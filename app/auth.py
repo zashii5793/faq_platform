@@ -26,6 +26,8 @@ def is_email_allowed(email: str) -> bool:
 
 
 def require_user(request: Request) -> dict:
+    if settings.demo_mode:
+        return {"email": "demo@local", "name": "Demo User"}
     user = request.session.get("user")
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not signed in")

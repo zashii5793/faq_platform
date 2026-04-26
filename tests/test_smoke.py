@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.masking import mask
+from app.masking import build_rules, mask
 from app.rag import FaqIndex, load_chunks
 
 
@@ -21,17 +21,24 @@ def test_ask_requires_auth():
     assert r.status_code == 401
 
 
-def test_masking_school_name():
+def test_masking_generic_pii():
+    text = "連絡先は test@example.com / 03-1234-5678 / https://internal.example.com/x です"
+    out = mask(text, rules=build_rules("general"))
+    assert "[メール]" in out
+    assert "[電話番号]" in out
+    assert "[URL]" in out
+
+
+def test_masking_education_industry():
     text = "○○学園の生徒情報について教えてください"
-    out = mask(text)
+    out = mask(text, rules=build_rules("education"))
     assert "[学校名]" in out
 
 
-def test_masking_email_phone():
-    text = "連絡先は test@example.com / 03-1234-5678 です"
-    out = mask(text)
-    assert "[メール]" in out
-    assert "[電話番号]" in out
+def test_masking_general_does_not_match_school():
+    text = "○○学園の件で"
+    out = mask(text, rules=build_rules("general"))
+    assert "[学校名]" not in out  # general industry では学校名は対象外
 
 
 def test_rag_loads_and_searches(tmp_path: Path):

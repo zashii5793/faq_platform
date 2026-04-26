@@ -6,6 +6,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    product_name: str = "Inquira"
+    org_name: str = "（貴社）"
+    assistant_role: str = "社内ヘルプデスク"
+
     anthropic_api_key: str = ""
     claude_model: str = "claude-sonnet-4-6"
 
@@ -21,8 +25,12 @@ class Settings(BaseSettings):
     faq_master_dir: Path = Path("./data/faq_master")
     index_path: Path = Path("./data/index.json")
 
+    masking_industry: str = "general"
+
     host: str = "0.0.0.0"
     port: int = 8000
+
+    demo_mode: bool = False
 
     @property
     def allowed_email_set(self) -> set[str]:
