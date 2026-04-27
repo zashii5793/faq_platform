@@ -20,34 +20,151 @@ app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request) -> HTMLResponse:
     user = request.session.get("user")
-    if not user or not is_email_allowed(user.get("email", "")):
-        return HTMLResponse(
-            '<a href="/auth/login">Googleでログイン</a>',
-            status_code=200,
-        )
-    return HTMLResponse(
-        f"""
-        <h1>社内FAQ (PoC)</h1>
-        <p>{user['email']} としてログイン中 - <a href="/auth/logout">ログアウト</a></p>
-        <form id="qa">
-          <input name="question" style="width: 80%" placeholder="質問を入力" required>
-          <button type="submit">送信</button>
-        </form>
-        <pre id="out"></pre>
-        <script>
-          document.getElementById('qa').onsubmit = async (e) => {{
-            e.preventDefault();
-            const q = e.target.question.value;
-            const r = await fetch('/api/ask', {{
-              method: 'POST', headers: {{'Content-Type':'application/json'}},
-              body: JSON.stringify({{question: q}})
-            }});
-            const data = await r.json();
-            document.getElementById('out').textContent = JSON.stringify(data, null, 2);
-          }};
-        </script>
-        """
-    )
+    if not settings.demo_mode and (not user or not is_email_allowed(user.get("email", ""))):
+        return HTMLResponse(_login_page(), status_code=200)
+    user_email = (user or {}).get("email") or "demo@local"
+    return HTMLResponse(_chat_page(user_email))
+
+
+def _login_page() -> str:
+    return f"""<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>{settings.product_name} - {settings.org_name}</title>
+<style>
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background:#f7f8fa;display:flex;align-items:center;justify-content:center;
+     height:100vh;margin:0;color:#1f2937}}
+.card{{background:#fff;padding:48px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.06);
+     text-align:center;max-width:420px}}
+h1{{margin:0 0 8px;font-size:28px;color:#111827}}
+p{{color:#6b7280;margin:0 0 24px}}
+.btn{{background:#1a73e8;color:#fff;padding:12px 24px;border-radius:8px;
+     text-decoration:none;font-weight:500;display:inline-flex;gap:8px;align-items:center}}
+.btn:hover{{background:#1557b0}}
+.tag{{display:inline-block;background:#eef2ff;color:#4338ca;padding:4px 10px;
+     border-radius:999px;font-size:12px;margin-bottom:16px}}
+</style></head><body>
+<div class="card">
+  <div class="tag">社内専用</div>
+  <h1>{settings.product_name}</h1>
+  <p>{settings.org_name}の{settings.assistant_role}<br>
+     社内ドキュメントから即座に回答します</p>
+  <a class="btn" href="/auth/login">🔐 Googleでログイン</a>
+</div></body></html>"""
+
+
+def _chat_page(user_email: str) -> str:
+    return f"""<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>{settings.product_name}</title>
+<style>
+*{{box-sizing:border-box}}
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background:#f7f8fa;margin:0;color:#1f2937;height:100vh;display:flex;flex-direction:column}}
+header{{background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 24px;
+       display:flex;justify-content:space-between;align-items:center}}
+.logo{{font-size:20px;font-weight:700;color:#1a73e8}}
+.logo small{{color:#6b7280;font-weight:400;font-size:13px;margin-left:6px}}
+.user{{font-size:13px;color:#6b7280}}
+.user a{{color:#1a73e8;text-decoration:none;margin-left:8px}}
+main{{flex:1;display:flex;flex-direction:column;max-width:840px;margin:0 auto;width:100%;padding:0 16px}}
+.chat{{flex:1;overflow-y:auto;padding:24px 0}}
+.empty{{text-align:center;color:#9ca3af;margin-top:80px}}
+.empty h2{{color:#374151;margin-bottom:12px}}
+.suggestions{{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:24px}}
+.chip{{background:#fff;border:1px solid #e5e7eb;padding:8px 16px;border-radius:999px;
+      font-size:13px;cursor:pointer;color:#374151}}
+.chip:hover{{background:#f3f4f6}}
+.msg{{margin-bottom:24px}}
+.msg.user .bubble{{background:#1a73e8;color:#fff;margin-left:auto}}
+.msg.bot .bubble{{background:#fff;border:1px solid #e5e7eb}}
+.bubble{{padding:14px 18px;border-radius:14px;max-width:78%;white-space:pre-wrap;
+        line-height:1.6;display:inline-block}}
+.msg.user{{text-align:right}}
+.sources{{margin-top:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;
+         padding:12px 16px;font-size:13px;max-width:78%}}
+.sources summary{{cursor:pointer;color:#4b5563;font-weight:500}}
+.src{{padding:8px 0;border-bottom:1px solid #f3f4f6}}
+.src:last-child{{border-bottom:0}}
+.src-name{{font-weight:600;color:#1f2937}}
+.src-score{{color:#9ca3af;font-size:11px;margin-left:8px}}
+.src-text{{color:#6b7280;font-size:12px;margin-top:4px;line-height:1.5;
+          display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}
+.feedback{{display:inline-flex;gap:6px;margin-top:8px}}
+.feedback button{{background:transparent;border:1px solid #e5e7eb;padding:4px 10px;
+                  border-radius:6px;cursor:pointer;font-size:12px}}
+.feedback button:hover{{background:#f3f4f6}}
+form#qa{{display:flex;gap:8px;padding:16px 0;border-top:1px solid #e5e7eb;background:#f7f8fa}}
+input#q{{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:12px 16px;
+        font-size:15px;font-family:inherit}}
+input#q:focus{{outline:none;border-color:#1a73e8;box-shadow:0 0 0 3px rgba(26,115,232,.15)}}
+button.send{{background:#1a73e8;color:#fff;border:0;border-radius:10px;
+            padding:0 24px;font-size:15px;font-weight:500;cursor:pointer}}
+button.send:hover{{background:#1557b0}}
+button.send:disabled{{background:#9ca3af}}
+.loading{{display:inline-block;width:14px;height:14px;border:2px solid #e5e7eb;
+         border-top-color:#1a73e8;border-radius:50%;animation:spin 1s linear infinite;
+         vertical-align:middle;margin-left:6px}}
+@keyframes spin{{to{{transform:rotate(360deg)}}}}
+</style></head><body>
+<header>
+  <div class="logo">{settings.product_name}<small>{settings.org_name}の{settings.assistant_role}</small></div>
+  <div class="user">{user_email}<a href="/auth/logout">ログアウト</a></div>
+</header>
+<main>
+  <div class="chat" id="chat">
+    <div class="empty" id="empty">
+      <h2>👋 どんなことでも聞いてください</h2>
+      <p>社内ドキュメントを参照して、出典付きで回答します</p>
+      <div class="suggestions">
+        <div class="chip" data-q="出席登録の保存ボタンが効きません">出席登録の保存ボタンが効きません</div>
+        <div class="chip" data-q="経費精算の締め日はいつですか">経費精算の締め日はいつですか</div>
+        <div class="chip" data-q="VPNが繋がらない時の対処法">VPNが繋がらない時の対処法</div>
+        <div class="chip" data-q="有給休暇の申請方法">有給休暇の申請方法</div>
+      </div>
+    </div>
+  </div>
+  <form id="qa">
+    <input id="q" placeholder="質問を入力（例: 経費精算の領収書はいつまでに提出？）" autocomplete="off" required>
+    <button class="send" type="submit">送信</button>
+  </form>
+</main>
+<script>
+const chat=document.getElementById('chat'),empty=document.getElementById('empty'),
+      form=document.getElementById('qa'),input=document.getElementById('q'),
+      btn=form.querySelector('button');
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{{input.value=c.dataset.q;form.requestSubmit()}});
+function escape(s){{return s.replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[c])}}
+function addMsg(role,html){{
+  if(empty)empty.remove();
+  const d=document.createElement('div');d.className='msg '+role;
+  d.innerHTML='<div class="bubble">'+html+'</div>';
+  chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return d;
+}}
+form.onsubmit=async e=>{{
+  e.preventDefault();const q=input.value.trim();if(!q)return;
+  input.value='';btn.disabled=true;
+  addMsg('user',escape(q));
+  const wait=addMsg('bot','回答を生成中<span class="loading"></span>');
+  try{{
+    const r=await fetch('/api/ask',{{method:'POST',headers:{{'Content-Type':'application/json'}},
+                                     body:JSON.stringify({{question:q}})}});
+    const data=await r.json();
+    let html=escape(data.answer||'(回答なし)');
+    if(data.sources&&data.sources.length){{
+      html+='<details class="sources" open><summary>📎 参照ドキュメント '+data.sources.length+'件</summary>';
+      for(const s of data.sources){{
+        html+='<div class="src"><span class="src-name">'+escape(s.source)+'</span>'
+              +'<span class="src-score">関連度 '+s.score.toFixed(2)+'</span></div>';
+      }}
+      html+='</details>';
+    }}
+    html+='<div class="feedback"><button>👍 役に立った</button><button>👎 改善が必要</button></div>';
+    wait.querySelector('.bubble').innerHTML=html;
+  }}catch(err){{wait.querySelector('.bubble').textContent='エラー: '+err.message}}
+  btn.disabled=false;input.focus();
+}};
+</script></body></html>"""
 
 
 @app.get("/auth/login")
