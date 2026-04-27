@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>Inquira UI Mockup - サイドバー版</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',sans-serif;
+     background:#f7f8fa;color:#1f2937;height:100vh;display:flex;font-size:14px}
+
+/* ============== Sidebar ============== */
+aside{width:280px;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;
+      flex-shrink:0;overflow-y:auto}
+.brand{padding:20px 18px;border-bottom:1px solid #e5e7eb}
+.brand h1{color:#1a73e8;font-size:22px;font-weight:700}
+.brand p{color:#6b7280;font-size:12px;margin-top:2px}
+.section{padding:16px 18px;border-bottom:1px solid #f3f4f6}
+.section h3{font-size:11px;color:#9ca3af;font-weight:600;letter-spacing:.05em;
+            text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.section h3 .icon{font-size:14px}
+.stat{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px}
+.stat .label{color:#6b7280}
+.stat .value{color:#1f2937;font-weight:600}
+.stat .value.big{font-size:20px;color:#1a73e8}
+.topic-item{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;color:#374151}
+.topic-item .count{color:#9ca3af;font-size:11px}
+.history-item{padding:8px 10px;margin:4px -10px;border-radius:6px;cursor:pointer;
+              font-size:12px;color:#374151;line-height:1.4;transition:background .15s}
+.history-item:hover{background:#f3f4f6}
+.history-item .time{color:#9ca3af;font-size:10px;margin-top:2px}
+.cov-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tag{background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:999px;font-size:11px}
+.upload{margin-top:10px;border:2px dashed #cbd5e1;border-radius:8px;padding:12px;text-align:center;
+        font-size:12px;color:#6b7280;cursor:pointer;transition:all .15s}
+.upload:hover{border-color:#1a73e8;background:#eff6ff;color:#1a73e8}
+.fb-row{display:flex;gap:8px;margin-bottom:8px}
+.fb-pill{flex:1;background:#f9fafb;border-radius:8px;padding:8px;text-align:center;font-size:13px}
+.fb-pill.up{color:#10b981}
+.fb-pill.down{color:#dc2626}
+.fb-pill .num{font-size:20px;font-weight:700;display:block}
+.fb-issues{font-size:11px;color:#6b7280;margin-top:8px}
+.fb-issues li{padding:4px 0;list-style:none}
+.fb-issues li:before{content:"⚠ ";color:#f59e0b}
+
+/* ============== Main ============== */
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+header{background:#fff;border-bottom:1px solid #e5e7eb;padding:14px 24px;
+       display:flex;justify-content:space-between;align-items:center}
+header .org{font-size:15px;font-weight:600;color:#1f2937}
+header .org small{color:#6b7280;font-weight:400;margin-left:8px}
+header .right{display:flex;align-items:center;gap:14px}
+header .gear{cursor:pointer;font-size:18px;color:#6b7280;padding:6px;border-radius:6px}
+header .gear:hover{background:#f3f4f6}
+header .user{font-size:13px;color:#6b7280}
+header .user a{color:#1a73e8;text-decoration:none;margin-left:8px}
+.devtools{position:absolute;top:60px;right:24px;background:#fff;border:1px solid #e5e7eb;
+          border-radius:10px;padding:14px;box-shadow:0 4px 16px rgba(0,0,0,.08);width:280px;font-size:13px;z-index:10}
+.devtools h4{font-size:11px;color:#9ca3af;text-transform:uppercase;margin-bottom:10px;letter-spacing:.05em}
+.devtools .row{padding:6px 0;display:flex;justify-content:space-between;align-items:center}
+.devtools select{padding:4px 8px;border:1px solid #e5e7eb;border-radius:4px;font-size:12px}
+.devtools button{background:#f3f4f6;border:0;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px}
+
+.chat{flex:1;overflow-y:auto;padding:24px 32px;max-width:920px;width:100%;margin:0 auto}
+.msg{margin-bottom:20px}
+.msg.user{text-align:right}
+.msg.user .bubble{background:#1a73e8;color:#fff;margin-left:auto}
+.msg.bot .bubble{background:#fff;border:1px solid #e5e7eb}
+.bubble{padding:12px 16px;border-radius:14px;max-width:75%;display:inline-block;
+        line-height:1.6;white-space:pre-wrap;text-align:left}
+.mask-info{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:8px;
+           padding:6px 10px;font-size:12px;margin-bottom:6px;display:inline-block;max-width:75%}
+.mask-info code{background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px;font-size:11px}
+.sources{margin-top:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;
+         padding:10px 14px;font-size:12px;max-width:75%}
+.sources summary{cursor:pointer;color:#4b5563;font-weight:500;list-style:none}
+.sources summary::-webkit-details-marker{display:none}
+.sources summary:before{content:"▸ ";color:#9ca3af}
+.sources[open] summary:before{content:"▾ "}
+.src{padding:6px 0;border-bottom:1px solid #f3f4f6;line-height:1.5}
+.src:last-child{border-bottom:0}
+.src-name{font-weight:600;color:#1f2937}
+.src-score{color:#9ca3af;font-size:10px;margin-left:6px}
+.src-text{color:#6b7280;font-size:11px;margin-top:2px}
+.feedback{display:inline-flex;gap:6px;margin-top:6px}
+.feedback button{background:transparent;border:1px solid #e5e7eb;padding:3px 10px;
+                  border-radius:6px;font-size:11px;color:#4b5563;cursor:pointer}
+.feedback button.up.active{background:#10b981;color:#fff;border-color:#10b981}
+
+.welcome{text-align:center;padding:48px 24px;color:#6b7280}
+.welcome h2{color:#374151;font-size:22px;margin-bottom:6px}
+.suggestions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px;max-width:680px;margin-left:auto;margin-right:auto}
+.chip{background:#fff;border:1px solid #e5e7eb;padding:8px 14px;border-radius:999px;
+      font-size:13px;cursor:pointer;color:#374151}
+.chip:hover{background:#1a73e8;color:#fff;border-color:#1a73e8}
+.chip .src-hint{color:#9ca3af;font-size:10px;margin-left:6px}
+.chip:hover .src-hint{color:#bfdbfe}
+
+footer.input-area{background:#fff;border-top:1px solid #e5e7eb;padding:14px 24px}
+.input-wrap{display:flex;gap:8px;max-width:920px;margin:0 auto}
+input.q{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:12px 16px;font-size:14px;font-family:inherit}
+input.q:focus{outline:none;border-color:#1a73e8;box-shadow:0 0 0 3px rgba(26,115,232,.15)}
+button.send{background:#1a73e8;color:#fff;border:0;border-radius:10px;padding:0 22px;font-weight:500;cursor:pointer}
+</style></head><body>
+
+<aside>
+  <div class="brand">
+    <h1>Inquira</h1>
+    <p>ZAXEL株式会社</p>
+  </div>
+
+  <div class="section">
+    <h3><span class="icon">📊</span> 分析（直近24時間）</h3>
+    <div class="stat"><span class="label">質問数</span><span class="value big">12</span></div>
+    <div class="stat"><span class="label">平均関連度</span><span class="value">0.34</span></div>
+    <div class="stat"><span class="label">解決感（👍率）</span><span class="value">80%</span></div>
+    <div style="margin-top:10px">
+      <div class="topic-item"><span>経費精算</span><span class="count">5件</span></div>
+      <div class="topic-item"><span>VPN接続</span><span class="count">3件</span></div>
+      <div class="topic-item"><span>有給休暇</span><span class="count">2件</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3><span class="icon">🕐</span> 問い合わせ履歴</h3>
+    <div class="history-item">
+      経費精算の領収書を紛失した
+      <div class="time">2分前</div>
+    </div>
+    <div class="history-item">
+      VPNが繋がらない時の対処法
+      <div class="time">15分前</div>
+    </div>
+    <div class="history-item">
+      有給を当日朝に取りたい場合は？
+      <div class="time">1時間前</div>
+    </div>
+    <div class="history-item">
+      出席登録の保存ボタンが効きません
+      <div class="time">2時間前</div>
+    </div>
+    <div class="history-item">
+      パスワードを忘れた
+      <div class="time">3時間前</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3><span class="icon">📚</span> ナレッジ取り込み状況</h3>
+    <div class="stat"><span class="label">取り込み済み文書</span><span class="value">6</span></div>
+    <div class="stat"><span class="label">総チャンク数</span><span class="value">22</span></div>
+    <div class="stat"><span class="label">最終取り込み</span><span class="value" style="font-size:11px">14:23</span></div>
+    <div style="margin-top:8px;font-size:11px;color:#6b7280">カバー領域</div>
+    <div class="cov-tags">
+      <span class="tag">業務システム</span>
+      <span class="tag">経理</span>
+      <span class="tag">情シス</span>
+      <span class="tag">人事</span>
+    </div>
+    <div class="upload">
+      📁 ファイルをドロップ<br>
+      <span style="font-size:10px">または クリックして選択 (.md / .txt)</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3><span class="icon">💬</span> フィードバック</h3>
+    <div class="fb-row">
+      <div class="fb-pill up"><span class="num">8</span>👍 役立った</div>
+      <div class="fb-pill down"><span class="num">2</span>👎 改善要望</div>
+    </div>
+    <div class="fb-issues">
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">改善要望のあった質問</div>
+      <ul>
+        <li>海外出張時の経費上限は？</li>
+        <li>休職中の有給扱い</li>
+      </ul>
+    </div>
+  </div>
+</aside>
+
+<main>
+  <header>
+    <div class="org">ZAXEL株式会社の社内ヘルプデスク<small>Inquira v0.2</small></div>
+    <div class="right">
+      <span class="gear" title="開発者設定">⚙</span>
+      <span class="user">staff@zaxel.co.jp <a href="#">ログアウト</a></span>
+    </div>
+  </header>
+
+  <!-- 開発者ツールパネル（モックアップ用に表示） -->
+  <div class="devtools">
+    <h4>🛠 開発者ツール</h4>
+    <div class="row">
+      <span>業界プリセット</span>
+      <select><option>general（汎用）</option><option>education</option><option>finance</option><option>healthcare</option></select>
+    </div>
+    <div class="row">
+      <span>インデックス</span>
+      <button>再構築</button>
+    </div>
+    <div class="row">
+      <span>監査ログ</span>
+      <button>表示</button>
+    </div>
+    <div class="row" style="font-size:11px;color:#9ca3af;border-top:1px solid #f3f4f6;margin-top:6px;padding-top:8px">
+      Inquira v0.2 / Claude Sonnet 4.6 / OK
+    </div>
+  </div>
+
+  <div class="chat">
+    <!-- ウェルカム例 -->
+    <div class="welcome">
+      <h2>👋 どんなことでも聞いてください</h2>
+      <p>取り込み済みの 6 文書を参照して、出典付きで回答します</p>
+      <div class="suggestions">
+        <div class="chip">出席登録の保存ボタンが効きません <span class="src-hint">出席登録.md</span></div>
+        <div class="chip">経費精算の締め日はいつですか <span class="src-hint">経費精算.md</span></div>
+        <div class="chip">領収書を紛失した <span class="src-hint">経費精算.md</span></div>
+        <div class="chip">VPNが繋がらない時の対処法 <span class="src-hint">VPN接続.md</span></div>
+        <div class="chip">有給を当日朝に取りたい <span class="src-hint">有給休暇.md</span></div>
+        <div class="chip">パスワードを忘れた <span class="src-hint">ログイン.md</span></div>
+      </div>
+      <p style="margin-top:24px;font-size:11px;color:#9ca3af">
+        💡 サジェストは取り込み済み文書から自動生成されます。文書を追加するとここに反映されます。
+      </p>
+    </div>
+  </div>
+
+  <footer class="input-area">
+    <div class="input-wrap">
+      <input class="q" placeholder="質問を入力（例: 経費精算の領収書はいつまでに提出？）">
+      <button class="send">送信</button>
+    </div>
+  </footer>
+</main>
+</body></html>
