@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inquira — インタラクティブデモ</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',sans-serif;
+     background:#f7f8fa;margin:0;color:#1f2937;height:100vh;display:flex;flex-direction:column}
+header{background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 24px;
+       display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.logo{font-size:20px;font-weight:700;color:#1a73e8}
+.logo small{color:#6b7280;font-weight:400;font-size:13px;margin-left:6px}
+.controls{display:flex;align-items:center;gap:12px;font-size:13px;color:#4b5563}
+select{padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;font-size:13px}
+.user{font-size:13px;color:#6b7280}
+main{flex:1;display:flex;flex-direction:column;max-width:880px;margin:0 auto;width:100%;padding:0 16px;min-height:0}
+.notice{background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;padding:10px 16px;
+        border-radius:8px;margin:12px 0;font-size:13px;line-height:1.6}
+.chat{flex:1;overflow-y:auto;padding:8px 0 24px}
+.empty{text-align:center;color:#9ca3af;margin-top:48px;padding:0 16px}
+.empty h2{color:#374151;margin-bottom:12px;font-size:22px}
+.empty p{margin:8px 0 0;font-size:14px}
+.suggestions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:24px;max-width:720px;margin-left:auto;margin-right:auto}
+.chip{background:#fff;border:1px solid #e5e7eb;padding:8px 16px;border-radius:999px;
+      font-size:13px;cursor:pointer;color:#374151;transition:all .15s}
+.chip:hover{background:#1a73e8;color:#fff;border-color:#1a73e8}
+.msg{margin-bottom:24px}
+.msg.user .bubble{background:#1a73e8;color:#fff;margin-left:auto}
+.msg.bot .bubble{background:#fff;border:1px solid #e5e7eb}
+.bubble{padding:14px 18px;border-radius:14px;max-width:78%;white-space:pre-wrap;
+        line-height:1.6;display:inline-block;word-break:break-word}
+.msg.user{text-align:right}
+.mask-info{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:8px;
+           padding:8px 12px;font-size:12px;margin-bottom:8px;max-width:78%;display:inline-block;text-align:left}
+.mask-info code{background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px;font-size:11px}
+.sources{margin-top:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;
+         padding:12px 16px;font-size:13px;max-width:78%}
+.sources summary{cursor:pointer;color:#4b5563;font-weight:500;outline:none}
+.src{padding:8px 0;border-bottom:1px solid #f3f4f6}
+.src:last-child{border-bottom:0}
+.src-name{font-weight:600;color:#1f2937}
+.src-score{color:#9ca3af;font-size:11px;margin-left:8px}
+.src-text{color:#6b7280;font-size:12px;margin-top:4px;line-height:1.5;
+          display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.feedback{display:inline-flex;gap:6px;margin-top:8px}
+.feedback button{background:transparent;border:1px solid #e5e7eb;padding:4px 10px;
+                  border-radius:6px;cursor:pointer;font-size:12px;color:#4b5563}
+.feedback button:hover{background:#f3f4f6}
+.feedback button.active{background:#1a73e8;color:#fff;border-color:#1a73e8}
+form#qa{display:flex;gap:8px;padding:16px 0;border-top:1px solid #e5e7eb;background:#f7f8fa}
+input#q{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:12px 16px;
+        font-size:15px;font-family:inherit}
+input#q:focus{outline:none;border-color:#1a73e8;box-shadow:0 0 0 3px rgba(26,115,232,.15)}
+button.send{background:#1a73e8;color:#fff;border:0;border-radius:10px;
+            padding:0 24px;font-size:15px;font-weight:500;cursor:pointer}
+button.send:hover{background:#1557b0}
+button.send:disabled{background:#9ca3af;cursor:wait}
+.loading{display:inline-block;width:12px;height:12px;border:2px solid #e5e7eb;
+         border-top-color:#1a73e8;border-radius:50%;animation:spin 1s linear infinite;
+         vertical-align:middle;margin-left:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.no-hit{color:#9ca3af;font-style:italic}
+</style></head><body>
+<header>
+  <div class="logo">Inquira<small id="orgLabel">○○株式会社の社内ヘルプデスク</small></div>
+  <div class="controls">
+    <label>業界:
+      <select id="industry">
+        <option value="general">general（汎用）</option>
+        <option value="education">education（教育）</option>
+        <option value="finance">finance（金融）</option>
+        <option value="healthcare">healthcare（医療）</option>
+      </select>
+    </label>
+    <span class="user">demo@local</span>
+  </div>
+</header>
+<main>
+  <div class="notice">
+    🧪 <b>このページはクライアントサイドのデモシミュレータ</b>です。FAQ参照・スコアリング・マスキングは全てブラウザ内で完結。
+    実プロダクトは Claude API + RAG で回答文を生成します（このデモは抜粋表示）。
+  </div>
+  <div class="chat" id="chat">
+    <div class="empty" id="empty">
+      <h2>👋 どんなことでも聞いてください</h2>
+      <p>社内ドキュメントを参照して、出典付きで回答します</p>
+      <p style="font-size:12px">下のサジェストをクリック、または自由に質問を入力してください</p>
+      <div class="suggestions">
+        <div class="chip">出席登録の保存ボタンが効きません</div>
+        <div class="chip">経費精算の締め日はいつですか</div>
+        <div class="chip">VPNが繋がらない時の対処法</div>
+        <div class="chip">有給を当日朝に取りたい場合は？</div>
+        <div class="chip">パスワードを忘れた</div>
+        <div class="chip">成績の評定が反映されない</div>
+        <div class="chip">領収書を紛失した</div>
+        <div class="chip">海外出張でVPNを使いたい</div>
+      </div>
+    </div>
+  </div>
+  <form id="qa">
+    <input id="q" placeholder="質問を入力（例: 経費精算の領収書はいつまでに提出？）" autocomplete="off" required>
+    <button class="send" type="submit">送信</button>
+  </form>
+</main>
+
+<script>
+// ============================================================
+// FAQ コーパス（本来はサーバ側 data/faq_master/）
+// ============================================================
+const DOCS = {
+  '出席登録.md': {
+    title: '出席登録の操作方法',
+    chunks: [
+      {id: '出席登録.md#0', text: '出席登録の通常の出席入力: メインメニューから「出席管理」を開く → 学年・クラスを選択 → 該当日の出席状況を入力し「保存」'},
+      {id: '出席登録.md#1', text: '保存ボタンを押しても反映されない場合、ブラウザのキャッシュが原因のことが多い。Ctrl+Shift+R で強制リロード後、再ログインしてから再操作してください。'},
+      {id: '出席登録.md#2', text: '過去日の修正は管理者権限が必要。一般ユーザーは当日のみ修正可能です。'},
+      {id: '出席登録.md#3', text: '一括欠席登録の方法: 学級閉鎖メニューから「全員欠席」を選択し、理由（インフルエンザ等）を記入して保存。'},
+    ],
+  },
+  '成績入力.md': {
+    title: '成績入力ガイド',
+    chunks: [
+      {id: '成績入力.md#0', text: '評定の入力フロー: 「成績管理」→「評定入力」→ 学期・科目・クラスを選択 → 評定を入力し「確定」→ 確定後は教務主任の承認待ち'},
+      {id: '成績入力.md#1', text: '評定が反映されない場合、評定マスタの設定を確認してください。マスタに無い評定値は弾かれます。管理メニュー→「評定マスタ」で 1〜5 の数値が登録されているか確認。'},
+      {id: '成績入力.md#2', text: '成績画面に学年が出てこない場合、学年の権限設定が外れている可能性があります。情報システム部にチケットを起票してください。'},
+      {id: '成績入力.md#3', text: 'CSV エクスポートは成績一覧画面右上の「エクスポート」ボタンから可能。文字コードは Shift_JIS。'},
+    ],
+  },
+  'ログイン.md': {
+    title: 'ログイントラブル対応',
+    chunks: [
+      {id: 'ログイン.md#0', text: 'パスワードを忘れた場合: ログイン画面の「パスワードを忘れた方」リンクから再設定メールを送信できます。メールが届かない場合は迷惑メールフォルダを確認、それでも無ければ情報システム部に連絡。'},
+      {id: 'ログイン.md#1', text: 'アカウントロック: 5回連続でパスワードを誤入力するとロックされます。30分待つか、管理者に解除依頼してください。'},
+      {id: 'ログイン.md#2', text: '二要素認証コードが届かない場合、登録メールアドレスを確認。アドレス変更時は事前申請が必要です。'},
+    ],
+  },
+  '経費精算.md': {
+    title: '経費精算ガイド',
+    chunks: [
+      {id: '経費精算.md#0', text: '経費精算の月次締めは毎月25日。提出期限は締め日の翌営業日17時まで。期限を過ぎた場合は翌月扱いになります。'},
+      {id: '経費精算.md#1', text: '必要書類: 領収書（原本またはスキャン）、経費精算書（社内ポータルから出力）、出張費なら出張報告書、接待費なら参加者リスト。'},
+      {id: '経費精算.md#2', text: '領収書を紛失した場合は「支払証明書」を経理部まで提出してください。クレジットカード明細でも代用可能ですが、原則は領収書原本です。'},
+      {id: '経費精算.md#3', text: '個人立替払いの上限は1件あたり5万円まで。それ以上は事前に法人カードの利用申請が必要です。'},
+      {id: '経費精算.md#4', text: 'インボイス対応: 2023年10月以降、適格請求書発行事業者の登録番号 (T+13桁) が記載された領収書のみ仕入税額控除の対象です。'},
+    ],
+  },
+  'VPN接続.md': {
+    title: '社内VPN接続マニュアル',
+    chunks: [
+      {id: 'VPN接続.md#0', text: 'FortiClient接続手順: FortiClient起動 → リモートアクセス選択 → VPN名 corp-vpn を選び接続 → 社員番号とADパスワード入力 → ワンタイムパスワード(OTP)6桁コード入力。'},
+      {id: 'VPN接続.md#1', text: 'VPNが繋がらない/タイムアウトする場合: ①インターネット接続自体を確認 ②FortiClient再起動 ③PC再起動 ④パスワード期限切れの可能性→ADパスワードリセット申請 ⑤上記でダメなら情報システム部にチケット起票。'},
+      {id: 'VPN接続.md#2', text: 'VPN接続中に社内サーバ \\\\fileserver が見えない場合、エクスプローラーで \\\\fileserver.corp.local を直接入力してください。DNS解決が遅延することがあります。'},
+      {id: 'VPN接続.md#3', text: '海外出張時のVPN利用: 中国・ロシア等は接続不可です。事前にIT部に相談し、専用回線または代替手段を準備してください。'},
+    ],
+  },
+  '有給休暇.md': {
+    title: '有給休暇 申請ガイド',
+    chunks: [
+      {id: '有給休暇.md#0', text: '有給取得ルール: 入社6ヶ月後に10日付与、以降勤続年数に応じて最大20日。取得単位は1日/半日/時間単位（年間最大40時間）。翌年度繰越は上限20日まで。'},
+      {id: '有給休暇.md#1', text: '申請方法: 勤怠システム(KING OF TIME)にログイン → 「休暇申請」→「年次有給」を選択 → 取得日と理由(任意)を入力 → 上長の承認後に確定。'},
+      {id: '有給休暇.md#2', text: '当日朝に有給を取りたい場合: 緊急時は電話・チャットで上長に連絡し、出社後に事後申請してください。事前申請が原則です。'},
+      {id: '有給休暇.md#3', text: '有給の残日数確認: KING OF TIME の「個人画面」→「休暇残日数」で確認できます。月初に自動更新されます。'},
+      {id: '有給休暇.md#4', text: '計画年休との違い: 計画年休は会社が年初に指定する日（例: GW前後の連休化）で、個人申請とは別枠です。'},
+    ],
+  },
+};
+
+// 全チャンクのフラット配列
+const ALL_CHUNKS = [];
+Object.entries(DOCS).forEach(([file, doc]) => {
+  doc.chunks.forEach(c => ALL_CHUNKS.push({...c, source: file}));
+});
+
+// ============================================================
+// マスキング (汎用 + 業界プリセット)
+// ============================================================
+const GENERIC_RULES = [
+  {name:'email', re: /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, repl: '[メール]'},
+  {name:'phone', re: /\b0\d{1,4}[-(]?\d{1,4}[-)]?\d{3,4}\b/g, repl: '[電話番号]'},
+  {name:'card', re: /\b(?:\d[ -]?){13,19}\b/g, repl: '[カード番号]'},
+  {name:'mynum', re: /\b\d{4}[ -]?\d{4}[ -]?\d{4}\b/g, repl: '[マイナンバー]'},
+  {name:'ip', re: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g, repl: '[IPアドレス]'},
+  {name:'url', re: /https?:\/\/\S+/g, repl: '[URL]'},
+];
+const INDUSTRY_RULES = {
+  general: [],
+  education: [{name:'school', re: /[一-鿿ぁ-んァ-ヶー々〇○]+(?:学園|学院|高校|中学|小学校|大学|短大|専門学校)/g, repl: '[学校名]'}],
+  healthcare: [{name:'mrn', re: /\bMRN[-_]?\d{4,}\b/gi, repl: '[診療番号]'}],
+  finance: [{name:'bank', re: /\b\d{7}\b/g, repl: '[口座番号]'}],
+};
+function mask(text, industry) {
+  let out = text;
+  const rules = [...GENERIC_RULES, ...(INDUSTRY_RULES[industry] || [])];
+  for (const r of rules) out = out.replace(r.re, r.repl);
+  return out;
+}
+
+// ============================================================
+// 検索: 文字bigram の Jaccard 類似度（簡易TF-IDF代替）
+// ============================================================
+function bigrams(s) {
+  const out = new Set();
+  const t = s.replace(/\s+/g, '');
+  for (let i = 0; i < t.length - 1; i++) out.add(t.substring(i, i+2));
+  return out;
+}
+function score(qBigrams, chunkText) {
+  const cb = bigrams(chunkText);
+  let inter = 0;
+  qBigrams.forEach(b => { if (cb.has(b)) inter++; });
+  const denom = Math.sqrt(qBigrams.size * cb.size) || 1;
+  return inter / denom;
+}
+function search(query, topK=5) {
+  const qb = bigrams(query);
+  return ALL_CHUNKS
+    .map(c => ({...c, score: score(qb, c.text)}))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
+}
+
+// ============================================================
+// 「LLM応答」シミュレーション
+// 実プロダクトでは Claude が複数チャンクを合成して回答するが、
+// このデモではトップチャンクの本文を整形して返す
+// ============================================================
+function generateAnswer(query, hits) {
+  if (!hits.length) {
+    return {text: '該当情報が見つかりませんでした。社内ヘルプデスクに直接お問い合わせください。', noHit: true};
+  }
+  const top = hits[0];
+  const file = top.source.replace('.md', '');
+  // 上位3件のチャンクを「複数根拠を踏まえた回答」風に整形
+  const supportTexts = hits.slice(0, 3).map(h => h.text);
+  let body = top.text;
+  if (hits.length >= 2 && hits[1].score > 0.1 && hits[1].source === top.source) {
+    body += '\n\n補足: ' + hits[1].text;
+  }
+  return {text: body + '\n\n出典: ' + top.source, noHit: false};
+}
+
+// ============================================================
+// UI
+// ============================================================
+const chat = document.getElementById('chat');
+const empty = document.getElementById('empty');
+const form = document.getElementById('qa');
+const input = document.getElementById('q');
+const sendBtn = form.querySelector('button');
+const industrySelect = document.getElementById('industry');
+const orgLabel = document.getElementById('orgLabel');
+
+industrySelect.onchange = () => {
+  const labels = {general:'○○株式会社', education:'教育系A社様', finance:'△△銀行', healthcare:'□□病院'};
+  orgLabel.textContent = labels[industrySelect.value] + 'の社内ヘルプデスク';
+};
+
+document.querySelectorAll('.chip').forEach(c => {
+  c.onclick = () => { input.value = c.textContent.trim(); form.requestSubmit(); };
+});
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function addUserMsg(rawText, maskedText) {
+  if (empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  let html = '';
+  if (rawText !== maskedText) {
+    html += `<div class="mask-info"><b>📌 送信前マスキング適用</b>: <code>${escapeHtml(maskedText)}</code></div><br>`;
+  }
+  html += `<div class="bubble">${escapeHtml(rawText)}</div>`;
+  div.innerHTML = html;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function addBotMsg(answer, hits) {
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  const cls = answer.noHit ? 'bubble no-hit' : 'bubble';
+  let html = `<div class="${cls}">${escapeHtml(answer.text)}</div>`;
+  if (hits.length) {
+    html += `<details class="sources" open><summary>📎 参照ドキュメント ${hits.length}件</summary>`;
+    for (const h of hits) {
+      html += `<div class="src"><span class="src-name">${escapeHtml(h.source)}</span>` +
+              `<span class="src-score">関連度 ${h.score.toFixed(2)}</span>` +
+              `<div class="src-text">${escapeHtml(h.text)}</div></div>`;
+    }
+    html += `</details>`;
+  }
+  html += `<div class="feedback"><button data-fb="up">👍 役に立った</button><button data-fb="down">👎 改善が必要</button></div>`;
+  div.innerHTML = html;
+  div.querySelectorAll('.feedback button').forEach(b => {
+    b.onclick = () => {
+      div.querySelectorAll('.feedback button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    };
+  });
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+form.onsubmit = (e) => {
+  e.preventDefault();
+  const raw = input.value.trim();
+  if (!raw) return;
+  input.value = '';
+  sendBtn.disabled = true;
+  const industry = industrySelect.value;
+  const masked = mask(raw, industry);
+  addUserMsg(raw, masked);
+
+  // ローディング表示
+  const wait = document.createElement('div');
+  wait.className = 'msg bot';
+  wait.innerHTML = '<div class="bubble">回答を生成中<span class="loading"></span></div>';
+  chat.appendChild(wait);
+  chat.scrollTop = chat.scrollHeight;
+
+  // 検索 + 回答生成（少しディレイで本物っぽく）
+  setTimeout(() => {
+    const hits = search(masked, 5);
+    const answer = generateAnswer(masked, hits);
+    wait.remove();
+    addBotMsg(answer, hits);
+    sendBtn.disabled = false;
+    input.focus();
+  }, 400 + Math.random() * 400);
+};
+
+input.focus();
+</script>
+</body></html>

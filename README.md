@@ -45,6 +45,21 @@ docs/
 tests/                      pytest
 ```
 
+## 🎬 30秒で見る（ブラウザだけで動く）
+
+サーバ・APIキー・依存インストール **すべて不要**。ブラウザで開くだけ：
+
+```
+docs/demo.html
+```
+
+クライアントサイドで FAQ 検索・スコアリング・マスキングをシミュレートします。
+業界プリセット切替（汎用 / 教育 / 金融 / 医療）も動作確認可能。
+
+スクリーンショット：
+- [`docs/demo_interactive_initial.png`](./docs/demo_interactive_initial.png) — 初期画面
+- [`docs/demo_interactive_session.png`](./docs/demo_interactive_session.png) — 4問やり取り＋マスキング適用
+
 ## クイックスタート（デモ）
 
 ```bash
