@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>Inquira - ナレッジ取り込み&クレンジング モックアップ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',sans-serif;
+     background:rgba(15,23,42,.6);color:#1f2937;min-height:100vh;padding:32px;font-size:14px}
+
+.modal{background:#fff;max-width:920px;margin:0 auto;border-radius:14px;overflow:hidden;
+       box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 24px;border-bottom:1px solid #e5e7eb;display:flex;
+              justify-content:space-between;align-items:center;background:#fafbfc}
+.modal-header h2{font-size:18px;color:#111827}
+.modal-header h2 span{color:#1a73e8}
+.close{cursor:pointer;font-size:22px;color:#9ca3af;background:none;border:0;padding:4px 10px;border-radius:6px}
+.close:hover{background:#f3f4f6}
+
+.modal-body{padding:24px;max-height:calc(100vh - 200px);overflow-y:auto}
+
+/* Step 1: Upload */
+.step-title{font-size:13px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;
+            font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.step-num{background:#1a73e8;color:#fff;width:22px;height:22px;border-radius:50%;
+          display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+
+.upload-zone{border:2px dashed #93c5fd;background:#eff6ff;border-radius:12px;
+             padding:32px;text-align:center;cursor:pointer;transition:all .15s}
+.upload-zone:hover{background:#dbeafe;border-color:#1a73e8}
+.upload-zone .icon{font-size:36px;margin-bottom:8px}
+.upload-zone .main{font-size:15px;color:#1e3a8a;font-weight:500}
+.upload-zone .sub{font-size:12px;color:#6b7280;margin-top:6px}
+.upload-zone .formats{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:14px}
+.fmt{background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:3px 9px;font-size:11px;color:#374151;font-weight:500}
+
+.divider{text-align:center;color:#9ca3af;font-size:12px;margin:14px 0;position:relative}
+.divider:before,.divider:after{content:'';position:absolute;top:50%;width:42%;height:1px;background:#e5e7eb}
+.divider:before{left:0}.divider:after{right:0}
+
+.gdrive{display:flex;align-items:center;gap:10px;padding:14px 20px;border:1px solid #e5e7eb;
+        border-radius:10px;cursor:pointer;background:#fff}
+.gdrive:hover{background:#f9fafb;border-color:#1a73e8}
+.gdrive .gicon{width:24px;height:24px;background:#fbbf24;border-radius:4px;display:flex;
+               align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:11px}
+.gdrive .label{font-size:14px;color:#1f2937}
+.gdrive .sub{font-size:11px;color:#6b7280}
+
+/* Capacity meter */
+.capacity{margin:16px 0 24px;background:#f9fafb;border-radius:10px;padding:12px 16px}
+.cap-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cap-row .label{font-size:13px;color:#374151;font-weight:500}
+.cap-row .vals{font-size:12px;color:#6b7280}
+.cap-row .vals .used{color:#1a73e8;font-weight:600}
+.cap-bar{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+.cap-fill{height:100%;background:linear-gradient(90deg,#1a73e8,#3b82f6);width:24%}
+.cap-info{font-size:11px;color:#6b7280;margin-top:6px}
+
+/* Step 2: Cleanse cards */
+.file-card{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px}
+.file-card.ok{border-left:4px solid #10b981}
+.file-card.warn{border-left:4px solid #f59e0b}
+.file-card.danger{border-left:4px solid #dc2626;background:#fef2f2}
+
+.fc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.fc-title{display:flex;align-items:center;gap:10px}
+.fc-icon{font-size:24px}
+.fc-name{font-weight:600;color:#111827}
+.fc-meta{font-size:11px;color:#9ca3af;margin-top:2px}
+.fc-badge{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;flex-shrink:0}
+.fc-badge.ok{background:#d1fae5;color:#065f46}
+.fc-badge.warn{background:#fef3c7;color:#92400e}
+.fc-badge.danger{background:#fee2e2;color:#991b1b}
+
+.fc-grid{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font-size:13px;line-height:1.5;margin-bottom:10px}
+.fc-grid dt{color:#6b7280}
+.fc-grid dd{color:#1f2937}
+.concern{display:flex;align-items:flex-start;gap:6px;margin:3px 0}
+.concern.warn{color:#92400e}
+.concern.danger{color:#991b1b;font-weight:500}
+
+.fc-actions{display:flex;gap:6px;margin-top:8px}
+.fc-actions button{padding:6px 12px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;
+                   font-size:12px;cursor:pointer;color:#374151}
+.fc-actions button:hover{background:#f3f4f6}
+.fc-actions button.primary{background:#1a73e8;color:#fff;border-color:#1a73e8}
+.fc-actions button.primary:hover{background:#1557b0}
+.fc-actions button.danger{color:#dc2626}
+
+/* Footer */
+.modal-footer{padding:16px 24px;border-top:1px solid #e5e7eb;background:#fafbfc;
+              display:flex;justify-content:space-between;align-items:center}
+.summary{font-size:13px;color:#6b7280}
+.summary b{color:#111827}
+button.confirm{background:#1a73e8;color:#fff;border:0;border-radius:8px;padding:10px 22px;
+               font-weight:500;cursor:pointer;font-size:14px}
+button.confirm:hover{background:#1557b0}
+button.confirm:disabled{background:#9ca3af}
+</style></head><body>
+
+<div class="modal">
+  <div class="modal-header">
+    <h2>📚 ナレッジ追加 <span>— Inquira</span></h2>
+    <button class="close">✕</button>
+  </div>
+
+  <div class="modal-body">
+
+    <!-- Step 1 -->
+    <div class="step-title"><span class="step-num">1</span>ファイルを投入</div>
+
+    <div class="upload-zone">
+      <div class="icon">📁</div>
+      <div class="main">ドラッグ＆ドロップ または クリックして選択</div>
+      <div class="sub">パース・PII検出・重複判定を自動実行します</div>
+      <div class="formats">
+        <span class="fmt">PDF</span>
+        <span class="fmt">Excel</span>
+        <span class="fmt">PowerPoint</span>
+        <span class="fmt">CSV</span>
+        <span class="fmt">画像 (OCR)</span>
+        <span class="fmt">Markdown</span>
+        <span class="fmt">テキスト</span>
+      </div>
+    </div>
+
+    <div class="divider">または</div>
+
+    <div class="gdrive">
+      <div class="gicon">G</div>
+      <div>
+        <div class="label">Google Drive から取り込み</div>
+        <div class="sub">フォルダ単位で同期可能（OAuth 認証）</div>
+      </div>
+      <div style="margin-left:auto;color:#1a73e8;font-size:13px">接続 →</div>
+    </div>
+
+    <div class="capacity">
+      <div class="cap-row">
+        <span class="label">📊 容量使用状況</span>
+        <span class="vals"><span class="used">1.2GB</span> / 5GB（Standard プラン）</span>
+      </div>
+      <div class="cap-bar"><div class="cap-fill"></div></div>
+      <div class="cap-info">1ファイル上限: 50MB ／ 残り容量: 3.8GB ／ 80%到達時に Enterprise アップグレード案内</div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-title" style="margin-top:28px"><span class="step-num">2</span>クレンジング結果</div>
+
+    <!-- Card 1: OK -->
+    <div class="file-card ok">
+      <div class="fc-header">
+        <div class="fc-title">
+          <span class="fc-icon">📄</span>
+          <div>
+            <div class="fc-name">経費規程_2024.pdf</div>
+            <div class="fc-meta">2.4 MB · 23ページ · アップロード 30秒前</div>
+          </div>
+        </div>
+        <span class="fc-badge ok">✅ 取り込み可</span>
+      </div>
+      <dl class="fc-grid">
+        <dt>抽出内容</dt><dd>テキスト + 表 5件 + 画像3件（画像はOCR済み）</dd>
+        <dt>チャンク数</dt><dd>47件（平均 612字／チャンク）</dd>
+        <dt>検出された懸念</dt>
+        <dd>
+          <div class="concern warn">⚠ メール 3件 / 電話番号 2件 → 自動マスク予定</div>
+        </dd>
+        <dt>重複判定</dt><dd>類似度 30%（経費精算.md）— 補完関係 ✓</dd>
+      </dl>
+      <div class="fc-actions">
+        <button>👁 プレビュー</button>
+        <button>✏ 編集</button>
+        <button class="primary">取り込む</button>
+        <button>スキップ</button>
+      </div>
+    </div>
+
+    <!-- Card 2: WARN -->
+    <div class="file-card warn">
+      <div class="fc-header">
+        <div class="fc-title">
+          <span class="fc-icon">📊</span>
+          <div>
+            <div class="fc-name">顧客対応履歴_Q3.xlsx</div>
+            <div class="fc-meta">5.8 MB · 12シート · アップロード 1分前</div>
+          </div>
+        </div>
+        <span class="fc-badge warn">⚠ 確認必要</span>
+      </div>
+      <dl class="fc-grid">
+        <dt>抽出内容</dt><dd>表 12シート × 平均 380行</dd>
+        <dt>チャンク数</dt><dd>156件</dd>
+        <dt>検出された懸念</dt>
+        <dd>
+          <div class="concern warn">⚠ 個人氏名 28件 → マスキング推奨</div>
+          <div class="concern warn">⚠ 機密マーカー「社外秘」3件 → 管理者確認推奨</div>
+          <div class="concern warn">⚠ メール 14件 / 電話番号 9件 → 自動マスク予定</div>
+        </dd>
+        <dt>重複判定</dt><dd>新規（既存文書との類似なし）</dd>
+      </dl>
+      <div class="fc-actions">
+        <button>👁 プレビュー</button>
+        <button class="primary">マスクして取り込む</button>
+        <button>編集して取り込む</button>
+        <button>スキップ</button>
+      </div>
+    </div>
+
+    <!-- Card 3: DANGER -->
+    <div class="file-card danger">
+      <div class="fc-header">
+        <div class="fc-title">
+          <span class="fc-icon">📋</span>
+          <div>
+            <div class="fc-name">社員リスト_2024.csv</div>
+            <div class="fc-meta">340 KB · 487行 · アップロード 1分前</div>
+          </div>
+        </div>
+        <span class="fc-badge danger">🔴 取り込み非推奨</span>
+      </div>
+      <dl class="fc-grid">
+        <dt>抽出内容</dt><dd>表 1シート × 487行（社員番号・氏名・所属・連絡先など）</dd>
+        <dt>検出された懸念</dt>
+        <dd>
+          <div class="concern danger">🔴 マイナンバー疑い: 487件（全行）— 法的リスク</div>
+          <div class="concern danger">🔴 個人氏名: 487件 — 完全な個人情報集</div>
+          <div class="concern danger">🔴 銀行口座番号: 487件</div>
+        </dd>
+        <dt>推奨アクション</dt><dd style="color:#991b1b;font-weight:500">FAQ用途には不適切。人事管理システムでの保管を推奨</dd>
+      </dl>
+      <div class="fc-actions">
+        <button>📋 詳細レポート</button>
+        <button class="danger">スキップ</button>
+      </div>
+    </div>
+
+    <!-- Card 4: Image -->
+    <div class="file-card ok">
+      <div class="fc-header">
+        <div class="fc-title">
+          <span class="fc-icon">📷</span>
+          <div>
+            <div class="fc-name">VPN設定スクショ.jpg</div>
+            <div class="fc-meta">120 KB · 1280×720 · アップロード 2分前</div>
+          </div>
+        </div>
+        <span class="fc-badge ok">✅ 取り込み可</span>
+      </div>
+      <dl class="fc-grid">
+        <dt>抽出内容</dt><dd>OCR テキスト 230字（信頼度 87%）</dd>
+        <dt>チャンク数</dt><dd>1件</dd>
+        <dt>検出された懸念</dt><dd>なし</dd>
+      </dl>
+      <div class="fc-actions">
+        <button>👁 プレビュー</button>
+        <button class="primary">取り込む</button>
+        <button>スキップ</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="modal-footer">
+    <div class="summary">
+      <b>3件取り込み</b> · 1件スキップ · 推定 +204チャンク · 容量 +8.6MB
+    </div>
+    <button class="confirm">選択を確定して取り込む（3件）</button>
+  </div>
+
+</div>
+
+</body></html>
