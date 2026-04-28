@@ -1,15 +1,14 @@
 """ナレッジ取り込みパイプライン。
 
 責務:
-  1. ファイルパース（CSV / Markdown / テキスト / JSON）
+  1. ファイルパース（CSV / Markdown / テキスト / JSON / PDF / Excel）
   2. チャンク化
   3. PII・機密マーカー検出
   4. 推奨アクション判定（ok / warn / danger）
   5. FAQマスターへの書き込み
 
 注意:
-  - PDF/Excel/PPT/画像 は別途依存追加が必要なため本リリースではスコープ外
-    （ROADMAP Phase 2 で対応）
+  - PowerPoint / 画像OCR は ROADMAP Phase 2 で対応予定
 """
 from __future__ import annotations
 
@@ -83,6 +82,9 @@ def _detect_format(filename: str) -> str:
         "txt": "text",
         "csv": "csv",
         "json": "json",
+        "pdf": "pdf",
+        "xlsx": "xlsx",
+        "xls": "xlsx",
     }.get(ext, "unsupported")
 
 
@@ -120,12 +122,62 @@ def _parse_csv(filename: str, content: bytes) -> list[Chunk]:
     return chunks
 
 
+def _parse_pdf(filename: str, content: bytes) -> list[Chunk]:
+    """PDF: ページ単位でチャンク化（chunk_id にページ番号を含める）。"""
+    from pypdf import PdfReader
+
+    reader = PdfReader(io.BytesIO(content))
+    chunks: list[Chunk] = []
+    for i, page in enumerate(reader.pages):
+        text = (page.extract_text() or "").strip()
+        if not text:
+            continue
+        # 600字超は段落分割
+        for j, piece in enumerate(_split_text(text)):
+            suffix = f"p{i+1}" if j == 0 else f"p{i+1}-{j}"
+            chunks.append(
+                Chunk(chunk_id=f"{filename}#{suffix}", source=filename, text=piece)
+            )
+    return chunks
+
+
+def _parse_xlsx(filename: str, content: bytes) -> list[Chunk]:
+    """Excel: シート×行をチャンクに変換。1行=1チャンク（ヘッダー付き "key: value"）。"""
+    from openpyxl import load_workbook
+
+    wb = load_workbook(io.BytesIO(content), data_only=True, read_only=True)
+    chunks: list[Chunk] = []
+    for sheet in wb.sheetnames:
+        ws = wb[sheet]
+        rows_iter = ws.iter_rows(values_only=True)
+        try:
+            header = [str(c) if c is not None else f"col{i}" for i, c in enumerate(next(rows_iter))]
+        except StopIteration:
+            continue
+        for r_idx, row in enumerate(rows_iter, start=2):
+            parts = [
+                f"{h}: {v}" for h, v in zip(header, row)
+                if v is not None and str(v).strip()
+            ]
+            if not parts:
+                continue
+            text = " / ".join(parts)
+            chunks.append(
+                Chunk(chunk_id=f"{filename}#{sheet}!r{r_idx}", source=filename, text=text)
+            )
+    return chunks
+
+
 def parse(filename: str, content: bytes) -> list[Chunk]:
     fmt = _detect_format(filename)
     if fmt in ("markdown", "text", "json"):
         return _parse_text(filename, content.decode("utf-8", errors="replace"))
     if fmt == "csv":
         return _parse_csv(filename, content)
+    if fmt == "pdf":
+        return _parse_pdf(filename, content)
+    if fmt == "xlsx":
+        return _parse_xlsx(filename, content)
     raise ValueError(f"unsupported format: {Path(filename).suffix}")
 
 

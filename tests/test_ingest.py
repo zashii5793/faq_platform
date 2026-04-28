@@ -27,6 +27,62 @@ def test_parse_unsupported():
         parse("foo.exe", b"bin")
 
 
+def test_parse_xlsx():
+    """openpyxl でシート×行をチャンク化できる。"""
+    from openpyxl import Workbook
+    import io
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "FAQ"
+    ws.append(["question", "answer"])
+    ws.append(["VPN繋がらない", "FortiClientを再起動"])
+    ws.append(["有給申請", "KING OF TIMEから"])
+    buf = io.BytesIO()
+    wb.save(buf)
+
+    chunks = parse("faq.xlsx", buf.getvalue())
+    assert len(chunks) == 2
+    assert "VPN" in chunks[0].text
+    assert "FAQ!r2" in chunks[0].chunk_id  # シート名+行番号
+
+
+def test_parse_pdf():
+    """pypdf でページごとにチャンク化できる。"""
+    from pypdf import PdfWriter
+    from pypdf.generic import NameObject, TextStringObject
+    import io
+
+    # シンプルなPDFを作成（pypdfで読める最小フォーマット）
+    # pypdf の AddBlankPage では text 抽出できないので reportlab があれば使うが、
+    # ここでは pypdf 自身で書き込む形で代替。
+    pdf_bytes = _make_minimal_pdf("Hello PDF\nThis is page one.")
+    chunks = parse("doc.pdf", pdf_bytes)
+    assert chunks
+    assert "PDF" in chunks[0].text or "page" in chunks[0].text.lower()
+
+
+def _make_minimal_pdf(text: str) -> bytes:
+    """テスト用の最小PDF生成（手書き）。"""
+    pdf = (
+        b"%PDF-1.4\n"
+        b"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+        b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
+        b"3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+        b"/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >> endobj\n"
+        b"4 0 obj << /Length 60 >> stream\n"
+        b"BT /F1 12 Tf 50 700 Td ("
+        + text.encode("latin-1", errors="replace") + b") Tj ET\n"
+        b"endstream endobj\n"
+        b"5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n"
+        b"xref\n0 6\n0000000000 65535 f\n"
+        b"0000000009 00000 n\n0000000058 00000 n\n0000000111 00000 n\n"
+        b"0000000226 00000 n\n0000000316 00000 n\n"
+        b"trailer << /Size 6 /Root 1 0 R >>\nstartxref\n388\n%%EOF\n"
+    )
+    return pdf
+
+
 def test_analyze_clean_doc():
     content = "出席登録の保存ボタンが押せない場合、ブラウザを再起動してください。".encode("utf-8")
     result = analyze("clean.md", content)
