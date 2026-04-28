@@ -27,6 +27,10 @@ class Settings(BaseSettings):
 
     masking_industry: str = "general"
 
+    # 確信度: top-1 スコアがこの値未満ならLLM呼び出しを行わず「該当情報なし」を返す
+    # TF-IDF char_wb の経験値: 関連質問は 0.15+, ノイズマッチは 0.05-0.07 程度
+    min_score_threshold: float = 0.08
+
     host: str = "0.0.0.0"
     port: int = 8000
 

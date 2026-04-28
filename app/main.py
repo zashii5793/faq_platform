@@ -117,6 +117,15 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .msg.bot .bubble{{background:#fff;border:1px solid #e5e7eb}}
 .bubble{{padding:12px 16px;border-radius:14px;max-width:75%;display:inline-block;
         line-height:1.6;white-space:pre-wrap;text-align:left}}
+.confidence{{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:4px 10px;
+            border-radius:999px;font-size:11px;font-weight:600;max-width:75%}}
+.confidence.high{{background:#d1fae5;color:#065f46}}
+.confidence.mid{{background:#fef3c7;color:#92400e}}
+.confidence.low{{background:#fed7aa;color:#9a3412}}
+.confidence.none{{background:#fee2e2;color:#991b1b}}
+.confidence-bar{{display:inline-block;width:60px;height:4px;background:rgba(0,0,0,.1);border-radius:2px;overflow:hidden}}
+.confidence-bar > div{{height:100%;background:currentColor}}
+.no-answer{{color:#991b1b;font-style:italic}}
 .sources{{margin-top:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;
          padding:10px 14px;font-size:12px;max-width:75%}}
 .sources summary{{cursor:pointer;color:#4b5563;font-weight:500}}
@@ -151,7 +160,9 @@ button.send:disabled{{background:#9ca3af}}
   <div class="section">
     <h3>📊 分析（直近）</h3>
     <div class="stat"><span class="label">質問数</span><span class="value big" id="stat-queries">-</span></div>
-    <div class="stat"><span class="label">トップトピック</span></div>
+    <div class="stat"><span class="label">回答率</span><span class="value" id="stat-answerrate">-</span></div>
+    <div class="stat"><span class="label">平均確信度</span><span class="value" id="stat-confidence">-</span></div>
+    <div class="stat" style="margin-top:6px"><span class="label">トップトピック</span></div>
     <div id="top-topics"><div class="empty-list">読み込み中…</div></div>
   </div>
 
@@ -232,6 +243,8 @@ async function loadStats(){{
     if(!r.ok) return;
     const s=await r.json();
     document.getElementById('stat-queries').textContent=s.analytics.n_queries_today;
+    document.getElementById('stat-answerrate').textContent=s.analytics.answer_rate+'%';
+    document.getElementById('stat-confidence').textContent=s.analytics.avg_confidence+'%';
     document.getElementById('stat-docs').textContent=s.knowledge.n_documents;
     document.getElementById('stat-chunks').textContent=s.knowledge.n_chunks;
     const topics=document.getElementById('top-topics');
@@ -281,7 +294,20 @@ form.onsubmit=async e=>{{
     const r=await fetch('/api/ask',{{method:'POST',headers:{{'Content-Type':'application/json'}},
                                      body:JSON.stringify({{question:q}})}});
     const data=await r.json();
-    let html=escape(data.answer||'(回答なし)');
+    const conf = data.confidence || 0;
+    let confCls='none', confLabel='回答不可';
+    if(conf >= 80) {{ confCls='high'; confLabel='高い'; }}
+    else if(conf >= 50) {{ confCls='mid'; confLabel='中程度'; }}
+    else if(conf >= 20) {{ confCls='low'; confLabel='低い（要確認）'; }}
+    let html='';
+    if(!data.has_answer) {{
+      html+='<div class="no-answer">'+escape(data.answer)+'</div>';
+    }} else {{
+      html+=escape(data.answer);
+    }}
+    html+='<div><span class="confidence '+confCls+'">'
+          +'確信度 '+conf+'% · '+confLabel
+          +'<span class="confidence-bar"><div style="width:'+conf+'%"></div></span></span></div>';
     if(data.sources && data.sources.length){{
       html+='<details class="sources" open><summary>📎 参照ドキュメント '+data.sources.length+'件</summary>';
       for(const s of data.sources){{
@@ -353,24 +379,68 @@ class Source(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     sources: list[Source]
+    confidence: int  # 0-100
+    has_answer: bool
+
+
+def _compute_confidence(scored_chunks: list[tuple]) -> int:
+    """top-score とサポート件数から確信度（0-100）を算出。"""
+    if not scored_chunks:
+        return 0
+    top = scored_chunks[0][1]
+    if top < settings.min_score_threshold:
+        return 0
+    base = min(95, int(30 + top * 250))
+    relevant = sum(1 for _, s in scored_chunks if s >= settings.min_score_threshold)
+    return min(98, base + max(0, relevant - 1) * 3)
+
+
+NO_ANSWER_TEXT = (
+    "該当情報が見つかりませんでした。\n"
+    "取り込み済みドキュメントから関連内容を発見できませんでした。\n"
+    "別の表現で再度質問するか、社内ヘルプデスクに直接お問い合わせください。"
+)
 
 
 @app.post("/api/ask", response_model=AskResponse)
 async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskResponse:
     masked_q = mask(payload.question)
     chunks = get_index().search(masked_q, top_k=5)
+    confidence = _compute_confidence(chunks)
+
+    # 閾値未満なら LLM を呼ばずに「該当情報なし」を返す（ハルシネーション抑制）
+    if confidence == 0:
+        audit.record(
+            "query",
+            user=user["email"],
+            question=masked_q,
+            sources=[],
+            confidence=0,
+            answered=False,
+        )
+        return AskResponse(
+            answer=NO_ANSWER_TEXT,
+            sources=[],
+            confidence=0,
+            has_answer=False,
+        )
+
     response_text = answer(masked_q, chunks)
     audit.record(
         "query",
         user=user["email"],
         question=masked_q,
         sources=[c.chunk_id for c, _ in chunks],
+        confidence=confidence,
+        answered=True,
     )
     return AskResponse(
         answer=response_text,
         sources=[
             Source(chunk_id=c.chunk_id, source=c.source, score=s) for c, s in chunks
         ],
+        confidence=confidence,
+        has_answer=True,
     )
 
 
@@ -677,7 +747,8 @@ async def admin_stats(user: dict = Depends(require_user)):
     feedback = [e for e in recent if e.get("event") == "feedback"]
 
     history = [
-        {"question": q.get("question", ""), "ts": q.get("ts", ""), "sources": q.get("sources", [])}
+        {"question": q.get("question", ""), "ts": q.get("ts", ""),
+         "sources": q.get("sources", []), "confidence": q.get("confidence", 0)}
         for q in queries[:8]
     ]
     top_topics: Counter = Counter()
@@ -685,6 +756,11 @@ async def admin_stats(user: dict = Depends(require_user)):
         srcs = q.get("sources") or []
         if srcs:
             top_topics[srcs[0].split("#")[0]] += 1
+
+    confs = [q.get("confidence", 0) for q in queries if "confidence" in q]
+    answered = sum(1 for q in queries if q.get("answered") is True)
+    avg_confidence = round(sum(confs) / len(confs)) if confs else 0
+    answer_rate = round(answered / len(queries) * 100) if queries else 0
 
     fb_up = sum(1 for f in feedback if f.get("vote") == "up")
     fb_down = sum(1 for f in feedback if f.get("vote") == "down")
@@ -701,6 +777,8 @@ async def admin_stats(user: dict = Depends(require_user)):
         "analytics": {
             "n_queries_today": len(queries),
             "top_topics": top_topics.most_common(5),
+            "avg_confidence": avg_confidence,
+            "answer_rate": answer_rate,
         },
         "history": history,
         "feedback": {"up": fb_up, "down": fb_down, "down_questions": down_questions},
