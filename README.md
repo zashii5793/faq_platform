@@ -1,5 +1,7 @@
 # Inquira — 社内問い合わせを"自己解決"に変えるFAQプラットフォーム
 
+[![Test](https://github.com/zashii5793/faq_platform/actions/workflows/test.yml/badge.svg)](https://github.com/zashii5793/faq_platform/actions/workflows/test.yml)
+
 > どの企業にもある「**同じ質問が何度も来る**」「**ナレッジが個人と紙とチケットに散在する**」問題を、
 > 既存ドキュメントを根拠に Claude が回答するセルフサービス FAQ で解決します。
 

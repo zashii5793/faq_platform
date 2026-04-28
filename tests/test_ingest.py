@@ -73,9 +73,6 @@ def test_parse_pptx():
 
 def test_parse_pdf():
     """pypdf でページごとにチャンク化できる。"""
-    from pypdf import PdfWriter
-    from pypdf.generic import NameObject, TextStringObject
-    import io
 
     # シンプルなPDFを作成（pypdfで読める最小フォーマット）
     # pypdf の AddBlankPage では text 抽出できないので reportlab があれば使うが、
