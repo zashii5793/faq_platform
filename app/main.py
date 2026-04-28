@@ -440,6 +440,16 @@ input[type=file]{display:none}
 .fc-actions button.ingested{background:#10b981;color:#fff;border-color:#10b981;cursor:default}
 .fc-actions button.skipped{background:#6b7280;color:#fff;border-color:#6b7280}
 .fc-status{font-size:11px;color:#9ca3af;margin-left:auto;align-self:center}
+.file-card.included{box-shadow:0 0 0 1px #1a73e8 inset}
+.file-card.skipped-state{opacity:.55}
+.modal-footer{padding:14px 24px;border-top:1px solid #e5e7eb;background:#fafbfc;
+              display:flex;justify-content:space-between;align-items:center;gap:14px}
+.summary{font-size:13px;color:#6b7280}
+.summary b{color:#111827}
+button.confirm{background:#1a73e8;color:#fff;border:0;border-radius:8px;padding:10px 22px;
+               font-weight:500;cursor:pointer;font-size:14px}
+button.confirm:hover{background:#1557b0}
+button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
 .modal-footer{padding:16px 24px;border-top:1px solid #e5e7eb;background:#fafbfc;
               display:flex;justify-content:space-between;align-items:center}
 .summary{font-size:13px;color:#6b7280}
@@ -480,6 +490,7 @@ input[type=file]{display:none}
   </div>
   <div class="modal-footer">
     <div class="summary" id="summary">未取り込み</div>
+    <button class="confirm" id="confirmBtn" disabled>選択を確定して取り込む (0件)</button>
   </div>
 </div>
 
@@ -488,17 +499,28 @@ const dz = document.getElementById('dropzone');
 const fi = document.getElementById('fileInput');
 const results = document.getElementById('results');
 const summary = document.getElementById('summary');
+const confirmBtn = document.getElementById('confirmBtn');
 
-const stats = {analyzed: 0, ingested: 0, skipped: 0, danger: 0};
+// 解析済みファイルのキュー: {id, file, analysis, state: 'included'|'skipped'|'ingested'|'danger'}
+const queue = [];
+let nextId = 0;
 
 function escape(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function fmtBytes(b){if(b<1024)return b+'B';if(b<1024*1024)return (b/1024).toFixed(1)+'KB';return (b/1024/1024).toFixed(1)+'MB'}
 function badge(rec){return {ok:'✅ 取り込み可',warn:'⚠ 確認必要',danger:'🔴 取り込み非推奨'}[rec]||rec}
-function iconFor(format){return {markdown:'📝',text:'📝',csv:'📊',json:'📋',pdf:'📄',xlsx:'📊'}[format]||'📄'}
+function iconFor(format){return {markdown:'📝',text:'📝',csv:'📊',json:'📋',pdf:'📄',xlsx:'📊',pptx:'📰'}[format]||'📄'}
 
 function updateSummary(){
-  summary.innerHTML = `<b>${stats.analyzed}件解析</b> · 取り込み済み ${stats.ingested}件 · スキップ ${stats.skipped}件` +
-    (stats.danger ? ` · <span style="color:#dc2626">危険判定 ${stats.danger}件</span>` : '');
+  const inc = queue.filter(q => q.state === 'included').length;
+  const ingested = queue.filter(q => q.state === 'ingested').length;
+  const skipped = queue.filter(q => q.state === 'skipped').length;
+  const danger = queue.filter(q => q.state === 'danger').length;
+  summary.innerHTML = `<b>${queue.length}件解析</b> · 取り込み対象 <b style="color:#1a73e8">${inc}件</b>` +
+    (ingested ? ` · 取り込み済み ${ingested}件` : '') +
+    (skipped ? ` · スキップ ${skipped}件` : '') +
+    (danger ? ` · <span style="color:#dc2626">危険判定 ${danger}件</span>` : '');
+  confirmBtn.disabled = inc === 0;
+  confirmBtn.textContent = `選択を確定して取り込む (${inc}件)`;
 }
 
 function renderConcerns(f){
@@ -518,9 +540,10 @@ function renderConcerns(f){
   return cs.length ? cs.join('') : '<span style="color:#9ca3af">懸念事項なし</span>';
 }
 
-function renderCard(file, analysis){
+function renderCard(item){
+  const {file, analysis} = item;
   const card = document.createElement('div');
-  card.className = 'file-card ' + analysis.recommendation;
+  item.card = card;
   const previewHtml = (analysis.preview||[]).slice(0,2)
     .map(p => `<div style="color:#6b7280;font-size:11px;padding:4px 0;border-top:1px solid #f3f4f6">${escape(p.slice(0,120))}…</div>`).join('');
   card.innerHTML = `
@@ -529,63 +552,45 @@ function renderCard(file, analysis){
         <span class="fc-icon">${iconFor(analysis.format)}</span>
         <div>
           <div class="fc-name">${escape(analysis.filename)}</div>
-          <div class="fc-meta">${fmtBytes(analysis.size_bytes)} · ${analysis.format} · SHA-256 ${analysis.sha256.slice(0,8)}</div>
+          <div class="fc-meta">${fmtBytes(analysis.size_bytes)} · ${analysis.format} · ${analysis.n_chunks}チャンク · SHA-256 ${analysis.sha256.slice(0,8)}</div>
         </div>
       </div>
       <span class="fc-badge ${analysis.recommendation}">${badge(analysis.recommendation)}</span>
     </div>
     <dl class="fc-grid">
       <dt>判定理由</dt><dd>${escape(analysis.reason)}</dd>
-      <dt>チャンク数</dt><dd>${analysis.n_chunks}件</dd>
       <dt>検出された懸念</dt><dd>${renderConcerns(analysis)}</dd>
       ${previewHtml ? `<dt>プレビュー</dt><dd>${previewHtml}</dd>` : ''}
     </dl>
     <div class="fc-actions"></div>
   `;
   const actions = card.querySelector('.fc-actions');
+  applyState(item);
   if(analysis.recommendation === 'danger'){
-    const btnSkip = document.createElement('button');
-    btnSkip.textContent = 'スキップ';
-    btnSkip.onclick = () => { stats.skipped++; updateSummary(); btnSkip.className='skipped'; btnSkip.disabled=true; btnSkip.textContent='スキップ済み'; };
-    actions.appendChild(btnSkip);
     const note = document.createElement('span');
     note.className = 'fc-status';
-    note.textContent = '※ 危険判定のため取り込み不可';
+    note.textContent = '※ 危険判定のため取り込み対象から除外';
     actions.appendChild(note);
-    stats.danger++;
   } else {
-    const btnIngest = document.createElement('button');
-    btnIngest.className = 'primary';
-    btnIngest.textContent = analysis.recommendation === 'warn' ? 'マスクして取り込む' : '取り込む';
-    btnIngest.onclick = async () => {
-      btnIngest.disabled = true;
-      btnIngest.innerHTML = '<span class="spinner"></span>取り込み中…';
-      try {
-        const fd = new FormData();
-        fd.append('file', file);
-        const r = await fetch('/api/admin/ingest', {method:'POST', body:fd});
-        if(!r.ok){throw new Error((await r.json()).detail || r.statusText)}
-        const d = await r.json();
-        btnIngest.className = 'ingested';
-        btnIngest.textContent = `✓ 取り込み済み (${d.ingested_chunks}チャンク)`;
-        stats.ingested++; updateSummary();
-      } catch(e) {
-        btnIngest.disabled = false;
-        btnIngest.className = 'primary';
-        btnIngest.textContent = analysis.recommendation === 'warn' ? 'マスクして取り込む' : '取り込む';
-        const err = document.createElement('div');
-        err.className = 'error-msg';
-        err.textContent = 'エラー: ' + e.message;
-        actions.parentNode.appendChild(err);
-      }
-    };
-    actions.appendChild(btnIngest);
     const btnSkip = document.createElement('button');
-    btnSkip.textContent = 'スキップ';
-    btnSkip.onclick = () => { stats.skipped++; updateSummary(); btnIngest.disabled=true; btnSkip.className='skipped'; btnSkip.disabled=true; btnSkip.textContent='スキップ済み'; };
+    btnSkip.textContent = item.state === 'skipped' ? '取り込み対象に戻す' : 'スキップ';
+    btnSkip.onclick = () => {
+      item.state = item.state === 'included' ? 'skipped' : 'included';
+      btnSkip.textContent = item.state === 'skipped' ? '取り込み対象に戻す' : 'スキップ';
+      applyState(item);
+      updateSummary();
+    };
     actions.appendChild(btnSkip);
   }
   return card;
+}
+
+function applyState(item){
+  const c = item.card;
+  if(!c) return;
+  c.className = 'file-card ' + item.analysis.recommendation;
+  if(item.state === 'included') c.classList.add('included');
+  else if(item.state === 'skipped') c.classList.add('skipped-state');
 }
 
 async function analyzeFile(file){
@@ -609,12 +614,48 @@ async function analyzeFile(file){
       return;
     }
     const analysis = await r.json();
-    stats.analyzed++; updateSummary();
-    pending.replaceWith(renderCard(file, analysis));
+    const state = analysis.recommendation === 'danger' ? 'danger' : 'included';
+    const item = {id: ++nextId, file, analysis, state};
+    queue.push(item);
+    pending.replaceWith(renderCard(item));
+    updateSummary();
   } catch(e) {
     pending.outerHTML = `<div class="file-card danger"><div class="fc-meta">通信エラー: ${escape(e.message)}</div></div>`;
   }
 }
+
+confirmBtn.onclick = async () => {
+  const targets = queue.filter(q => q.state === 'included');
+  if(!targets.length) return;
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = '<span class="spinner"></span>取り込み中…';
+  let success = 0, failed = 0;
+  for(const item of targets){
+    item.card.classList.add('included');
+    const fd = new FormData();
+    fd.append('file', item.file);
+    try {
+      const r = await fetch('/api/admin/ingest', {method:'POST', body:fd});
+      if(!r.ok) throw new Error((await r.json()).detail || r.statusText);
+      const d = await r.json();
+      item.state = 'ingested';
+      item.card.classList.remove('included');
+      item.card.querySelector('.fc-badge').textContent = `✓ 取り込み済み (${d.ingested_chunks}チャンク)`;
+      item.card.querySelector('.fc-badge').className = 'fc-badge ok';
+      item.card.querySelector('.fc-actions').innerHTML = '';
+      success++;
+    } catch(e) {
+      const err = document.createElement('div');
+      err.className = 'error-msg';
+      err.textContent = '取り込み失敗: ' + e.message;
+      item.card.appendChild(err);
+      failed++;
+    }
+  }
+  updateSummary();
+  confirmBtn.disabled = (queue.filter(q => q.state === 'included').length === 0);
+  alert(`取り込み完了: ${success}件成功 / ${failed}件失敗`);
+};
 
 fi.onchange = e => { for(const f of e.target.files) analyzeFile(f); fi.value=''; };
 ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover') }));
