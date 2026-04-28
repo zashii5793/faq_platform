@@ -228,7 +228,254 @@ async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskRes
     )
 
 
-@app.post("/api/admin/reload-index")
+@app.get("/admin/upload", response_class=HTMLResponse)
+async def admin_upload_page(request: Request) -> HTMLResponse:
+    """ナレッジ取り込み画面。`/api/admin/analyze` と `/api/admin/ingest` を叩く。"""
+    if not settings.demo_mode:
+        user = request.session.get("user")
+        if not user or not is_email_allowed(user.get("email", "")):
+            return HTMLResponse('<a href="/auth/login">Googleでログイン</a>', status_code=200)
+    return HTMLResponse(_upload_page())
+
+
+def _upload_page() -> str:
+    return """<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>ナレッジ追加 — Inquira</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',sans-serif;
+     background:#f7f8fa;color:#1f2937;min-height:100vh;padding:32px;font-size:14px}
+.modal{background:#fff;max-width:920px;margin:0 auto;border-radius:14px;overflow:hidden;
+       box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.modal-header{padding:18px 24px;border-bottom:1px solid #e5e7eb;display:flex;
+              justify-content:space-between;align-items:center;background:#fafbfc}
+.modal-header h2{font-size:18px;color:#111827}
+.modal-header h2 span{color:#1a73e8}
+.modal-body{padding:24px}
+.step-title{font-size:13px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;
+            font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.step-num{background:#1a73e8;color:#fff;width:22px;height:22px;border-radius:50%;
+          display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+.upload-zone{display:block;border:2px dashed #93c5fd;background:#eff6ff;border-radius:12px;
+             padding:36px;text-align:center;cursor:pointer;transition:all .15s}
+.upload-zone:hover,.upload-zone.dragover{background:#dbeafe;border-color:#1a73e8}
+.upload-zone .icon{font-size:36px;margin-bottom:8px}
+.upload-zone .main{font-size:15px;color:#1e3a8a;font-weight:500}
+.upload-zone .sub{font-size:12px;color:#6b7280;margin-top:6px}
+.formats{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:14px}
+.fmt{background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:3px 9px;font-size:11px;color:#374151;font-weight:500}
+input[type=file]{display:none}
+.file-card{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px}
+.file-card.ok{border-left:4px solid #10b981}
+.file-card.warn{border-left:4px solid #f59e0b}
+.file-card.danger{border-left:4px solid #dc2626;background:#fef2f2}
+.fc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.fc-title{display:flex;align-items:center;gap:10px}
+.fc-icon{font-size:24px}
+.fc-name{font-weight:600;color:#111827}
+.fc-meta{font-size:11px;color:#9ca3af;margin-top:2px}
+.fc-badge{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;flex-shrink:0}
+.fc-badge.ok{background:#d1fae5;color:#065f46}
+.fc-badge.warn{background:#fef3c7;color:#92400e}
+.fc-badge.danger{background:#fee2e2;color:#991b1b}
+.fc-grid{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font-size:13px;line-height:1.5;margin-bottom:10px}
+.fc-grid dt{color:#6b7280}
+.fc-grid dd{color:#1f2937}
+.concern{display:flex;align-items:flex-start;gap:6px;margin:3px 0}
+.concern.warn{color:#92400e}
+.concern.danger{color:#991b1b;font-weight:500}
+.fc-actions{display:flex;gap:6px;margin-top:8px}
+.fc-actions button{padding:6px 12px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;
+                   font-size:12px;cursor:pointer;color:#374151}
+.fc-actions button:hover{background:#f3f4f6}
+.fc-actions button.primary{background:#1a73e8;color:#fff;border-color:#1a73e8}
+.fc-actions button.primary:disabled{background:#9ca3af;cursor:not-allowed}
+.fc-actions button.ingested{background:#10b981;color:#fff;border-color:#10b981;cursor:default}
+.fc-actions button.skipped{background:#6b7280;color:#fff;border-color:#6b7280}
+.fc-status{font-size:11px;color:#9ca3af;margin-left:auto;align-self:center}
+.modal-footer{padding:16px 24px;border-top:1px solid #e5e7eb;background:#fafbfc;
+              display:flex;justify-content:space-between;align-items:center}
+.summary{font-size:13px;color:#6b7280}
+.summary b{color:#111827}
+.empty-msg{text-align:center;color:#9ca3af;padding:24px;font-size:13px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #e5e7eb;
+         border-top-color:#1a73e8;border-radius:50%;animation:spin 1s linear infinite;
+         vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-msg{color:#991b1b;font-size:12px;margin-top:6px}
+</style></head><body>
+<div class="modal">
+  <div class="modal-header">
+    <h2>📚 ナレッジ追加 <span>— Inquira</span></h2>
+    <a href="/" style="color:#6b7280;text-decoration:none;font-size:13px">← チャットに戻る</a>
+  </div>
+  <div class="modal-body">
+    <div class="step-title"><span class="step-num">1</span>ファイルを投入</div>
+    <label class="upload-zone" id="dropzone">
+      <div class="icon">📁</div>
+      <div class="main">ドラッグ＆ドロップ または クリックして選択</div>
+      <div class="sub">パース・PII検出・推奨判定を自動実行します</div>
+      <div class="formats">
+        <span class="fmt">PDF</span>
+        <span class="fmt">Excel</span>
+        <span class="fmt">CSV</span>
+        <span class="fmt">Markdown</span>
+        <span class="fmt">テキスト</span>
+        <span class="fmt">JSON</span>
+      </div>
+      <input type="file" id="fileInput" multiple accept=".md,.txt,.csv,.json,.pdf,.xlsx,.xls">
+    </label>
+
+    <div class="step-title" style="margin-top:28px"><span class="step-num">2</span>クレンジング結果</div>
+    <div id="results">
+      <div class="empty-msg">ファイルをドロップすると、ここに解析結果が表示されます</div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="summary" id="summary">未取り込み</div>
+  </div>
+</div>
+
+<script>
+const dz = document.getElementById('dropzone');
+const fi = document.getElementById('fileInput');
+const results = document.getElementById('results');
+const summary = document.getElementById('summary');
+
+const stats = {analyzed: 0, ingested: 0, skipped: 0, danger: 0};
+
+function escape(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmtBytes(b){if(b<1024)return b+'B';if(b<1024*1024)return (b/1024).toFixed(1)+'KB';return (b/1024/1024).toFixed(1)+'MB'}
+function badge(rec){return {ok:'✅ 取り込み可',warn:'⚠ 確認必要',danger:'🔴 取り込み非推奨'}[rec]||rec}
+function iconFor(format){return {markdown:'📝',text:'📝',csv:'📊',json:'📋',pdf:'📄',xlsx:'📊'}[format]||'📄'}
+
+function updateSummary(){
+  summary.innerHTML = `<b>${stats.analyzed}件解析</b> · 取り込み済み ${stats.ingested}件 · スキップ ${stats.skipped}件` +
+    (stats.danger ? ` · <span style="color:#dc2626">危険判定 ${stats.danger}件</span>` : '');
+}
+
+function renderConcerns(f){
+  const cs = [];
+  const rec = f.recommendation;
+  const cls = rec === 'danger' ? 'danger' : 'warn';
+  if(f.findings.pii_counts && Object.keys(f.findings.pii_counts).length){
+    const list = Object.entries(f.findings.pii_counts).map(([k,v]) => `${k}${v}件`).join(', ');
+    cs.push(`<div class="concern ${cls}">${rec==='danger'?'🔴':'⚠'} PII検出: ${escape(list)}</div>`);
+  }
+  if(f.findings.confidential_markers && f.findings.confidential_markers.length){
+    cs.push(`<div class="concern warn">⚠ 機密マーカー: ${escape(f.findings.confidential_markers.join(', '))}</div>`);
+  }
+  if(f.findings.name_candidates >= 5){
+    cs.push(`<div class="concern ${cls}">⚠ 個人氏名候補 ${f.findings.name_candidates}件</div>`);
+  }
+  return cs.length ? cs.join('') : '<span style="color:#9ca3af">懸念事項なし</span>';
+}
+
+function renderCard(file, analysis){
+  const card = document.createElement('div');
+  card.className = 'file-card ' + analysis.recommendation;
+  const previewHtml = (analysis.preview||[]).slice(0,2)
+    .map(p => `<div style="color:#6b7280;font-size:11px;padding:4px 0;border-top:1px solid #f3f4f6">${escape(p.slice(0,120))}…</div>`).join('');
+  card.innerHTML = `
+    <div class="fc-header">
+      <div class="fc-title">
+        <span class="fc-icon">${iconFor(analysis.format)}</span>
+        <div>
+          <div class="fc-name">${escape(analysis.filename)}</div>
+          <div class="fc-meta">${fmtBytes(analysis.size_bytes)} · ${analysis.format} · SHA-256 ${analysis.sha256.slice(0,8)}</div>
+        </div>
+      </div>
+      <span class="fc-badge ${analysis.recommendation}">${badge(analysis.recommendation)}</span>
+    </div>
+    <dl class="fc-grid">
+      <dt>判定理由</dt><dd>${escape(analysis.reason)}</dd>
+      <dt>チャンク数</dt><dd>${analysis.n_chunks}件</dd>
+      <dt>検出された懸念</dt><dd>${renderConcerns(analysis)}</dd>
+      ${previewHtml ? `<dt>プレビュー</dt><dd>${previewHtml}</dd>` : ''}
+    </dl>
+    <div class="fc-actions"></div>
+  `;
+  const actions = card.querySelector('.fc-actions');
+  if(analysis.recommendation === 'danger'){
+    const btnSkip = document.createElement('button');
+    btnSkip.textContent = 'スキップ';
+    btnSkip.onclick = () => { stats.skipped++; updateSummary(); btnSkip.className='skipped'; btnSkip.disabled=true; btnSkip.textContent='スキップ済み'; };
+    actions.appendChild(btnSkip);
+    const note = document.createElement('span');
+    note.className = 'fc-status';
+    note.textContent = '※ 危険判定のため取り込み不可';
+    actions.appendChild(note);
+    stats.danger++;
+  } else {
+    const btnIngest = document.createElement('button');
+    btnIngest.className = 'primary';
+    btnIngest.textContent = analysis.recommendation === 'warn' ? 'マスクして取り込む' : '取り込む';
+    btnIngest.onclick = async () => {
+      btnIngest.disabled = true;
+      btnIngest.innerHTML = '<span class="spinner"></span>取り込み中…';
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const r = await fetch('/api/admin/ingest', {method:'POST', body:fd});
+        if(!r.ok){throw new Error((await r.json()).detail || r.statusText)}
+        const d = await r.json();
+        btnIngest.className = 'ingested';
+        btnIngest.textContent = `✓ 取り込み済み (${d.ingested_chunks}チャンク)`;
+        stats.ingested++; updateSummary();
+      } catch(e) {
+        btnIngest.disabled = false;
+        btnIngest.className = 'primary';
+        btnIngest.textContent = analysis.recommendation === 'warn' ? 'マスクして取り込む' : '取り込む';
+        const err = document.createElement('div');
+        err.className = 'error-msg';
+        err.textContent = 'エラー: ' + e.message;
+        actions.parentNode.appendChild(err);
+      }
+    };
+    actions.appendChild(btnIngest);
+    const btnSkip = document.createElement('button');
+    btnSkip.textContent = 'スキップ';
+    btnSkip.onclick = () => { stats.skipped++; updateSummary(); btnIngest.disabled=true; btnSkip.className='skipped'; btnSkip.disabled=true; btnSkip.textContent='スキップ済み'; };
+    actions.appendChild(btnSkip);
+  }
+  return card;
+}
+
+async function analyzeFile(file){
+  // remove "empty" placeholder if present
+  const empty = results.querySelector('.empty-msg');
+  if(empty) empty.remove();
+
+  // pending card
+  const pending = document.createElement('div');
+  pending.className = 'file-card';
+  pending.innerHTML = `<div class="fc-header"><div class="fc-title"><span class="fc-icon">📄</span><div><div class="fc-name">${escape(file.name)}</div><div class="fc-meta">${fmtBytes(file.size)} · 解析中…</div></div></div><span class="spinner"></span></div>`;
+  results.appendChild(pending);
+
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch('/api/admin/analyze', {method:'POST', body:fd});
+    if(!r.ok){
+      const err = await r.json();
+      pending.outerHTML = `<div class="file-card danger"><div class="fc-header"><div class="fc-title"><span class="fc-icon">❌</span><div><div class="fc-name">${escape(file.name)}</div><div class="fc-meta">解析エラー: ${escape(err.detail||r.statusText)}</div></div></div></div></div>`;
+      return;
+    }
+    const analysis = await r.json();
+    stats.analyzed++; updateSummary();
+    pending.replaceWith(renderCard(file, analysis));
+  } catch(e) {
+    pending.outerHTML = `<div class="file-card danger"><div class="fc-meta">通信エラー: ${escape(e.message)}</div></div>`;
+  }
+}
+
+fi.onchange = e => { for(const f of e.target.files) analyzeFile(f); fi.value=''; };
+['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover') }));
+['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover') }));
+dz.addEventListener('drop', e => { for(const f of e.dataTransfer.files) analyzeFile(f); });
+</script>
+</body></html>"""
 async def admin_reload(user: dict = Depends(require_user)):
     idx = reload_index()
     audit.record("reload_index", user=user["email"], n_chunks=len(idx.chunks))
