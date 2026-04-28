@@ -1,7 +1,7 @@
 """FastAPI エントリポイント。Google SSO + 簡易 RAG + Claude 呼び出し。"""
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
@@ -9,6 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from . import audit
 from .auth import is_email_allowed, oauth, require_user
 from .config import settings
+from .ingest import analyze as ingest_analyze, ingest as ingest_commit
 from .llm import answer
 from .masking import mask
 from .rag import get_index, reload_index
@@ -232,6 +233,78 @@ async def admin_reload(user: dict = Depends(require_user)):
     idx = reload_index()
     audit.record("reload_index", user=user["email"], n_chunks=len(idx.chunks))
     return {"chunks": len(idx.chunks)}
+
+
+@app.post("/api/admin/analyze")
+async def admin_analyze(file: UploadFile = File(...), user: dict = Depends(require_user)):
+    """ファイルをパース・スキャンしクレンジング結果を返す（DB書き込みなし）。"""
+    content = await file.read()
+    if len(content) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="50MB を超えるファイルは未対応")
+    try:
+        result = ingest_analyze(file.filename or "uploaded", content, settings.masking_industry)
+    except ValueError as e:
+        raise HTTPException(status_code=415, detail=str(e))
+    audit.record(
+        "analyze",
+        user=user["email"],
+        filename=result.filename,
+        sha256=result.sha256[:12],
+        recommendation=result.recommendation,
+    )
+    return {
+        "filename": result.filename,
+        "sha256": result.sha256,
+        "size_bytes": result.size_bytes,
+        "format": result.format,
+        "n_chunks": result.n_chunks,
+        "findings": {
+            "pii_counts": result.findings.pii_counts,
+            "confidential_markers": result.findings.confidential_markers,
+            "name_candidates": result.findings.name_candidates,
+        },
+        "recommendation": result.recommendation,
+        "reason": result.reason,
+        "preview": [c.text[:200] for c in result.chunks[:3]],
+    }
+
+
+class IngestRequest(BaseModel):
+    apply_masking: bool = True
+
+
+@app.post("/api/admin/ingest")
+async def admin_ingest(
+    payload: IngestRequest = IngestRequest(),
+    file: UploadFile = File(...),
+    user: dict = Depends(require_user),
+):
+    """ファイルを取り込み FAQマスターに保存。マスキング適用後にインデックス更新。"""
+    content = await file.read()
+    try:
+        result = ingest_analyze(file.filename or "uploaded", content, settings.masking_industry)
+    except ValueError as e:
+        raise HTTPException(status_code=415, detail=str(e))
+    if result.recommendation == "danger":
+        raise HTTPException(
+            status_code=400,
+            detail=f"取り込み非推奨のため拒否: {result.reason}",
+        )
+    n = ingest_commit(
+        result, settings.faq_master_dir,
+        apply_masking=payload.apply_masking,
+        industry=settings.masking_industry,
+    )
+    reload_index()
+    audit.record(
+        "ingest",
+        user=user["email"],
+        filename=result.filename,
+        sha256=result.sha256[:12],
+        n_chunks=n,
+        masked=payload.apply_masking,
+    )
+    return {"ingested_chunks": n, "filename": result.filename, "recommendation": result.recommendation}
 
 
 @app.get("/healthz")
