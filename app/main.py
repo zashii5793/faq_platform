@@ -59,92 +59,222 @@ def _chat_page(user_email: str) -> str:
 <html lang="ja"><head><meta charset="utf-8">
 <title>{settings.product_name}</title>
 <style>
-*{{box-sizing:border-box}}
-body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-     background:#f7f8fa;margin:0;color:#1f2937;height:100vh;display:flex;flex-direction:column}}
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',sans-serif;
+     background:#f7f8fa;color:#1f2937;height:100vh;display:flex;font-size:14px}}
+
+aside{{width:280px;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;
+      flex-shrink:0;overflow-y:auto}}
+.brand{{padding:18px;border-bottom:1px solid #e5e7eb}}
+.brand h1{{color:#1a73e8;font-size:22px;font-weight:700}}
+.brand p{{color:#6b7280;font-size:12px;margin-top:2px}}
+.section{{padding:14px 18px;border-bottom:1px solid #f3f4f6}}
+.section h3{{font-size:11px;color:#9ca3af;font-weight:600;letter-spacing:.05em;
+            text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}}
+.stat{{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}}
+.stat .label{{color:#6b7280}}
+.stat .value{{color:#1f2937;font-weight:600}}
+.stat .value.big{{font-size:20px;color:#1a73e8}}
+.topic-item{{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:#374151}}
+.topic-item .count{{color:#9ca3af;font-size:11px}}
+.history-item{{padding:6px 8px;margin:3px -8px;border-radius:6px;cursor:pointer;
+              font-size:12px;color:#374151;line-height:1.4}}
+.history-item:hover{{background:#f3f4f6}}
+.cov-tags{{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}}
+.tag{{background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:999px;font-size:11px}}
+.upload-link{{margin-top:8px;display:block;border:2px dashed #cbd5e1;border-radius:8px;
+        padding:10px;text-align:center;font-size:12px;color:#6b7280;text-decoration:none}}
+.upload-link:hover{{border-color:#1a73e8;background:#eff6ff;color:#1a73e8}}
+.fb-row{{display:flex;gap:6px;margin-bottom:6px}}
+.fb-pill{{flex:1;background:#f9fafb;border-radius:8px;padding:6px;text-align:center;font-size:12px}}
+.fb-pill.up{{color:#10b981}}
+.fb-pill.down{{color:#dc2626}}
+.fb-pill .num{{font-size:18px;font-weight:700;display:block}}
+.fb-issues{{font-size:11px;color:#6b7280;margin-top:6px}}
+.fb-issues li{{padding:3px 0;list-style:none}}
+.fb-issues li:before{{content:"⚠ ";color:#f59e0b}}
+.empty-list{{font-size:11px;color:#9ca3af;font-style:italic}}
+
+main{{flex:1;display:flex;flex-direction:column;min-width:0}}
 header{{background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 24px;
        display:flex;justify-content:space-between;align-items:center}}
-.logo{{font-size:20px;font-weight:700;color:#1a73e8}}
-.logo small{{color:#6b7280;font-weight:400;font-size:13px;margin-left:6px}}
+header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .user{{font-size:13px;color:#6b7280}}
 .user a{{color:#1a73e8;text-decoration:none;margin-left:8px}}
-main{{flex:1;display:flex;flex-direction:column;max-width:840px;margin:0 auto;width:100%;padding:0 16px}}
-.chat{{flex:1;overflow-y:auto;padding:24px 0}}
-.empty{{text-align:center;color:#9ca3af;margin-top:80px}}
-.empty h2{{color:#374151;margin-bottom:12px}}
-.suggestions{{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:24px}}
-.chip{{background:#fff;border:1px solid #e5e7eb;padding:8px 16px;border-radius:999px;
+.chat{{flex:1;overflow-y:auto;padding:24px 32px;max-width:920px;width:100%;margin:0 auto}}
+.empty{{text-align:center;color:#9ca3af;margin-top:60px}}
+.empty h2{{color:#374151;margin-bottom:8px;font-size:22px}}
+.empty p{{margin:6px 0}}
+.suggestions{{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px;max-width:680px;margin-left:auto;margin-right:auto}}
+.chip{{background:#fff;border:1px solid #e5e7eb;padding:8px 14px;border-radius:999px;
       font-size:13px;cursor:pointer;color:#374151}}
-.chip:hover{{background:#f3f4f6}}
-.msg{{margin-bottom:24px}}
+.chip:hover{{background:#1a73e8;color:#fff;border-color:#1a73e8}}
+.chip .src-hint{{color:#9ca3af;font-size:10px;margin-left:6px}}
+.chip:hover .src-hint{{color:#bfdbfe}}
+.msg{{margin-bottom:20px}}
+.msg.user{{text-align:right}}
 .msg.user .bubble{{background:#1a73e8;color:#fff;margin-left:auto}}
 .msg.bot .bubble{{background:#fff;border:1px solid #e5e7eb}}
-.bubble{{padding:14px 18px;border-radius:14px;max-width:78%;white-space:pre-wrap;
-        line-height:1.6;display:inline-block}}
-.msg.user{{text-align:right}}
-.sources{{margin-top:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;
-         padding:12px 16px;font-size:13px;max-width:78%}}
+.bubble{{padding:12px 16px;border-radius:14px;max-width:75%;display:inline-block;
+        line-height:1.6;white-space:pre-wrap;text-align:left}}
+.sources{{margin-top:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;
+         padding:10px 14px;font-size:12px;max-width:75%}}
 .sources summary{{cursor:pointer;color:#4b5563;font-weight:500}}
-.src{{padding:8px 0;border-bottom:1px solid #f3f4f6}}
+.src{{padding:6px 0;border-bottom:1px solid #f3f4f6}}
 .src:last-child{{border-bottom:0}}
 .src-name{{font-weight:600;color:#1f2937}}
-.src-score{{color:#9ca3af;font-size:11px;margin-left:8px}}
-.src-text{{color:#6b7280;font-size:12px;margin-top:4px;line-height:1.5;
-          display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}
-.feedback{{display:inline-flex;gap:6px;margin-top:8px}}
-.feedback button{{background:transparent;border:1px solid #e5e7eb;padding:4px 10px;
-                  border-radius:6px;cursor:pointer;font-size:12px}}
+.src-score{{color:#9ca3af;font-size:10px;margin-left:6px}}
+.feedback{{display:inline-flex;gap:6px;margin-top:6px}}
+.feedback button{{background:transparent;border:1px solid #e5e7eb;padding:3px 10px;
+                  border-radius:6px;font-size:11px;color:#4b5563;cursor:pointer}}
 .feedback button:hover{{background:#f3f4f6}}
-form#qa{{display:flex;gap:8px;padding:16px 0;border-top:1px solid #e5e7eb;background:#f7f8fa}}
-input#q{{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:12px 16px;
-        font-size:15px;font-family:inherit}}
-input#q:focus{{outline:none;border-color:#1a73e8;box-shadow:0 0 0 3px rgba(26,115,232,.15)}}
-button.send{{background:#1a73e8;color:#fff;border:0;border-radius:10px;
-            padding:0 24px;font-size:15px;font-weight:500;cursor:pointer}}
-button.send:hover{{background:#1557b0}}
+.feedback button.up.active{{background:#10b981;color:#fff;border-color:#10b981}}
+.feedback button.down.active{{background:#dc2626;color:#fff;border-color:#dc2626}}
+footer.input-area{{background:#fff;border-top:1px solid #e5e7eb;padding:12px 24px}}
+.input-wrap{{display:flex;gap:8px;max-width:920px;margin:0 auto}}
+input.q{{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:12px 16px;font-size:14px;font-family:inherit}}
+input.q:focus{{outline:none;border-color:#1a73e8;box-shadow:0 0 0 3px rgba(26,115,232,.15)}}
+button.send{{background:#1a73e8;color:#fff;border:0;border-radius:10px;padding:0 22px;font-weight:500;cursor:pointer}}
 button.send:disabled{{background:#9ca3af}}
-.loading{{display:inline-block;width:14px;height:14px;border:2px solid #e5e7eb;
+.loading{{display:inline-block;width:12px;height:12px;border:2px solid #e5e7eb;
          border-top-color:#1a73e8;border-radius:50%;animation:spin 1s linear infinite;
          vertical-align:middle;margin-left:6px}}
 @keyframes spin{{to{{transform:rotate(360deg)}}}}
 </style></head><body>
-<header>
-  <div class="logo">{settings.product_name}<small>{settings.org_name}の{settings.assistant_role}</small></div>
-  <div class="user">{user_email}<a href="/auth/logout">ログアウト</a></div>
-</header>
+
+<aside>
+  <div class="brand">
+    <h1>{settings.product_name}</h1>
+    <p>{settings.org_name}</p>
+  </div>
+
+  <div class="section">
+    <h3>📊 分析（直近）</h3>
+    <div class="stat"><span class="label">質問数</span><span class="value big" id="stat-queries">-</span></div>
+    <div class="stat"><span class="label">トップトピック</span></div>
+    <div id="top-topics"><div class="empty-list">読み込み中…</div></div>
+  </div>
+
+  <div class="section">
+    <h3>🕐 問い合わせ履歴</h3>
+    <div id="history"><div class="empty-list">読み込み中…</div></div>
+  </div>
+
+  <div class="section">
+    <h3>📚 ナレッジ取り込み状況</h3>
+    <div class="stat"><span class="label">取り込み済み文書</span><span class="value" id="stat-docs">-</span></div>
+    <div class="stat"><span class="label">総チャンク数</span><span class="value" id="stat-chunks">-</span></div>
+    <div style="margin-top:6px;font-size:11px;color:#6b7280">カバー領域</div>
+    <div class="cov-tags" id="cov-tags"></div>
+    <a class="upload-link" href="/admin/upload">📁 ファイルを追加</a>
+  </div>
+
+  <div class="section">
+    <h3>💬 フィードバック</h3>
+    <div class="fb-row">
+      <div class="fb-pill up"><span class="num" id="fb-up">0</span>👍 役立った</div>
+      <div class="fb-pill down"><span class="num" id="fb-down">0</span>👎 要改善</div>
+    </div>
+    <div class="fb-issues">
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">改善要望のあった質問</div>
+      <ul id="fb-issues"><li class="empty-list" style="list-style:none;padding-left:0">なし</li></ul>
+    </div>
+  </div>
+</aside>
+
 <main>
+  <header>
+    <div class="org">{settings.org_name}の{settings.assistant_role}</div>
+    <div class="user">{user_email}<a href="/auth/logout">ログアウト</a></div>
+  </header>
+
   <div class="chat" id="chat">
     <div class="empty" id="empty">
       <h2>👋 どんなことでも聞いてください</h2>
-      <p>社内ドキュメントを参照して、出典付きで回答します</p>
-      <div class="suggestions">
-        <div class="chip" data-q="出席登録の保存ボタンが効きません">出席登録の保存ボタンが効きません</div>
-        <div class="chip" data-q="経費精算の締め日はいつですか">経費精算の締め日はいつですか</div>
-        <div class="chip" data-q="VPNが繋がらない時の対処法">VPNが繋がらない時の対処法</div>
-        <div class="chip" data-q="有給休暇の申請方法">有給休暇の申請方法</div>
-      </div>
+      <p>取り込み済み文書を参照して、出典付きで回答します</p>
+      <div class="suggestions" id="suggestions"></div>
+      <p style="margin-top:20px;font-size:11px;color:#9ca3af">
+        💡 サジェストは取り込み済み文書から自動生成されます
+      </p>
     </div>
   </div>
-  <form id="qa">
-    <input id="q" placeholder="質問を入力（例: 経費精算の領収書はいつまでに提出？）" autocomplete="off" required>
-    <button class="send" type="submit">送信</button>
-  </form>
+
+  <footer class="input-area">
+    <div class="input-wrap">
+      <form id="qa" style="display:flex;gap:8px;flex:1">
+        <input class="q" id="q" placeholder="質問を入力（例: 経費精算の領収書はいつまでに提出？）" autocomplete="off" required>
+        <button class="send" type="submit">送信</button>
+      </form>
+    </div>
+  </footer>
 </main>
+
 <script>
 const chat=document.getElementById('chat'),empty=document.getElementById('empty'),
       form=document.getElementById('qa'),input=document.getElementById('q'),
-      btn=form.querySelector('button');
-document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{{input.value=c.dataset.q;form.requestSubmit()}});
-function escape(s){{return s.replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[c])}}
+      sendBtn=form.querySelector('button.send'),
+      suggestionsEl=document.getElementById('suggestions');
+
+function escape(s){{return String(s).replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}})[c])}}
+
+function relTime(iso){{
+  if(!iso)return '';
+  const ms=Date.now()-new Date(iso).getTime();
+  if(ms<60000)return Math.floor(ms/1000)+'秒前';
+  if(ms<3600000)return Math.floor(ms/60000)+'分前';
+  if(ms<86400000)return Math.floor(ms/3600000)+'時間前';
+  return Math.floor(ms/86400000)+'日前';
+}}
+
+async function loadStats(){{
+  try {{
+    const r=await fetch('/api/admin/stats');
+    if(!r.ok) return;
+    const s=await r.json();
+    document.getElementById('stat-queries').textContent=s.analytics.n_queries_today;
+    document.getElementById('stat-docs').textContent=s.knowledge.n_documents;
+    document.getElementById('stat-chunks').textContent=s.knowledge.n_chunks;
+    const topics=document.getElementById('top-topics');
+    topics.innerHTML=s.analytics.top_topics.length
+      ? s.analytics.top_topics.map(([n,c])=>`<div class="topic-item"><span>${{escape(n.replace('.md',''))}}</span><span class="count">${{c}}件</span></div>`).join('')
+      : '<div class="empty-list">まだ質問がありません</div>';
+    const hist=document.getElementById('history');
+    hist.innerHTML=s.history.length
+      ? s.history.map(h=>`<div class="history-item" data-q="${{escape(h.question)}}"><div>${{escape(h.question.slice(0,40))}}${{h.question.length>40?'…':''}}</div><div style="color:#9ca3af;font-size:10px">${{relTime(h.ts)}}</div></div>`).join('')
+      : '<div class="empty-list">まだ履歴がありません</div>';
+    hist.querySelectorAll('.history-item').forEach(el=>el.onclick=()=>{{input.value=el.dataset.q;form.requestSubmit();}});
+    const tags=document.getElementById('cov-tags');
+    tags.innerHTML=s.knowledge.documents.slice(0,8).map(d=>`<span class="tag">${{escape(d.replace('.md',''))}}</span>`).join('') || '<span class="empty-list">なし</span>';
+    document.getElementById('fb-up').textContent=s.feedback.up;
+    document.getElementById('fb-down').textContent=s.feedback.down;
+    const issues=document.getElementById('fb-issues');
+    issues.innerHTML=s.feedback.down_questions.length
+      ? s.feedback.down_questions.map(q=>`<li>${{escape(q.slice(0,40))}}${{q.length>40?'…':''}}</li>`).join('')
+      : '<li class="empty-list" style="list-style:none;padding-left:0">なし</li>';
+    // サジェストを文書から動的生成
+    if(suggestionsEl && s.knowledge.documents.length){{
+      const templates=['{{}}について教えて','{{}}の使い方は？','{{}}の手順を知りたい','{{}}でトラブルが起きた時'];
+      suggestionsEl.innerHTML=s.knowledge.documents.slice(0,6).map((d,i)=>{{
+        const topic=d.replace('.md','');
+        const tpl=templates[i%templates.length];
+        const q=tpl.replace('{{}}',topic);
+        return `<div class="chip" data-q="${{escape(q)}}">${{escape(q)}} <span class="src-hint">${{escape(d)}}</span></div>`;
+      }}).join('');
+      suggestionsEl.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{{input.value=c.dataset.q;form.requestSubmit();}});
+    }}
+  }} catch(e) {{ console.error('stats error', e); }}
+}}
+
 function addMsg(role,html){{
-  if(empty)empty.remove();
+  if(empty && empty.parentNode) empty.remove();
   const d=document.createElement('div');d.className='msg '+role;
   d.innerHTML='<div class="bubble">'+html+'</div>';
   chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return d;
 }}
+
 form.onsubmit=async e=>{{
   e.preventDefault();const q=input.value.trim();if(!q)return;
-  input.value='';btn.disabled=true;
+  input.value='';sendBtn.disabled=true;
   addMsg('user',escape(q));
   const wait=addMsg('bot','回答を生成中<span class="loading"></span>');
   try{{
@@ -152,7 +282,7 @@ form.onsubmit=async e=>{{
                                      body:JSON.stringify({{question:q}})}});
     const data=await r.json();
     let html=escape(data.answer||'(回答なし)');
-    if(data.sources&&data.sources.length){{
+    if(data.sources && data.sources.length){{
       html+='<details class="sources" open><summary>📎 参照ドキュメント '+data.sources.length+'件</summary>';
       for(const s of data.sources){{
         html+='<div class="src"><span class="src-name">'+escape(s.source)+'</span>'
@@ -160,11 +290,27 @@ form.onsubmit=async e=>{{
       }}
       html+='</details>';
     }}
-    html+='<div class="feedback"><button>👍 役に立った</button><button>👎 改善が必要</button></div>';
+    const fbId='fb-'+Date.now();
+    html+=`<div class="feedback" id="${{fbId}}"><button data-vote="up">👍 役に立った</button><button data-vote="down">👎 改善が必要</button></div>`;
     wait.querySelector('.bubble').innerHTML=html;
+    const fb=document.getElementById(fbId);
+    if(fb){{
+      fb.querySelectorAll('button').forEach(b=>b.onclick=async()=>{{
+        const vote=b.dataset.vote;
+        fb.querySelectorAll('button').forEach(x=>x.classList.remove('up','down','active'));
+        b.classList.add(vote,'active');
+        await fetch('/api/feedback',{{method:'POST',headers:{{'Content-Type':'application/json'}},
+                                     body:JSON.stringify({{question:q,vote,sources:(data.sources||[]).map(s=>s.source)}})}});
+        loadStats();
+      }});
+    }}
+    loadStats();
   }}catch(err){{wait.querySelector('.bubble').textContent='エラー: '+err.message}}
-  btn.disabled=false;input.focus();
+  sendBtn.disabled=false;input.focus();
 }};
+
+loadStats();
+setInterval(loadStats, 30000);
 </script></body></html>"""
 
 
@@ -476,6 +622,65 @@ fi.onchange = e => { for(const f of e.target.files) analyzeFile(f); fi.value='';
 dz.addEventListener('drop', e => { for(const f of e.dataTransfer.files) analyzeFile(f); });
 </script>
 </body></html>"""
+
+
+@app.get("/api/admin/stats")
+async def admin_stats(user: dict = Depends(require_user)):
+    """サイドバー集計用。ナレッジ状態・履歴・トップトピック・フィードバックを返す。"""
+    from collections import Counter
+
+    idx = get_index()
+    recent = audit.read_recent(200)
+    queries = [e for e in recent if e.get("event") == "query"]
+    feedback = [e for e in recent if e.get("event") == "feedback"]
+
+    history = [
+        {"question": q.get("question", ""), "ts": q.get("ts", ""), "sources": q.get("sources", [])}
+        for q in queries[:8]
+    ]
+    top_topics: Counter = Counter()
+    for q in queries:
+        srcs = q.get("sources") or []
+        if srcs:
+            top_topics[srcs[0].split("#")[0]] += 1
+
+    fb_up = sum(1 for f in feedback if f.get("vote") == "up")
+    fb_down = sum(1 for f in feedback if f.get("vote") == "down")
+    down_questions = [f.get("question", "") for f in feedback if f.get("vote") == "down"][:3]
+
+    sources = sorted({c.source for c in idx.chunks})
+
+    return {
+        "knowledge": {
+            "n_documents": len(sources),
+            "n_chunks": len(idx.chunks),
+            "documents": sources,
+        },
+        "analytics": {
+            "n_queries_today": len(queries),
+            "top_topics": top_topics.most_common(5),
+        },
+        "history": history,
+        "feedback": {"up": fb_up, "down": fb_down, "down_questions": down_questions},
+    }
+
+
+class FeedbackRequest(BaseModel):
+    question: str
+    vote: str
+    sources: list[str] = []
+
+
+@app.post("/api/feedback")
+async def api_feedback(payload: FeedbackRequest, user: dict = Depends(require_user)):
+    if payload.vote not in ("up", "down"):
+        raise HTTPException(status_code=400, detail="vote must be up/down")
+    audit.record("feedback", user=user["email"], question=payload.question,
+                 vote=payload.vote, sources=payload.sources)
+    return {"ok": True}
+
+
+@app.post("/api/admin/reload-index")
 async def admin_reload(user: dict = Depends(require_user)):
     idx = reload_index()
     audit.record("reload_index", user=user["email"], n_chunks=len(idx.chunks))
