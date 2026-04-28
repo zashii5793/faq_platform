@@ -1,14 +1,14 @@
 """ナレッジ取り込みパイプライン。
 
 責務:
-  1. ファイルパース（CSV / Markdown / テキスト / JSON / PDF / Excel）
+  1. ファイルパース（CSV / Markdown / テキスト / JSON / PDF / Excel / PowerPoint）
   2. チャンク化
   3. PII・機密マーカー検出
   4. 推奨アクション判定（ok / warn / danger）
   5. FAQマスターへの書き込み
 
 注意:
-  - PowerPoint / 画像OCR は ROADMAP Phase 2 で対応予定
+  - 画像OCR は ROADMAP Phase 2 で対応予定
 """
 from __future__ import annotations
 
@@ -85,6 +85,8 @@ def _detect_format(filename: str) -> str:
         "pdf": "pdf",
         "xlsx": "xlsx",
         "xls": "xlsx",
+        "pptx": "pptx",
+        "ppt": "pptx",
     }.get(ext, "unsupported")
 
 
@@ -168,6 +170,34 @@ def _parse_xlsx(filename: str, content: bytes) -> list[Chunk]:
     return chunks
 
 
+def _parse_pptx(filename: str, content: bytes) -> list[Chunk]:
+    """PowerPoint: スライド1枚を1チャンクに変換（タイトル + テキスト枠 + ノート）。"""
+    from pptx import Presentation
+
+    prs = Presentation(io.BytesIO(content))
+    chunks: list[Chunk] = []
+    for i, slide in enumerate(prs.slides, start=1):
+        parts: list[str] = []
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                for para in shape.text_frame.paragraphs:
+                    text = "".join(run.text for run in para.runs).strip()
+                    if text:
+                        parts.append(text)
+        # 発表者ノート
+        if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
+            note = slide.notes_slide.notes_text_frame.text.strip()
+            if note:
+                parts.append(f"[ノート] {note}")
+        if not parts:
+            continue
+        text = "\n".join(parts)
+        chunks.append(
+            Chunk(chunk_id=f"{filename}#slide{i}", source=filename, text=text)
+        )
+    return chunks
+
+
 def parse(filename: str, content: bytes) -> list[Chunk]:
     fmt = _detect_format(filename)
     if fmt in ("markdown", "text", "json"):
@@ -178,6 +208,8 @@ def parse(filename: str, content: bytes) -> list[Chunk]:
         return _parse_pdf(filename, content)
     if fmt == "xlsx":
         return _parse_xlsx(filename, content)
+    if fmt == "pptx":
+        return _parse_pptx(filename, content)
     raise ValueError(f"unsupported format: {Path(filename).suffix}")
 
 

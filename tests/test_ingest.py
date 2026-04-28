@@ -47,6 +47,30 @@ def test_parse_xlsx():
     assert "FAQ!r2" in chunks[0].chunk_id  # シート名+行番号
 
 
+def test_parse_pptx():
+    """python-pptx でスライドごとにチャンク化できる。"""
+    from pptx import Presentation
+    from pptx.util import Inches
+    import io
+
+    prs = Presentation()
+    blank = prs.slide_layouts[6]
+    s1 = prs.slides.add_slide(blank)
+    tx = s1.shapes.add_textbox(Inches(1), Inches(1), Inches(6), Inches(2)).text_frame
+    tx.text = "出席登録の手順"
+    tx.add_paragraph().text = "メインメニューから操作"
+    s2 = prs.slides.add_slide(blank)
+    s2.shapes.add_textbox(Inches(1), Inches(1), Inches(6), Inches(2)).text_frame.text = "VPN接続"
+    buf = io.BytesIO()
+    prs.save(buf)
+
+    chunks = parse("operations.pptx", buf.getvalue())
+    assert len(chunks) == 2
+    assert "出席登録" in chunks[0].text
+    assert "slide1" in chunks[0].chunk_id
+    assert "VPN" in chunks[1].text
+
+
 def test_parse_pdf():
     """pypdf でページごとにチャンク化できる。"""
     from pypdf import PdfWriter

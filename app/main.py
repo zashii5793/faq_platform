@@ -475,12 +475,13 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
       <div class="formats">
         <span class="fmt">PDF</span>
         <span class="fmt">Excel</span>
+        <span class="fmt">PowerPoint</span>
         <span class="fmt">CSV</span>
         <span class="fmt">Markdown</span>
         <span class="fmt">テキスト</span>
         <span class="fmt">JSON</span>
       </div>
-      <input type="file" id="fileInput" multiple accept=".md,.txt,.csv,.json,.pdf,.xlsx,.xls">
+      <input type="file" id="fileInput" multiple accept=".md,.txt,.csv,.json,.pdf,.xlsx,.xls,.pptx,.ppt">
     </label>
 
     <div class="step-title" style="margin-top:28px"><span class="step-num">2</span>クレンジング結果</div>
