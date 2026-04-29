@@ -8,6 +8,7 @@ venv/
 *.log
 data/index.json
 data/audit/
+data/feedback_scores.json
 data/raw/*
 !data/raw/.gitkeep
 data/faq_master/*

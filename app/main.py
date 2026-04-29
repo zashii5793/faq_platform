@@ -12,7 +12,7 @@ from .config import settings
 from .ingest import analyze as ingest_analyze, ingest as ingest_commit
 from .llm import answer
 from .masking import mask
-from .rag import get_index, reload_index
+from .rag import get_index, record_feedback, reload_index
 
 app = FastAPI(title="Servicenet Internal FAQ (PoC)")
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
@@ -795,8 +795,11 @@ class FeedbackRequest(BaseModel):
 async def api_feedback(payload: FeedbackRequest, user: dict = Depends(require_user)):
     if payload.vote not in ("up", "down"):
         raise HTTPException(status_code=400, detail="vote must be up/down")
+    # 監査ログに記録
     audit.record("feedback", user=user["email"], question=payload.question,
                  vote=payload.vote, sources=payload.sources)
+    # 検索ランキングへの学習反映
+    record_feedback(payload.sources, payload.vote)
     return {"ok": True}
 
 

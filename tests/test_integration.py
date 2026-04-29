@@ -248,3 +248,61 @@ def test_confidence_higher_for_specific_match(client: TestClient):
         assert specific["confidence"] >= vague["confidence"]
     else:
         assert specific["has_answer"] is True
+
+
+# ============================================================
+# シナリオ11: フィードバック学習 — 👍 でランキングが上がる
+# ============================================================
+def test_feedback_boosts_search_ranking(client, monkeypatch, tmp_path):
+    """同程度の関連性を持つ2文書で、👍多い方が上位に来ることを検証。"""
+    # フィードバックスコアを独立した一時ファイルに分離
+    from app import rag
+    monkeypatch.setattr(rag, "FEEDBACK_PATH", tmp_path / "feedback.json")
+
+    # 2つのVPN関連文書を取り込み
+    md_a = "# VPN手順A\n\nVPN接続の方法。FortiClient起動。".encode("utf-8")
+    md_b = "# VPN手順B\n\nVPN接続の方法。VPNクライアント起動。".encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("vpn_a.md", md_a, "text/markdown")})
+    client.post("/api/admin/ingest", files={"file": ("vpn_b.md", md_b, "text/markdown")})
+
+    # 初期検索: どちらが上位かを記録
+    initial = client.post("/api/ask", json={"question": "VPN接続の方法"}).json()
+    assert initial["has_answer"] is True
+    initial_top = initial["sources"][0]["source"]
+
+    # 反対側に👍を5回投票して学習を強化
+    other = "vpn_b.md" if initial_top == "vpn_a.md" else "vpn_a.md"
+    for _ in range(5):
+        client.post("/api/feedback", json={
+            "question": "VPN接続の方法", "vote": "up", "sources": [other]
+        })
+
+    # 再検索: ブーストされた方が上位に来るはず
+    after = client.post("/api/ask", json={"question": "VPN接続の方法"}).json()
+    assert after["sources"][0]["source"] == other, \
+        f"フィードバック学習でランキングが変わるべき: 初期={initial_top}, 期待={other}, " \
+        f"実際={after['sources'][0]['source']}"
+
+
+def test_feedback_down_reduces_ranking(client, monkeypatch, tmp_path):
+    """👎を入れると同じ文書のスコアが下がる。"""
+    from app import rag
+    monkeypatch.setattr(rag, "FEEDBACK_PATH", tmp_path / "feedback.json")
+
+    md = "# 経費精算\n\n月次締めは毎月25日です。".encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("expense.md", md, "text/markdown")})
+
+    before = client.post("/api/ask", json={"question": "経費精算の締め日"}).json()
+    assert before["has_answer"] is True
+    before_score = before["sources"][0]["score"]
+
+    # 👎を3回
+    for _ in range(3):
+        client.post("/api/feedback", json={
+            "question": "経費精算の締め日", "vote": "down", "sources": ["expense.md"]
+        })
+
+    after = client.post("/api/ask", json={"question": "経費精算の締め日"}).json()
+    after_score = after["sources"][0]["score"]
+    assert after_score < before_score, \
+        f"👎でスコアが下がるべき: before={before_score}, after={after_score}"
