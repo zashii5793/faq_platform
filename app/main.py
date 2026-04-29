@@ -57,6 +57,7 @@ p{{color:#6b7280;margin:0 0 24px}}
 def _chat_page(user_email: str) -> str:
     return f"""<!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>{settings.product_name}</title>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
@@ -116,7 +117,27 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .msg.user .bubble{{background:#1a73e8;color:#fff;margin-left:auto}}
 .msg.bot .bubble{{background:#fff;border:1px solid #e5e7eb}}
 .bubble{{padding:12px 16px;border-radius:14px;max-width:75%;display:inline-block;
-        line-height:1.6;white-space:pre-wrap;text-align:left}}
+        line-height:1.6;white-space:pre-wrap;text-align:left;word-break:break-word}}
+.menu-btn{{display:none;background:none;border:0;padding:6px 10px;font-size:22px;cursor:pointer;color:#1f2937}}
+.scrim{{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99}}
+@media (max-width: 900px) {{
+  aside{{position:fixed;left:0;top:0;bottom:0;width:280px;z-index:100;
+        transform:translateX(-100%);transition:transform .25s}}
+  aside.open{{transform:translateX(0)}}
+  .scrim.show{{display:block}}
+  .menu-btn{{display:inline-flex}}
+  header .org{{font-size:13px;flex:1}}
+  .bubble{{max-width:90%}}
+  .sources,.confidence,.mask-info{{max-width:90%}}
+  .chat{{padding:16px}}
+  .suggestions{{flex-direction:column;gap:6px}}
+  .chip{{font-size:12px;padding:8px 12px}}
+}}
+@media (max-width: 480px) {{
+  header{{padding:10px 12px}}
+  .user{{display:none}}
+  input.q{{font-size:16px}} /* iOS の自動ズーム防止 */
+}}
 .confidence{{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:4px 10px;
             border-radius:999px;font-size:11px;font-weight:600;max-width:75%}}
 .confidence.high{{background:#d1fae5;color:#065f46}}
@@ -195,9 +216,11 @@ button.send:disabled{{background:#9ca3af}}
 
 <main>
   <header>
+    <button class="menu-btn" id="menuBtn" aria-label="メニューを開く">☰</button>
     <div class="org">{settings.org_name}の{settings.assistant_role}</div>
     <div class="user">{user_email}<a href="/auth/logout">ログアウト</a></div>
   </header>
+  <div class="scrim" id="scrim"></div>
 
   <div class="chat" id="chat">
     <div class="empty" id="empty">
@@ -337,6 +360,13 @@ form.onsubmit=async e=>{{
 
 loadStats();
 setInterval(loadStats, 30000);
+
+// モバイル: ハンバーガーメニュー
+const aside=document.querySelector('aside'),scrim=document.getElementById('scrim'),menuBtn=document.getElementById('menuBtn');
+if(menuBtn) {{
+  menuBtn.onclick=()=>{{ aside.classList.add('open'); scrim.classList.add('show'); }};
+  scrim.onclick=()=>{{ aside.classList.remove('open'); scrim.classList.remove('show'); }};
+}}
 </script></body></html>"""
 
 
@@ -457,6 +487,7 @@ async def admin_upload_page(request: Request) -> HTMLResponse:
 def _upload_page() -> str:
     return """<!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ナレッジ追加 — Inquira</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -520,6 +551,17 @@ button.confirm{background:#1a73e8;color:#fff;border:0;border-radius:8px;padding:
                font-weight:500;cursor:pointer;font-size:14px}
 button.confirm:hover{background:#1557b0}
 button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
+@media (max-width: 720px) {
+  body{padding:0}
+  .modal{border-radius:0;max-width:100%;min-height:100vh;box-shadow:none}
+  .modal-body{padding:16px}
+  .fc-grid{grid-template-columns:1fr;gap:4px}
+  .fc-grid dt{color:#9ca3af;font-size:11px;text-transform:uppercase;margin-top:6px}
+  .fc-actions{flex-wrap:wrap}
+  .upload-zone{padding:24px 16px}
+  .modal-footer{flex-direction:column;align-items:stretch;gap:10px}
+  .modal-footer button.confirm{width:100%}
+}
 .modal-footer{padding:16px 24px;border-top:1px solid #e5e7eb;background:#fafbfc;
               display:flex;justify-content:space-between;align-items:center}
 .summary{font-size:13px;color:#6b7280}

@@ -84,14 +84,43 @@ echo "✅ テスト全 PASS"
 # ──────────────────────────────────────────
 # 4. サーバ起動
 # ──────────────────────────────────────────
+
+# LAN IP を取得（Mac/Linux 両対応）
+LAN_IP=""
+if command -v ipconfig >/dev/null 2>&1; then
+  # macOS
+  LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "")
+elif command -v hostname >/dev/null 2>&1; then
+  # Linux
+  LAN_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+fi
+
+# HOST=0.0.0.0 なら携帯/タブレットから LAN 経由でアクセス可能
+HOST="${HOST:-127.0.0.1}"
+
 echo ""
 echo "🚀 Inquira を起動します"
 echo ""
-echo "   ┌──────────────────────────────────────────────────┐"
-echo "   │ チャット画面: http://127.0.0.1:${PORT}/                  │"
-echo "   │ ナレッジ追加: http://127.0.0.1:${PORT}/admin/upload      │"
-echo "   │ ヘルスチェック: http://127.0.0.1:${PORT}/healthz         │"
-echo "   └──────────────────────────────────────────────────┘"
+if [ "$HOST" = "0.0.0.0" ] && [ -n "$LAN_IP" ]; then
+  echo "   ┌──────────────────────────────────────────────────────────┐"
+  echo "   │ 💻 PC ブラウザ:   http://127.0.0.1:${PORT}/                      │"
+  echo "   │ 📱 携帯/タブレット: http://${LAN_IP}:${PORT}/  ← 同じWiFi内から  │"
+  echo "   │ 📁 ナレッジ追加:   http://${LAN_IP}:${PORT}/admin/upload         │"
+  echo "   └──────────────────────────────────────────────────────────┘"
+  echo ""
+  echo "   ⚠ DEMO_MODE は認証なしです。社内 WiFi 内など信頼できる NW でのみ使用してください。"
+else
+  echo "   ┌──────────────────────────────────────────────────┐"
+  echo "   │ チャット画面: http://127.0.0.1:${PORT}/                  │"
+  echo "   │ ナレッジ追加: http://127.0.0.1:${PORT}/admin/upload      │"
+  echo "   │ ヘルスチェック: http://127.0.0.1:${PORT}/healthz         │"
+  echo "   └──────────────────────────────────────────────────┘"
+  if [ -n "$LAN_IP" ]; then
+    echo ""
+    echo "   📱 携帯から試したい場合: HOST=0.0.0.0 ./scripts/demo.sh で再起動"
+    echo "      その後 http://${LAN_IP}:${PORT}/ にアクセス"
+  fi
+fi
 echo ""
 echo "   (Ctrl+C で停止)"
 echo ""
@@ -101,4 +130,4 @@ DEMO_MODE=1 \
   SESSION_SECRET=demo-secret \
   ORG_NAME="貴社" \
   ASSISTANT_ROLE="社内ヘルプデスク" \
-  uvicorn app.main:app --host 127.0.0.1 --port "${PORT}"
+  uvicorn app.main:app --host "${HOST}" --port "${PORT}"
