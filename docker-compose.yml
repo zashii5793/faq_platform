@@ -1,0 +1,16 @@
+services:
+  inquira:
+    build: .
+    image: inquira:demo
+    container_name: inquira-demo
+    ports:
+      - "8000:8000"
+    volumes:
+      # ホストの data/ をマウントして、再起動でも取り込み済み文書が消えないように
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s

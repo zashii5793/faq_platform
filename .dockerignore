@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.git/
+.github/
+docs/
+*.png
+*.html
+data/audit/
+data/index.json
+data/feedback_scores.json
+data/raw/*
+!data/raw/.gitkeep
+.DS_Store

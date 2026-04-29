@@ -7,26 +7,70 @@
 
 ---
 
-## 🚀 自分で動かす（30秒）
+## 🚀 自分で動かす（Mac 向け 3 通り）
+
+### 方法A: uv ★最速・推奨
+
+[uv](https://docs.astral.sh/uv/) は Rust 製の Python パッケージマネージャ。pyenv のビルドより **10倍速い**。
+
+```bash
+brew install uv
+git clone https://github.com/zashii5793/faq_platform.git
+cd faq_platform
+git checkout claude/add-roadmap-docs-RmQNp
+
+uv venv --python 3.11
+source .venv/bin/activate
+uv pip install -e ".[dev]"
+
+DEMO_MODE=1 FAQ_MASTER_DIR=./data/demo_faq SESSION_SECRET=demo \
+  uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+→ ブラウザで http://127.0.0.1:8000/
+
+### 方法B: Docker ★ゼロ設定
+
+Python のバージョン違いやビルド失敗を**完全に避けたい**ならこれ。
 
 ```bash
 git clone https://github.com/zashii5793/faq_platform.git
 cd faq_platform
+git checkout claude/add-roadmap-docs-RmQNp
+
+docker compose up --build
+```
+
+初回ビルド 2〜4分（Python イメージ DL + 依存インストール）。
+2回目以降はキャッシュが効いて 10秒以内で起動。
+
+→ ブラウザで http://127.0.0.1:8000/
+
+停止: `docker compose down`
+
+### 方法C: 既存 Python 3.11+ がある場合
+
+`python3 --version` で 3.11 以上なら、最も軽量に動く。
+
+```bash
+git clone https://github.com/zashii5793/faq_platform.git
+cd faq_platform
+git checkout claude/add-roadmap-docs-RmQNp
 ./scripts/demo.sh
 ```
 
-これだけで以下を自動実行します：
-1. Python venv 作成
-2. 依存パッケージインストール
-3. **39 件の統合テスト実行**（失敗したら起動しない）
-4. uvicorn 起動
+スクリプトが venv 作成・依存インストール・テスト実行・サーバ起動まで自動でやります。
 
-ブラウザで開く：
-- 💬 チャット画面: http://127.0.0.1:8000/
-- 📁 ナレッジ追加: http://127.0.0.1:8000/admin/upload
+---
 
-> Anthropic API キーがなくても **デモモード** で UI/動作を確認できます。
-> 本番運用時は `.env` を作成して `ANTHROPIC_API_KEY` 等を設定してください。
+## トラブルシューティング
+
+| 症状 | 対処 |
+|---|---|
+| `port 8000` 使用中 | `PORT=8080 ./scripts/demo.sh` のように変えて起動 |
+| 古い venv で起動失敗 | `rm -rf .venv && ./scripts/demo.sh` |
+| pyenv のビルドが終わらない | 案A (uv) または案B (Docker) を使う |
+| Docker が無い | `brew install --cask docker` で Docker Desktop を入れる |
 
 ---
 
