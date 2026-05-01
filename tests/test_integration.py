@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import io
 import json
+from urllib.parse import quote
 
 import pytest
 from fastapi.testclient import TestClient
@@ -282,6 +283,71 @@ def test_feedback_boosts_search_ranking(client, monkeypatch, tmp_path):
     assert after["sources"][0]["source"] == other, \
         f"フィードバック学習でランキングが変わるべき: 初期={initial_top}, 期待={other}, " \
         f"実際={after['sources'][0]['source']}"
+
+
+def test_analyze_returns_per_chunk_findings(client: TestClient):
+    """analyze レスポンスの chunks に各チャンクの判定が含まれる。"""
+    md = (
+        "## 普通の節\n\nここは安全な情報です。\n\n"
+        "## 連絡先\n\n問い合わせは support@example.com まで。\n\n"
+        "## 機密\n\n社外秘の重要な情報。"
+    ).encode("utf-8")
+    r = client.post("/api/admin/analyze", files={"file": ("doc.md", md, "text/markdown")})
+    assert r.status_code == 200
+    data = r.json()
+    assert "chunks" in data
+    assert len(data["chunks"]) >= 2
+    # 各チャンクに recommendation と findings が含まれる
+    for c in data["chunks"]:
+        assert "chunk_id" in c
+        assert "recommendation" in c
+        assert "findings" in c
+    # warn または danger チャンクが少なくとも1つある（連絡先 or 機密）
+    recs = [c["recommendation"] for c in data["chunks"]]
+    assert any(r in ("warn", "danger") for r in recs)
+
+
+def test_ingest_with_excluded_chunks(client: TestClient):
+    """excluded_chunk_ids で部分除外しての取り込みができる。"""
+    md = (
+        "## 安全な情報\n\nこれは公開してOK。\n\n"
+        "## 機密情報\n\n社外秘の内容。"
+    ).encode("utf-8")
+    # まず analyze でチャンク確認
+    r = client.post("/api/admin/analyze", files={"file": ("doc.md", md, "text/markdown")})
+    chunks = r.json()["chunks"]
+    confidential_id = next(c["chunk_id"] for c in chunks if c["recommendation"] == "warn")
+
+    # その chunk_id を除外して ingest（'#' を含むので URL エンコード必須）
+    r = client.post(
+        f"/api/admin/ingest?excluded_chunk_ids={quote(confidential_id, safe='')}",
+        files={"file": ("doc.md", md, "text/markdown")},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["excluded_chunks"] == 1
+    # 取り込み済み数 = 全チャンク - 除外数
+    assert data["ingested_chunks"] == len(chunks) - 1
+
+
+def test_ingest_dangerous_file_can_partial_with_exclusion(client: TestClient):
+    """ファイル全体が danger でも、危険チャンクを除外すれば取り込める。"""
+    csv = (
+        b"\xef\xbb\xbfname,note\n"
+        b"safe item,public OK\n"
+        b"sensitive,number 1234 5678 9012 here\n"  # マイナンバー
+    )
+    r = client.post("/api/admin/analyze", files={"file": ("mix.csv", csv, "text/csv")})
+    data = r.json()
+    danger_ids = ",".join(c["chunk_id"] for c in data["chunks"] if c["recommendation"] == "danger")
+
+    # 危険チャンク全部を除外して ingest（force 不要、'#' を含むので URL エンコード）
+    r = client.post(
+        f"/api/admin/ingest?excluded_chunk_ids={quote(danger_ids, safe=',')}",
+        files={"file": ("mix.csv", csv, "text/csv")},
+    )
+    assert r.status_code == 200
+    assert r.json()["ingested_chunks"] >= 1
 
 
 def test_feedback_down_reduces_ranking(client, monkeypatch, tmp_path):

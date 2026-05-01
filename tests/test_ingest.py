@@ -133,6 +133,43 @@ def test_analyze_warn_confidential_marker():
     assert "社外秘" in " ".join(result.findings.confidential_markers)
 
 
+def test_chunk_findings_per_chunk():
+    """各チャンクごとに PII / 機密マーカーを個別判定できる。"""
+    content = (
+        "# 文書\n\n"
+        "## セクション1\n\nこれは普通の文章です。問題なし。\n\n"
+        "## セクション2\n\n連絡は contact@example.com まで。\n\n"
+        "## セクション3\n\nマイナンバー 1234 5678 9012 を含む内容。"
+    ).encode("utf-8")
+    result = analyze("doc.md", content)
+    assert len(result.chunk_findings) == len(result.chunks)
+    recs = [cf.recommendation for cf in result.chunk_findings]
+    assert "ok" in recs
+    assert "warn" in recs or "danger" in recs
+
+
+def test_ingest_excludes_specified_chunks(tmp_path: Path):
+    """excluded_chunk_ids で指定したチャンクは出力ファイルから除外される。"""
+    content = (
+        "## 安全\n\n安全なテキストです。\n\n"
+        "## 機密\n\n社外秘の重要な情報。\n\n"
+        "## 公開\n\nどこでも書ける情報。"
+    ).encode("utf-8")
+    result = analyze("test.md", content)
+    assert result.n_chunks >= 2
+
+    # 「機密」チャンクを除外して取り込み
+    confidential_id = next(
+        c.chunk_id for c, cf in zip(result.chunks, result.chunk_findings)
+        if cf.confidential_markers
+    )
+    n = ingest(result, tmp_path, excluded_chunk_ids={confidential_id})
+    assert n == result.n_chunks - 1
+    out = (tmp_path / "test.md").read_text(encoding="utf-8")
+    assert "社外秘の重要な情報" not in out
+    assert "安全なテキスト" in out
+
+
 def test_ingest_writes_masked_text(tmp_path: Path):
     content = "問い合わせ: contact@example.com / 03-1234-5678".encode("utf-8")
     result = analyze("contact.md", content)

@@ -49,6 +49,16 @@ class Chunk:
 
 
 @dataclass
+class ChunkFindings:
+    """個別チャンクの検出結果。"""
+    pii_counts: dict[str, int] = field(default_factory=dict)
+    confidential_markers: list[str] = field(default_factory=list)
+    name_candidates: int = 0
+    recommendation: Recommendation = "ok"
+    reason: str = ""
+
+
+@dataclass
 class FileFindings:
     pii_counts: dict[str, int] = field(default_factory=dict)
     confidential_markers: list[str] = field(default_factory=list)
@@ -65,6 +75,7 @@ class FileAnalysis:
     findings: FileFindings
     recommendation: Recommendation
     reason: str
+    chunk_findings: list[ChunkFindings] = field(default_factory=list)
 
     @property
     def n_chunks(self) -> int:
@@ -90,19 +101,44 @@ def _detect_format(filename: str) -> str:
     }.get(ext, "unsupported")
 
 
-def _split_text(text: str, max_chars: int = 600) -> list[str]:
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-    chunks: list[str] = []
-    buf = ""
-    for p in paragraphs:
-        if len(buf) + len(p) + 2 <= max_chars:
-            buf = (buf + "\n\n" + p).strip()
+def _split_text(text: str, max_chars: int = 350) -> list[str]:
+    """テキストをチャンクに分割。
+
+    分割ルール:
+      1. Markdown 見出し (## / ### で始まる行) は必ず新チャンクの境界
+      2. それ以外は段落（空行2つ）単位で結合し、max_chars を超えたら分割
+      3. 1つのチャンクが max_chars * 1.5 を超える場合は強制改行
+    """
+    lines = text.split("\n")
+    sections: list[str] = []
+    buf: list[str] = []
+    for line in lines:
+        if line.startswith(("## ", "### ")) and buf:
+            sections.append("\n".join(buf).strip())
+            buf = [line]
         else:
-            if buf:
-                chunks.append(buf)
-            buf = p
+            buf.append(line)
     if buf:
-        chunks.append(buf)
+        sections.append("\n".join(buf).strip())
+    sections = [s for s in sections if s]
+
+    chunks: list[str] = []
+    for sec in sections:
+        if len(sec) <= max_chars * 1.5:
+            chunks.append(sec)
+            continue
+        # セクションが長すぎる場合は段落単位で分割
+        paragraphs = [p.strip() for p in sec.split("\n\n") if p.strip()]
+        cur = ""
+        for p in paragraphs:
+            if len(cur) + len(p) + 2 <= max_chars:
+                cur = (cur + "\n\n" + p).strip()
+            else:
+                if cur:
+                    chunks.append(cur)
+                cur = p
+        if cur:
+            chunks.append(cur)
     return chunks or [text]
 
 
@@ -243,6 +279,27 @@ def scan_findings(chunks: list[Chunk], industry: str = "general") -> FileFinding
     return findings
 
 
+def scan_chunk_findings(chunks: list[Chunk], industry: str = "general") -> list[ChunkFindings]:
+    """各チャンクごとに PII / 機密マーカー / 推奨判定を返す。"""
+    out: list[ChunkFindings] = []
+    for c in chunks:
+        cf = ChunkFindings(
+            pii_counts=_scan_pii(c.text, industry),
+            confidential_markers=_scan_confidential(c.text),
+            name_candidates=_scan_names(c.text),
+        )
+        cf.recommendation, cf.reason = assess(
+            FileFindings(
+                pii_counts=cf.pii_counts,
+                confidential_markers=cf.confidential_markers,
+                name_candidates=cf.name_candidates,
+            ),
+            n_chunks=1,
+        )
+        out.append(cf)
+    return out
+
+
 # =====================================================
 # 推奨判定
 # =====================================================
@@ -276,6 +333,7 @@ def assess(findings: FileFindings, n_chunks: int) -> tuple[Recommendation, str]:
 def analyze(filename: str, content: bytes, industry: str = "general") -> FileAnalysis:
     chunks = parse(filename, content)
     findings = scan_findings(chunks, industry)
+    chunk_findings = scan_chunk_findings(chunks, industry)
     rec, reason = assess(findings, len(chunks))
     return FileAnalysis(
         filename=filename,
@@ -286,20 +344,38 @@ def analyze(filename: str, content: bytes, industry: str = "general") -> FileAna
         findings=findings,
         recommendation=rec,
         reason=reason,
+        chunk_findings=chunk_findings,
     )
 
 
-def ingest(analysis: FileAnalysis, faq_master_dir: Path, apply_masking: bool = True,
-           industry: str = "general") -> int:
-    """マスク適用後にFAQマスターへ書き出し。チャンクごとに 1 ファイルではなく、
-    元ファイル名をそのまま 1 ファイルにまとめて保存する（参照可能性のため）。"""
+def ingest(
+    analysis: FileAnalysis,
+    faq_master_dir: Path,
+    apply_masking: bool = True,
+    industry: str = "general",
+    excluded_chunk_ids: set[str] | None = None,
+) -> int:
+    """マスク適用後にFAQマスターへ書き出し。
+
+    Args:
+      excluded_chunk_ids: スキップするチャンクIDの集合。指定された chunk_id は
+                          書き出し対象から除外される（部分取り込み）
+    """
     faq_master_dir.mkdir(parents=True, exist_ok=True)
     out_path = faq_master_dir / Path(analysis.filename).with_suffix(".md").name
 
     rules = build_rules(industry) if apply_masking else None
+    excluded = excluded_chunk_ids or set()
     body_parts = [f"# {analysis.filename}\n\n_取り込み元: {analysis.sha256[:12]}_\n"]
+    written = 0
     for chunk in analysis.chunks:
+        if chunk.chunk_id in excluded:
+            continue
         text = mask(chunk.text, rules) if rules is not None else chunk.text
         body_parts.append(f"\n## {chunk.chunk_id}\n\n{text}\n")
+        written += 1
+    if written == 0:
+        # 全チャンク除外なら出力しない
+        return 0
     out_path.write_text("\n".join(body_parts), encoding="utf-8")
-    return len(analysis.chunks)
+    return written

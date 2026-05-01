@@ -555,6 +555,27 @@ input[type=file]{display:none}
 .fc-status{font-size:11px;color:#9ca3af;margin-left:auto;align-self:center}
 .file-card.included{box-shadow:0 0 0 1px #1a73e8 inset}
 .file-card.skipped-state{opacity:.55}
+.chunk-list{margin-top:10px;border-top:1px dashed #e5e7eb;padding-top:10px}
+.chunk-list summary{cursor:pointer;color:#4b5563;font-weight:500;font-size:12px;outline:none;padding:4px 0}
+.chunk-list summary:hover{color:#1a73e8}
+.chunk-row{display:flex;gap:10px;padding:8px;border-radius:8px;margin:4px 0;align-items:flex-start;
+           background:#f9fafb;border:1px solid #f3f4f6}
+.chunk-row.excluded{opacity:.45;background:#f3f4f6}
+.chunk-row.danger{background:#fef2f2;border-color:#fecaca}
+.chunk-row.warn{background:#fffbeb;border-color:#fed7aa}
+.chunk-row input[type=checkbox]{margin-top:3px;flex-shrink:0;cursor:pointer}
+.chunk-info{flex:1;min-width:0}
+.chunk-id{font-family:'SF Mono',Consolas,monospace;font-size:10px;color:#9ca3af;display:block}
+.chunk-flag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:999px;margin-right:4px;font-weight:600}
+.chunk-flag.ok{background:#d1fae5;color:#065f46}
+.chunk-flag.warn{background:#fef3c7;color:#92400e}
+.chunk-flag.danger{background:#fee2e2;color:#991b1b}
+.chunk-text{font-size:11px;color:#374151;line-height:1.4;margin-top:3px;
+            display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.chunk-reason{font-size:10px;color:#92400e;margin-top:2px}
+.bulk-ops{display:flex;gap:6px;margin:6px 0;font-size:11px}
+.bulk-ops button{padding:3px 8px;border:1px solid #d1d5db;background:#fff;border-radius:4px;cursor:pointer;color:#4b5563}
+.bulk-ops button:hover{background:#f3f4f6}
 .modal-footer{padding:14px 24px;border-top:1px solid #e5e7eb;background:#fafbfc;
               display:flex;justify-content:space-between;align-items:center;gap:14px}
 .summary{font-size:13px;color:#6b7280}
@@ -640,12 +661,21 @@ function updateSummary(){
   const ingested = queue.filter(q => q.state === 'ingested').length;
   const skipped = queue.filter(q => q.state === 'skipped').length;
   const danger = queue.filter(q => q.state === 'danger').length;
+  // チャンク単位の総数
+  let totalChunks = 0, includedChunks = 0;
+  for(const q of queue){
+    if(q.state !== 'included') continue;
+    const chs = q.analysis.chunks || [];
+    totalChunks += chs.length;
+    includedChunks += chs.filter(c => !q.excluded?.has(c.chunk_id)).length;
+  }
   summary.innerHTML = `<b>${queue.length}件解析</b> · 取り込み対象 <b style="color:#1a73e8">${inc}件</b>` +
+    (totalChunks ? ` (チャンク <b>${includedChunks}/${totalChunks}</b>)` : '') +
     (ingested ? ` · 取り込み済み ${ingested}件` : '') +
     (skipped ? ` · スキップ ${skipped}件` : '') +
     (danger ? ` · <span style="color:#dc2626">危険判定 ${danger}件</span>` : '');
-  confirmBtn.disabled = inc === 0;
-  confirmBtn.textContent = `選択を確定して取り込む (${inc}件)`;
+  confirmBtn.disabled = inc === 0 || includedChunks === 0;
+  confirmBtn.textContent = `選択を確定して取り込む (${includedChunks}チャンク)`;
 }
 
 function renderConcerns(f){
@@ -666,11 +696,26 @@ function renderConcerns(f){
 }
 
 function renderCard(item){
-  const {file, analysis} = item;
+  const {analysis} = item;
   const card = document.createElement('div');
   item.card = card;
-  const previewHtml = (analysis.preview||[]).slice(0,2)
-    .map(p => `<div style="color:#6b7280;font-size:11px;padding:4px 0;border-top:1px solid #f3f4f6">${escape(p.slice(0,120))}…</div>`).join('');
+
+  // チャンク単位の除外を初期化: danger チャンクは自動除外
+  if(!item.excluded){
+    item.excluded = new Set();
+    for(const c of (analysis.chunks||[])){
+      if(c.recommendation === 'danger') item.excluded.add(c.chunk_id);
+    }
+  }
+  const flagBadge = (rec) => {
+    if(rec === 'ok') return `<span class="chunk-flag ok">✓ OK</span>`;
+    if(rec === 'warn') return `<span class="chunk-flag warn">⚠ 要確認</span>`;
+    if(rec === 'danger') return `<span class="chunk-flag danger">✕ 危険</span>`;
+    return '';
+  };
+  const dangerChunks = (analysis.chunks||[]).filter(c => c.recommendation === 'danger').length;
+  const warnChunks = (analysis.chunks||[]).filter(c => c.recommendation === 'warn').length;
+
   card.innerHTML = `
     <div class="fc-header">
       <div class="fc-title">
@@ -685,28 +730,85 @@ function renderCard(item){
     <dl class="fc-grid">
       <dt>判定理由</dt><dd>${escape(analysis.reason)}</dd>
       <dt>検出された懸念</dt><dd>${renderConcerns(analysis)}</dd>
-      ${previewHtml ? `<dt>プレビュー</dt><dd>${previewHtml}</dd>` : ''}
+      <dt>チャンク内訳</dt><dd>OK ${analysis.n_chunks - warnChunks - dangerChunks} / 要確認 ${warnChunks} / 危険 ${dangerChunks}</dd>
     </dl>
+    <details class="chunk-list">
+      <summary>📋 チャンク単位で確認・選択（${analysis.n_chunks}件）</summary>
+      <div class="bulk-ops">
+        <button data-op="all">全て取り込む</button>
+        <button data-op="exclude-warn">要確認チャンクを除外</button>
+        <button data-op="exclude-danger">危険チャンクのみ除外</button>
+        <button data-op="none">全てスキップ</button>
+      </div>
+      <div class="chunks-container"></div>
+    </details>
     <div class="fc-actions"></div>
   `;
-  const actions = card.querySelector('.fc-actions');
-  applyState(item);
-  if(analysis.recommendation === 'danger'){
-    const note = document.createElement('span');
-    note.className = 'fc-status';
-    note.textContent = '※ 危険判定のため取り込み対象から除外';
-    actions.appendChild(note);
-  } else {
-    const btnSkip = document.createElement('button');
-    btnSkip.textContent = item.state === 'skipped' ? '取り込み対象に戻す' : 'スキップ';
-    btnSkip.onclick = () => {
-      item.state = item.state === 'included' ? 'skipped' : 'included';
-      btnSkip.textContent = item.state === 'skipped' ? '取り込み対象に戻す' : 'スキップ';
-      applyState(item);
+
+  // チャンク行
+  const container = card.querySelector('.chunks-container');
+  for(const c of (analysis.chunks||[])){
+    const row = document.createElement('label');
+    row.className = 'chunk-row ' + c.recommendation;
+    if(item.excluded.has(c.chunk_id)) row.classList.add('excluded');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !item.excluded.has(c.chunk_id);
+    cb.onchange = () => {
+      if(cb.checked) item.excluded.delete(c.chunk_id);
+      else item.excluded.add(c.chunk_id);
+      row.classList.toggle('excluded', !cb.checked);
       updateSummary();
     };
-    actions.appendChild(btnSkip);
+    row.appendChild(cb);
+    const info = document.createElement('div');
+    info.className = 'chunk-info';
+    info.innerHTML = `
+      <span class="chunk-id">${escape(c.chunk_id)}</span>
+      ${flagBadge(c.recommendation)}
+      <div class="chunk-text">${escape(c.preview)}…</div>
+      ${c.reason && c.recommendation !== 'ok' ? `<div class="chunk-reason">⚠ ${escape(c.reason)}</div>` : ''}
+    `;
+    row.appendChild(info);
+    container.appendChild(row);
   }
+
+  // 一括操作
+  card.querySelectorAll('.bulk-ops button').forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      const op = btn.dataset.op;
+      item.excluded.clear();
+      for(const c of (analysis.chunks||[])){
+        if(op === 'none') item.excluded.add(c.chunk_id);
+        else if(op === 'exclude-warn' && (c.recommendation === 'warn' || c.recommendation === 'danger')) item.excluded.add(c.chunk_id);
+        else if(op === 'exclude-danger' && c.recommendation === 'danger') item.excluded.add(c.chunk_id);
+      }
+      // 行のチェックボックス更新
+      container.querySelectorAll('.chunk-row').forEach((row, i) => {
+        const cid = analysis.chunks[i].chunk_id;
+        const cb = row.querySelector('input[type=checkbox]');
+        cb.checked = !item.excluded.has(cid);
+        row.classList.toggle('excluded', !cb.checked);
+      });
+      updateSummary();
+    };
+  });
+
+  const actions = card.querySelector('.fc-actions');
+  applyState(item);
+  const btnSkip = document.createElement('button');
+  const updateSkipLabel = () => {
+    btnSkip.textContent = item.state === 'skipped' ? '取り込み対象に戻す' : 'ファイル全体をスキップ';
+  };
+  updateSkipLabel();
+  btnSkip.onclick = () => {
+    item.state = item.state === 'included' ? 'skipped' : 'included';
+    updateSkipLabel();
+    applyState(item);
+    updateSummary();
+  };
+  actions.appendChild(btnSkip);
   return card;
 }
 
@@ -739,7 +841,9 @@ async function analyzeFile(file){
       return;
     }
     const analysis = await r.json();
-    const state = analysis.recommendation === 'danger' ? 'danger' : 'included';
+    // ファイル全体が danger でも、安全なチャンクが残るなら included にする（チャンク除外で対応）
+    const hasNonDanger = (analysis.chunks||[]).some(c => c.recommendation !== 'danger');
+    const state = (analysis.recommendation === 'danger' && !hasNonDanger) ? 'danger' : 'included';
     const item = {id: ++nextId, file, analysis, state};
     queue.push(item);
     pending.replaceWith(renderCard(item));
@@ -754,21 +858,30 @@ confirmBtn.onclick = async () => {
   if(!targets.length) return;
   confirmBtn.disabled = true;
   confirmBtn.innerHTML = '<span class="spinner"></span>取り込み中…';
-  let success = 0, failed = 0;
+  let success = 0, failed = 0, ingestedChunks = 0;
   for(const item of targets){
     item.card.classList.add('included');
+    const includedChunks = (item.analysis.chunks||[]).filter(c => !item.excluded?.has(c.chunk_id));
+    if(includedChunks.length === 0){
+      item.state = 'skipped';
+      continue;
+    }
     const fd = new FormData();
     fd.append('file', item.file);
+    const excludedIds = Array.from(item.excluded || []).join(',');
+    const url = '/api/admin/ingest?excluded_chunk_ids=' + encodeURIComponent(excludedIds);
     try {
-      const r = await fetch('/api/admin/ingest', {method:'POST', body:fd});
+      const r = await fetch(url, {method:'POST', body:fd});
       if(!r.ok) throw new Error((await r.json()).detail || r.statusText);
       const d = await r.json();
       item.state = 'ingested';
       item.card.classList.remove('included');
-      item.card.querySelector('.fc-badge').textContent = `✓ 取り込み済み (${d.ingested_chunks}チャンク)`;
+      const excludedNote = d.excluded_chunks > 0 ? ` (${d.excluded_chunks}チャンク除外)` : '';
+      item.card.querySelector('.fc-badge').textContent = `✓ 取り込み済み (${d.ingested_chunks}チャンク${excludedNote})`;
       item.card.querySelector('.fc-badge').className = 'fc-badge ok';
       item.card.querySelector('.fc-actions').innerHTML = '';
       success++;
+      ingestedChunks += d.ingested_chunks;
     } catch(e) {
       const err = document.createElement('div');
       err.className = 'error-msg';
@@ -778,8 +891,7 @@ confirmBtn.onclick = async () => {
     }
   }
   updateSummary();
-  confirmBtn.disabled = (queue.filter(q => q.state === 'included').length === 0);
-  alert(`取り込み完了: ${success}件成功 / ${failed}件失敗`);
+  alert(`取り込み完了: ${success}件成功 (${ingestedChunks}チャンク) / ${failed}件失敗`);
 };
 
 fi.onchange = e => { for(const f of e.target.files) analyzeFile(f); fi.value=''; };
@@ -866,7 +978,11 @@ async def admin_reload(user: dict = Depends(require_user)):
 
 @app.post("/api/admin/analyze")
 async def admin_analyze(file: UploadFile = File(...), user: dict = Depends(require_user)):
-    """ファイルをパース・スキャンしクレンジング結果を返す（DB書き込みなし）。"""
+    """ファイルをパース・スキャンしクレンジング結果を返す（DB書き込みなし）。
+
+    レスポンスにはファイル全体の判定 + 各チャンクの個別判定を含む。
+    UI 側はチャンク単位で「取り込む / スキップ」を選べる。
+    """
     content = await file.read()
     if len(content) > 50 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="50MB を超えるファイルは未対応")
@@ -881,6 +997,20 @@ async def admin_analyze(file: UploadFile = File(...), user: dict = Depends(requi
         sha256=result.sha256[:12],
         recommendation=result.recommendation,
     )
+    chunks_payload = []
+    for c, cf in zip(result.chunks, result.chunk_findings):
+        chunks_payload.append({
+            "chunk_id": c.chunk_id,
+            "text": c.text,
+            "preview": c.text[:160],
+            "recommendation": cf.recommendation,
+            "reason": cf.reason,
+            "findings": {
+                "pii_counts": cf.pii_counts,
+                "confidential_markers": cf.confidential_markers,
+                "name_candidates": cf.name_candidates,
+            },
+        })
     return {
         "filename": result.filename,
         "sha256": result.sha256,
@@ -894,35 +1024,50 @@ async def admin_analyze(file: UploadFile = File(...), user: dict = Depends(requi
         },
         "recommendation": result.recommendation,
         "reason": result.reason,
-        "preview": [c.text[:200] for c in result.chunks[:3]],
+        "chunks": chunks_payload,
     }
-
-
-class IngestRequest(BaseModel):
-    apply_masking: bool = True
 
 
 @app.post("/api/admin/ingest")
 async def admin_ingest(
-    payload: IngestRequest = IngestRequest(),
     file: UploadFile = File(...),
+    apply_masking: bool = True,
+    excluded_chunk_ids: str = "",  # カンマ区切り
+    force: bool = False,
     user: dict = Depends(require_user),
 ):
-    """ファイルを取り込み FAQマスターに保存。マスキング適用後にインデックス更新。"""
+    """ファイルを取り込み FAQマスターに保存。
+
+    Args:
+      excluded_chunk_ids: カンマ区切りのチャンクID一覧。これらは取り込み対象から外す
+      force: True なら danger 判定の文書でも除外チャンク後の残りを取り込む
+    """
     content = await file.read()
     try:
         result = ingest_analyze(file.filename or "uploaded", content, settings.masking_industry)
     except ValueError as e:
         raise HTTPException(status_code=415, detail=str(e))
-    if result.recommendation == "danger":
-        raise HTTPException(
-            status_code=400,
-            detail=f"取り込み非推奨のため拒否: {result.reason}",
-        )
+
+    excluded = {x.strip() for x in excluded_chunk_ids.split(",") if x.strip()}
+
+    # ファイル全体が danger でも、危険チャンクを除外すれば OK な場合は取り込み可
+    if result.recommendation == "danger" and not force:
+        # 危険チャンクが全て excluded に含まれているかチェック
+        danger_chunks = {
+            c.chunk_id for c, cf in zip(result.chunks, result.chunk_findings)
+            if cf.recommendation == "danger"
+        }
+        if not danger_chunks.issubset(excluded):
+            raise HTTPException(
+                status_code=400,
+                detail=f"取り込み非推奨のため拒否: {result.reason} "
+                       f"（危険判定のチャンク {len(danger_chunks - excluded)} 件を除外して再試行してください）",
+            )
     n = ingest_commit(
         result, settings.faq_master_dir,
-        apply_masking=payload.apply_masking,
+        apply_masking=apply_masking,
         industry=settings.masking_industry,
+        excluded_chunk_ids=excluded,
     )
     reload_index()
     audit.record(
@@ -931,9 +1076,15 @@ async def admin_ingest(
         filename=result.filename,
         sha256=result.sha256[:12],
         n_chunks=n,
-        masked=payload.apply_masking,
+        excluded_count=len(excluded),
+        masked=apply_masking,
     )
-    return {"ingested_chunks": n, "filename": result.filename, "recommendation": result.recommendation}
+    return {
+        "ingested_chunks": n,
+        "excluded_chunks": len(excluded),
+        "filename": result.filename,
+        "recommendation": result.recommendation,
+    }
 
 
 @app.get("/healthz")
