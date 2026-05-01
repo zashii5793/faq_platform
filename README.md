@@ -203,7 +203,11 @@ pytest
 ## ロードマップ・関連文書
 
 - [ROADMAP.md](./ROADMAP.md) — 全体ロードマップ（Phase 1〜3）
+- **[docs/setup_guide_mac.md](./docs/setup_guide_mac.md) — Mac セットアップ詳細手順（初心者向け）**
+- **[docs/product_assessment.md](./docs/product_assessment.md) — プロダクト評価（使えるか？の正直な答え）**
+- [docs/architecture_report.md](./docs/architecture_report.md) — アーキテクチャ解説（非エンジニア向け）
 - [docs/specification.md](./docs/specification.md) — 技術仕様書
+- [docs/ui_specification.md](./docs/ui_specification.md) — UI設計仕様
 - [docs/business_analysis.md](./docs/business_analysis.md) — ビジネス用途分析
 - [docs/requirements_demo_education.md](./docs/requirements_demo_education.md) — 教育系A社様 導入事例
 
