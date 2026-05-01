@@ -414,12 +414,24 @@ class AskResponse(BaseModel):
 
 
 def _compute_confidence(scored_chunks: list[tuple]) -> int:
-    """top-score とサポート件数から確信度（0-100）を算出。"""
+    """top-score とサポート件数から確信度（0-100）を算出。
+
+    判定ロジック:
+      - top-1 < min_score_threshold → 0 (NO ANSWER)
+      - top-1 が中程度 (< 0.18) かつ top-2/top-1 比率が小さい (< 0.3) → 0
+        ＝ 1位だけ突出した単発ノイズマッチを排除
+      - それ以外は base = 30 + top × 250 (cap 95) + 関連件数ボーナス
+    """
     if not scored_chunks:
         return 0
     top = scored_chunks[0][1]
     if top < settings.min_score_threshold:
         return 0
+    # 突出ノイズ判定: 上位スコアが弱め＋差が大きい場合
+    if top < 0.18 and len(scored_chunks) >= 2:
+        second = scored_chunks[1][1]
+        if second / top < 0.3:
+            return 0
     base = min(95, int(30 + top * 250))
     relevant = sum(1 for _, s in scored_chunks if s >= settings.min_score_threshold)
     return min(98, base + max(0, relevant - 1) * 3)

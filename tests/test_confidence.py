@@ -39,6 +39,23 @@ def test_confidence_capped_at_98():
     assert c <= 98
 
 
+def test_confidence_zero_for_isolated_noise():
+    """1位だけ突出して2位以下が極端に低い場合は NO ANSWER。
+
+    実例: 「天気は？」のような無関係な質問が、共通の助詞・名詞で
+    1つの文書だけに弱マッチする現象を弾く。
+    """
+    # top=0.15 (中程度), second=0.03 → 比率0.2 で突出ノイズ
+    assert _compute_confidence(_scored([0.15, 0.03, 0.01])) == 0
+
+
+def test_confidence_passes_when_multiple_supporting():
+    """複数文書から関連情報が見つかれば top が中程度でも回答可。"""
+    # top=0.15, second=0.10 → 比率0.67 で正常
+    c = _compute_confidence(_scored([0.15, 0.10, 0.08]))
+    assert c > 0
+
+
 def test_ask_returns_no_answer_when_score_too_low(monkeypatch, tmp_path):
     """関連性が低い場合 LLM を呼ばずに NO_ANSWER を返す（ハルシネーション抑制）。"""
     # 空のFAQマスターディレクトリ → 検索結果ゼロ → confidence=0
