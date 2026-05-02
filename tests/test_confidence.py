@@ -40,17 +40,27 @@ def test_confidence_capped_at_98():
 
 
 def test_confidence_zero_for_isolated_noise():
-    """1位だけ突出して2位以下が極端に低い場合は NO ANSWER。
+    """top1が低め(<0.12)かつ2位以下が極端に低い → ノイズ扱いで NO ANSWER。
 
-    実例: 「天気は？」のような無関係な質問が、共通の助詞・名詞で
+    実例: 「天気は？」のような無関係な質問が、共通の助詞で
     1つの文書だけに弱マッチする現象を弾く。
     """
-    # top=0.15 (中程度), second=0.03 → 比率0.2 で突出ノイズ
-    assert _compute_confidence(_scored([0.15, 0.03, 0.01])) == 0
+    # top=0.10 (低め), second=0.02 → 比率0.2 で突出ノイズ
+    assert _compute_confidence(_scored([0.10, 0.02, 0.01])) == 0
+
+
+def test_confidence_passes_when_top_is_decent():
+    """top1 が 0.12 以上なら、2位以下が低くても正解1件ヒットとみなす。
+
+    実例: ニッチな質問で関連文書が1つしかないケースを救う。
+    """
+    # top=0.15, second=0.02 → 旧ロジックでは弾かれていたが新ロジックでは回答可
+    c = _compute_confidence(_scored([0.15, 0.02, 0.01]))
+    assert c > 0
 
 
 def test_confidence_passes_when_multiple_supporting():
-    """複数文書から関連情報が見つかれば top が中程度でも回答可。"""
+    """複数文書から関連情報が見つかれば回答可。"""
     # top=0.15, second=0.10 → 比率0.67 で正常
     c = _compute_confidence(_scored([0.15, 0.10, 0.08]))
     assert c > 0

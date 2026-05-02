@@ -108,6 +108,7 @@ def _split_text(text: str, max_chars: int = 350) -> list[str]:
       1. Markdown 見出し (## / ### で始まる行) は必ず新チャンクの境界
       2. それ以外は段落（空行2つ）単位で結合し、max_chars を超えたら分割
       3. 1つのチャンクが max_chars * 1.5 を超える場合は強制改行
+      4. 空白のみのチャンクは破棄
     """
     lines = text.split("\n")
     sections: list[str] = []
@@ -139,7 +140,24 @@ def _split_text(text: str, max_chars: int = 350) -> list[str]:
                 cur = p
         if cur:
             chunks.append(cur)
-    return chunks or [text]
+    # 最終フィルタ: 空・空白のみのチャンクは破棄
+    return [c for c in chunks if c.strip()]
+
+
+def _safe_filename(filename: str) -> str:
+    """アップロードファイル名を安全化:
+    - ディレクトリトラバーサル（../, ./）を防ぐためベース名のみ取得
+    - スラッシュ・バックスラッシュを除去
+    - 制御文字を除去
+    - 空文字なら 'unnamed.txt'
+    """
+    import os
+    # パス区切りを除去（path traversal対策）
+    safe = os.path.basename(filename.replace("\\", "/").replace("\0", ""))
+    # 制御文字除去
+    safe = "".join(c for c in safe if ord(c) >= 32)
+    safe = safe.strip()
+    return safe or "unnamed.txt"
 
 
 def _parse_text(filename: str, content: str) -> list[Chunk]:
@@ -235,6 +253,7 @@ def _parse_pptx(filename: str, content: bytes) -> list[Chunk]:
 
 
 def parse(filename: str, content: bytes) -> list[Chunk]:
+    filename = _safe_filename(filename)
     fmt = _detect_format(filename)
     if fmt in ("markdown", "text", "json"):
         return _parse_text(filename, content.decode("utf-8", errors="replace"))
@@ -331,15 +350,20 @@ def assess(findings: FileFindings, n_chunks: int) -> tuple[Recommendation, str]:
 # 全体パイプライン
 # =====================================================
 def analyze(filename: str, content: bytes, industry: str = "general") -> FileAnalysis:
-    chunks = parse(filename, content)
+    safe_name = _safe_filename(filename)
+    chunks = parse(safe_name, content)
     findings = scan_findings(chunks, industry)
     chunk_findings = scan_chunk_findings(chunks, industry)
     rec, reason = assess(findings, len(chunks))
+    # 内容が無い場合の特別ケース
+    if not chunks:
+        rec = "warn"
+        reason = "テキストを抽出できませんでした（空ファイル / 画像のみPDF / 空 Excel 等の可能性）"
     return FileAnalysis(
-        filename=filename,
+        filename=safe_name,
         sha256=hashlib.sha256(content).hexdigest(),
         size_bytes=len(content),
-        format=_detect_format(filename),
+        format=_detect_format(safe_name),
         chunks=chunks,
         findings=findings,
         recommendation=rec,

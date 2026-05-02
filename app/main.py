@@ -27,6 +27,25 @@ async def home(request: Request) -> HTMLResponse:
     return HTMLResponse(_chat_page(user_email))
 
 
+def _demo_banner_html() -> str:
+    """DEMO_MODE 中、かつ APIキー未設定の場合の警告。"""
+    if not settings.demo_mode:
+        return ""
+    if not settings.anthropic_api_key:
+        return (
+            '<div class="demo-banner">'
+            '🚧 <b>デモモード</b>（APIキー未設定）— 回答は <b>ローカルモードのスタブ</b> です。'
+            '実際の Claude 回答を見るには <code>.env</code> に '
+            '<code>ANTHROPIC_API_KEY=sk-ant-...</code> を設定して再起動してください。'
+            '</div>'
+        )
+    return (
+        '<div class="demo-banner" style="background:#dbeafe;border-color:#93c5fd;color:#1e40af">'
+        '🧪 <b>デモモード</b>（認証なし）— 本番運用前に <code>DEMO_MODE</code> を外してください。'
+        '</div>'
+    )
+
+
 def _login_page() -> str:
     return f"""<!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
@@ -97,6 +116,10 @@ aside{{width:280px;background:#fff;border-right:1px solid #e5e7eb;display:flex;f
 .empty-list{{font-size:11px;color:#9ca3af;font-style:italic}}
 
 main{{flex:1;display:flex;flex-direction:column;min-width:0}}
+.demo-banner{{background:#fef3c7;color:#92400e;padding:8px 14px;font-size:12px;
+              border-bottom:1px solid #fcd34d;text-align:center}}
+.demo-banner b{{font-weight:600}}
+.demo-banner a{{color:#1e40af;text-decoration:underline}}
 header{{background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 24px;
        display:flex;justify-content:space-between;align-items:center}}
 header .org{{font-size:14px;font-weight:600;color:#1f2937}}
@@ -220,6 +243,7 @@ button.send:disabled{{background:#9ca3af}}
     <div class="org">{settings.org_name}の{settings.assistant_role}</div>
     <div class="user">{user_email}<a href="/auth/logout">ログアウト</a></div>
   </header>
+  {_demo_banner_html()}
   <div class="scrim" id="scrim"></div>
 
   <div class="chat" id="chat">
@@ -418,8 +442,8 @@ def _compute_confidence(scored_chunks: list[tuple]) -> int:
 
     判定ロジック:
       - top-1 < min_score_threshold → 0 (NO ANSWER)
-      - top-1 が中程度 (< 0.18) かつ top-2/top-1 比率が小さい (< 0.3) → 0
-        ＝ 1位だけ突出した単発ノイズマッチを排除
+      - top-1 が低め (< 0.12) かつ top-2/top-1 比率が小さい (< 0.3) → 0
+        ＝ ノイズマッチを排除（top1 が中以上ならノイズではなく正解1件ヒットと判断）
       - それ以外は base = 30 + top × 250 (cap 95) + 関連件数ボーナス
     """
     if not scored_chunks:
@@ -427,8 +451,9 @@ def _compute_confidence(scored_chunks: list[tuple]) -> int:
     top = scored_chunks[0][1]
     if top < settings.min_score_threshold:
         return 0
-    # 突出ノイズ判定: 上位スコアが弱め＋差が大きい場合
-    if top < 0.18 and len(scored_chunks) >= 2:
+    # 突出ノイズ判定: top1 が弱く（< 0.12）2位との差が極端な場合のみ
+    # 0.12 以上は正解1件にヒットしている可能性が高いので回答に進める
+    if top < 0.12 and len(scored_chunks) >= 2:
         second = scored_chunks[1][1]
         if second / top < 0.3:
             return 0
