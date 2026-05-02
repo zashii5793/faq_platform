@@ -80,6 +80,9 @@ def main() -> int:
 
     chunks = load_chunks(faq_dir)
     print(f"📚 取り込み済み: {len(set(c.source for c in chunks))} 文書 / {len(chunks)} チャンク")
+    print(f"🔧 検索バックエンド: {settings.embedding_backend}")
+    if settings.embedding_backend in ("e5-small", "e5-base", "e5-large"):
+        print("   （初回は HuggingFace からモデル DL されます）")
     print()
     index = FaqIndex(chunks)
 

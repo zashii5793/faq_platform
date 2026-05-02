@@ -27,6 +27,11 @@ class Settings(BaseSettings):
 
     masking_industry: str = "general"
 
+    # 検索バックエンド: tfidf (デフォルト・軽量) / e5-small / e5-large / e5-base
+    embedding_backend: str = "tfidf"
+    # Embedding 使用時のキャッシュ保存先
+    embedding_cache_path: Path = Path("./data/embeddings.npz")
+
     # 確信度: top-1 スコアがこの値未満ならLLM呼び出しを行わず「該当情報なし」を返す
     # TF-IDF char_wb の経験値: 関連質問は 0.15+, ノイズマッチは 0.05-0.07 程度
     min_score_threshold: float = 0.08

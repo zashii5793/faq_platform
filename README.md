@@ -102,6 +102,33 @@ HOST=0.0.0.0 ./scripts/demo.sh
 
 ---
 
+---
+
+## 🔬 検索精度を上げる（Embedding 切替・任意）
+
+デフォルトは TF-IDF（モデルDL不要・軽量）ですが、精度を上げたい場合は **multilingual-e5** に切替可能：
+
+```bash
+# 1. embedding 用の依存をインストール
+pip install -e ".[embedding]"
+
+# 2. 環境変数で指定して起動（小: 470MB / 大: 2.2GB）
+EMBEDDING_BACKEND=e5-small ./scripts/demo_takaya.sh
+# または
+EMBEDDING_BACKEND=e5-large ./scripts/demo_takaya.sh
+```
+
+| バックエンド | モデルサイズ | 精度 | 起動時間 | メモリ |
+|---|---|---|---|---|
+| `tfidf` (デフォルト) | 0 | 中 (74%) | 即時 | 軽量 |
+| `e5-small` | 470MB | 高 | 初回30秒 | 1〜2GB |
+| `e5-large` | 2.2GB | 最高 | 初回2〜5分 | 4〜6GB |
+
+> 初回起動時のみ HuggingFace からモデルがダウンロードされます（以降キャッシュ）。
+> ベクトル化結果は `data/embeddings.npz` に保存され、文書追加時のみ再計算されます。
+
+---
+
 ## トラブルシューティング
 
 | 症状 | 対処 |

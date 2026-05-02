@@ -29,6 +29,10 @@ dev = [
     "httpx>=0.27",
     "ruff>=0.7",
 ]
+embedding = [
+    "sentence-transformers>=3.0",
+    "torch>=2.0",
+]
 
 [tool.setuptools]
 packages = ["app"]

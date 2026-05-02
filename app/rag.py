@@ -1,11 +1,16 @@
-"""簡易 RAG。FAQマスター（テキスト/Markdown/CSV）を読み込み、TF-IDF で検索する PoC 実装。
+"""RAG 検索エンジン。2つのバックエンドから選択可能。
 
-本番では Embedding（multilingual-e5-large 等）に差し替える前提（ROADMAP Task 1.1）。
+バックエンド:
+  - "tfidf": 文字bigram の TF-IDF（軽量・モデルDL不要・PoC向け）
+  - "e5-small" / "e5-base" / "e5-large": multilingual-e5 (semantic search)
+    初回起動時に HuggingFace から モデル DL（small=470MB / large=2.2GB）
 
-学習機能:
-  - フィードバック（👍/👎）から各文書のスコアブーストを学習
-  - 検索時に raw_score × (1 + 0.15 * tanh(net_votes / 5)) で再ランキング
-  - 永続化は data/feedback_scores.json（簡易版）
+切替:
+  環境変数 EMBEDDING_BACKEND=e5-small で起動
+
+学習機能（共通）:
+  - 👍/👎 から各文書のスコアブーストを学習（±15%倍率）
+  - 永続化: data/feedback_scores.json
 """
 from __future__ import annotations
 
@@ -104,23 +109,120 @@ def _boost_factor(source: str, fb: dict[str, dict[str, int]]) -> float:
     return 1.0 + 0.15 * math.tanh(net / 5.0)
 
 
+_E5_MODEL_NAMES = {
+    "e5-small": "intfloat/multilingual-e5-small",
+    "e5-base": "intfloat/multilingual-e5-base",
+    "e5-large": "intfloat/multilingual-e5-large",
+}
+
+
+class _TfidfBackend:
+    """文字bigram TF-IDF。モデルDL不要、起動高速。"""
+
+    def __init__(self, chunks: list[Chunk]):
+        self.chunks = chunks
+        if not chunks:
+            self.vectorizer = None
+            self.matrix = None
+            return
+        self.vectorizer = TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 3))
+        self.matrix = self.vectorizer.fit_transform([c.text for c in chunks])
+
+    def raw_search(self, query: str) -> np.ndarray:
+        if self.vectorizer is None:
+            return np.array([])
+        q = self.vectorizer.transform([query])
+        return (self.matrix @ q.T).toarray().ravel()
+
+
+class _E5Backend:
+    """multilingual-e5 semantic search。
+
+    e5 系モデルは passage と query で異なるプレフィックスを使うのが推奨:
+      - encode passage: "passage: <text>"
+      - encode query:   "query: <text>"
+    """
+
+    def __init__(self, chunks: list[Chunk], model_name: str):
+        self.chunks = chunks
+        if not chunks:
+            self.model = None
+            self.embeddings = None
+            return
+        # 遅延 import（embedding 不要環境では import エラーを起こさない）
+        from sentence_transformers import SentenceTransformer
+
+        self.model = SentenceTransformer(model_name)
+        # キャッシュから読み込み or 新規計算
+        self.embeddings = self._load_or_encode(chunks)
+
+    def _load_or_encode(self, chunks: list[Chunk]) -> np.ndarray:
+        cache = settings.embedding_cache_path
+        cache_key = self._cache_key(chunks)
+        if cache.exists():
+            try:
+                data = np.load(cache, allow_pickle=False)
+                if data.get("key", np.array([""]))[0] == cache_key:
+                    return data["embeddings"]
+            except Exception:  # noqa: BLE001
+                pass
+        passages = [f"passage: {c.text}" for c in chunks]
+        embeddings = self.model.encode(
+            passages, normalize_embeddings=True, show_progress_bar=False
+        ).astype(np.float32)
+        # キャッシュ保存
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        np.savez(cache, key=np.array([cache_key]), embeddings=embeddings)
+        return embeddings
+
+    @staticmethod
+    def _cache_key(chunks: list[Chunk]) -> str:
+        """チャンク内容のハッシュ（再構築検出用）。"""
+        import hashlib
+
+        h = hashlib.sha256()
+        for c in chunks:
+            h.update(c.chunk_id.encode("utf-8"))
+            h.update(c.text.encode("utf-8"))
+        return h.hexdigest()
+
+    def raw_search(self, query: str) -> np.ndarray:
+        if self.model is None or self.embeddings is None:
+            return np.array([])
+        q_vec = self.model.encode(
+            [f"query: {query}"], normalize_embeddings=True, show_progress_bar=False
+        ).astype(np.float32)[0]
+        # コサイン類似度（既に L2 正規化済みなので内積でOK）
+        return self.embeddings @ q_vec
+
+
+def _make_backend(chunks: list[Chunk]):
+    """設定に応じて検索バックエンドを構築。"""
+    backend = settings.embedding_backend.lower()
+    if backend in _E5_MODEL_NAMES:
+        try:
+            return _E5Backend(chunks, _E5_MODEL_NAMES[backend])
+        except Exception as e:  # noqa: BLE001
+            import warnings
+            warnings.warn(
+                f"Embedding バックエンド初期化失敗 ({e}), TF-IDF にフォールバック",
+                stacklevel=2,
+            )
+    return _TfidfBackend(chunks)
+
+
 class FaqIndex:
     def __init__(self, chunks: list[Chunk]):
         self.chunks = chunks
-        if chunks:
-            self.vectorizer = TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 3))
-            self.matrix = self.vectorizer.fit_transform([c.text for c in chunks])
-        else:
-            self.vectorizer = None
-            self.matrix = None
+        self.backend = _make_backend(chunks)
 
     def search(self, query: str, top_k: int = 5) -> list[tuple[Chunk, float]]:
         """検索 + フィードバック学習によるスコアブースト。"""
-        if not self.chunks or self.vectorizer is None:
+        if not self.chunks:
             return []
-        q = self.vectorizer.transform([query])
-        raw_scores = (self.matrix @ q.T).toarray().ravel()
-
+        raw_scores = self.backend.raw_search(query)
+        if len(raw_scores) == 0:
+            return []
         # フィードバック学習: source ごとのブースト適用
         fb = _load_feedback()
         boosted = np.array([
