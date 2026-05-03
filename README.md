@@ -230,8 +230,10 @@ pytest
 ## ロードマップ・関連文書
 
 - [ROADMAP.md](./ROADMAP.md) — 全体ロードマップ（Phase 1〜3）
+- **[docs/blog_post.md](./docs/blog_post.md) — ブログ記事（note/Zenn/Qiita 掲載用）**
 - **[docs/customer_proposal.md](./docs/customer_proposal.md) — 顧客提案資料テンプレ**
 - **[docs/practical_test_report.md](./docs/practical_test_report.md) — 実用テスト 8シナリオ評価**
+- **[docs/api_cost_analysis.md](./docs/api_cost_analysis.md) — API コスト試算と無料運用設計**
 - **[docs/product_assessment.md](./docs/product_assessment.md) — プロダクト評価**
 
 ### セットアップ手順
