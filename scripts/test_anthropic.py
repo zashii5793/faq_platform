@@ -98,9 +98,9 @@ def main() -> int:
     print("✅ APIキーは正常に動作しています。本番モードで起動できます:")
     print()
     print(f"   ANTHROPIC_API_KEY={api_key[:12]}... \\")
-    print(f"   FAQ_MASTER_DIR=./data/takaya_faq \\")
-    print(f"   ORG_NAME='タカヤモーター株式会社' \\")
-    print(f"   uvicorn app.main:app --host 127.0.0.1 --port 8000")
+    print("   FAQ_MASTER_DIR=./data/takaya_faq \\")
+    print("   ORG_NAME='タカヤモーター株式会社' \\")
+    print("   uvicorn app.main:app --host 127.0.0.1 --port 8000")
     return 0
 
 

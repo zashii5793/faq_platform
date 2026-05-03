@@ -230,14 +230,32 @@ pytest
 ## ロードマップ・関連文書
 
 - [ROADMAP.md](./ROADMAP.md) — 全体ロードマップ（Phase 1〜3）
-- **[docs/setup_guide_mac.md](./docs/setup_guide_mac.md) — Mac セットアップ詳細手順（初心者向け）**
-- **[docs/api_key_setup.md](./docs/api_key_setup.md) — Anthropic API キーの取得・確認・テスト**
-- **[docs/product_assessment.md](./docs/product_assessment.md) — プロダクト評価（使えるか？の正直な答え）**
+- **[docs/customer_proposal.md](./docs/customer_proposal.md) — 顧客提案資料テンプレ**
+- **[docs/practical_test_report.md](./docs/practical_test_report.md) — 実用テスト 8シナリオ評価**
+- **[docs/product_assessment.md](./docs/product_assessment.md) — プロダクト評価**
+
+### セットアップ手順
+
+- [docs/setup_guide_mac.md](./docs/setup_guide_mac.md) — Mac 開発環境
+- [docs/api_key_setup.md](./docs/api_key_setup.md) — Anthropic API キー
+- **[docs/google_oauth_setup.md](./docs/google_oauth_setup.md) — Google OAuth 設定**
+- **[docs/https_deployment.md](./docs/https_deployment.md) — HTTPS デプロイ手順**
+
+### 設計・仕組み
+
 - [docs/architecture_report.md](./docs/architecture_report.md) — アーキテクチャ解説（非エンジニア向け）
 - [docs/specification.md](./docs/specification.md) — 技術仕様書
 - [docs/ui_specification.md](./docs/ui_specification.md) — UI設計仕様
 - [docs/business_analysis.md](./docs/business_analysis.md) — ビジネス用途分析
 - [docs/requirements_demo_education.md](./docs/requirements_demo_education.md) — 教育系A社様 導入事例
+
+### スクリプト・ツール
+
+- [scripts/demo_takaya.sh](./scripts/demo_takaya.sh) — タカヤモーター想定デモ起動
+- [scripts/test_anthropic.py](./scripts/test_anthropic.py) — API キー疎通確認
+- **[scripts/production_smoke_test.py](./scripts/production_smoke_test.py) — 本番動作確認（実回答品質テスト）**
+- [scripts/benchmark_search.py](./scripts/benchmark_search.py) — 検索精度ベンチマーク
+- [scripts/classify_tickets.py](./scripts/classify_tickets.py) — チケット自動分類
 
 ## セキュリティ要点
 
