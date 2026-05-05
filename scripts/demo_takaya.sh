@@ -16,9 +16,41 @@ echo ""
 
 # 環境チェック（最低限）
 if ! command -v "$PYTHON" >/dev/null 2>&1; then
-  echo "❌ ${PYTHON} が見つかりません。Python 3.11+ をインストールしてください"
+  echo "❌ ${PYTHON} が見つかりません。"
+  echo "   方法A: brew install python@3.11"
+  echo "   方法B: curl -LsSf https://astral.sh/uv/install.sh | sh"
   exit 1
 fi
+
+# Python バージョンチェック (3.11+)
+PY_VER=$("$PYTHON" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+PY_MAJ=$(echo "$PY_VER" | cut -d. -f1)
+PY_MIN=$(echo "$PY_VER" | cut -d. -f2)
+if [ "$PY_MAJ" -lt 3 ] || { [ "$PY_MAJ" -eq 3 ] && [ "$PY_MIN" -lt 11 ]; }; then
+  echo "❌ Python ${PY_VER} は古すぎます。3.11+ が必要です（faq-platform の依存条件）。"
+  echo ""
+  echo "解決策（一番ラクなのは uv）:"
+  echo ""
+  echo "  方法A: uv で Python 3.11 を自動 DL"
+  echo "    curl -LsSf https://astral.sh/uv/install.sh | sh"
+  echo "    # 新しいターミナルで:"
+  echo "    cd $(pwd)"
+  echo "    rm -rf .venv"
+  echo "    uv venv --python 3.11"
+  echo "    source .venv/bin/activate"
+  echo "    uv pip install -e \".[dev]\""
+  echo "    DEMO_MODE=1 FAQ_MASTER_DIR=./data/takaya_faq SESSION_SECRET=demo \\"
+  echo "      ORG_NAME=\"タカヤモーター株式会社\" ASSISTANT_ROLE=\"整備工場サポート\" \\"
+  echo "      uvicorn app.main:app --host 127.0.0.1 --port 8000"
+  echo ""
+  echo "  方法B: brew install python@3.11 してから"
+  echo "    rm -rf .venv && PYTHON=python3.11 ./scripts/demo_takaya.sh"
+  echo ""
+  echo "  方法C: Docker"
+  echo "    docker compose up --build"
+  exit 1
+fi
+echo "   Python ${PY_VER} ✓"
 
 # venv
 if [ ! -d .venv ]; then
