@@ -372,3 +372,82 @@ def test_feedback_down_reduces_ranking(client, monkeypatch, tmp_path):
     after_score = after["sources"][0]["score"]
     assert after_score < before_score, \
         f"👎でスコアが下がるべき: before={before_score}, after={after_score}"
+
+
+# ============================================================
+# シナリオ12: 取り込み済み文書のメンテナンス（一覧 / 削除）
+# ============================================================
+def test_documents_list_empty(client: TestClient):
+    """初期状態では空リストが返る。"""
+    r = client.get("/api/admin/documents")
+    assert r.status_code == 200
+    assert r.json() == {"documents": []}
+
+
+def test_documents_list_after_ingest(client: TestClient):
+    """取り込み後、文書一覧にメタデータ込みで現れる。"""
+    md = "# VPN手順\n\nFortiClient を起動してログイン。".encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("vpn.md", md, "text/markdown")})
+
+    r = client.get("/api/admin/documents")
+    assert r.status_code == 200
+    docs = r.json()["documents"]
+    assert len(docs) == 1
+    d = docs[0]
+    assert d["filename"] == "vpn.md"
+    assert d["size_bytes"] > 0
+    assert d["n_chunks"] >= 1
+    assert "modified_at" in d
+
+
+def test_document_delete_removes_from_index(client: TestClient):
+    """削除すると、ファイルもインデックスからも消え、検索ヒットしなくなる。"""
+    md = "# 部品発注\n\n締め時間は毎日17時です。".encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("parts.md", md, "text/markdown")})
+
+    # 取り込まれた状態で質問するとヒットする
+    before = client.post("/api/ask", json={"question": "部品発注の締め時間"}).json()
+    assert before["has_answer"] is True
+
+    # 削除
+    r = client.delete("/api/admin/documents/parts.md")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["deleted"] == "parts.md"
+    assert body["n_chunks_after"] == 0
+
+    # 一覧から消える
+    r2 = client.get("/api/admin/documents")
+    assert r2.json()["documents"] == []
+
+    # 検索しても答えない（ハルシネーション抑制）
+    after = client.post("/api/ask", json={"question": "部品発注の締め時間"}).json()
+    assert after["has_answer"] is False
+
+
+def test_document_delete_path_traversal_blocked(client: TestClient):
+    """パストラバーサル攻撃は 400 で拒否される。"""
+    # `..` を含むパスは 400
+    r = client.delete("/api/admin/documents/..%2F..%2Fetc%2Fpasswd")
+    assert r.status_code == 400
+
+
+def test_document_delete_nonexistent_returns_404(client: TestClient):
+    """存在しないファイルの削除は 404。"""
+    r = client.delete("/api/admin/documents/nonexistent.md")
+    assert r.status_code == 404
+
+
+def test_document_delete_is_audit_logged(client: TestClient, tmp_path):
+    """削除イベントが監査ログに記録される。"""
+    from app import audit
+
+    md = "# テストFAQ\n\n削除テスト用。".encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("delete_me.md", md, "text/markdown")})
+    client.delete("/api/admin/documents/delete_me.md")
+
+    log = audit.read_recent(50)
+    delete_events = [e for e in log if e.get("event") == "delete_document"]
+    assert len(delete_events) == 1
+    assert delete_events[0]["filename"] == "delete_me.md"
+    assert delete_events[0]["size_bytes"] > 0
