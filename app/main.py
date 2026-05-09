@@ -630,6 +630,23 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
          vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .error-msg{color:#991b1b;font-size:12px;margin-top:6px}
+.doc-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+.doc-table th{text-align:left;color:#6b7280;font-weight:500;padding:8px 10px;
+              border-bottom:1px solid #e5e7eb;font-size:12px}
+.doc-table td{padding:10px;border-bottom:1px solid #f3f4f6;color:#111827}
+.doc-table tr:hover{background:#fafbfc}
+.doc-name{font-weight:500;word-break:break-all}
+.doc-meta{color:#9ca3af;font-size:11px}
+.doc-delete-btn{padding:6px 12px;background:#fff;color:#dc2626;border:1px solid #fecaca;
+                border-radius:6px;font-size:12px;cursor:pointer}
+.doc-delete-btn:hover{background:#fef2f2;border-color:#dc2626}
+.doc-delete-btn:disabled{opacity:.5;cursor:not-allowed}
+.doc-summary{padding:10px 12px;background:#f9fafb;border-radius:8px;font-size:12px;
+             color:#6b7280;margin-bottom:8px}
+.doc-summary b{color:#111827}
+@media (max-width:480px){
+  .doc-table th.col-modified,.doc-table td.col-modified{display:none}
+}
 </style></head><body>
 <div class="modal">
   <div class="modal-header">
@@ -657,6 +674,11 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
     <div class="step-title" style="margin-top:28px"><span class="step-num">2</span>クレンジング結果</div>
     <div id="results">
       <div class="empty-msg">ファイルをドロップすると、ここに解析結果が表示されます</div>
+    </div>
+
+    <div class="step-title" style="margin-top:32px"><span class="step-num">3</span>取り込み済み文書（メンテナンス）</div>
+    <div id="docs-section" style="font-size:13px;color:#6b7280">
+      <div class="empty-msg">読み込み中…</div>
     </div>
   </div>
   <div class="modal-footer">
@@ -923,6 +945,95 @@ fi.onchange = e => { for(const f of e.target.files) analyzeFile(f); fi.value='';
 ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover') }));
 ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover') }));
 dz.addEventListener('drop', e => { for(const f of e.dataTransfer.files) analyzeFile(f); });
+
+// === 取り込み済み文書一覧（メンテナンス） ===
+const docsSection = document.getElementById('docs-section');
+
+function fmtDate(iso){
+  try {
+    const d = new Date(iso);
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+    return `${y}-${m}-${day} ${hh}:${mm}`;
+  } catch(e) { return iso; }
+}
+
+async function loadDocuments(){
+  docsSection.innerHTML = '<div class="empty-msg"><span class="spinner"></span>読み込み中…</div>';
+  try {
+    const r = await fetch('/api/admin/documents');
+    if(!r.ok) throw new Error(r.statusText);
+    const d = await r.json();
+    renderDocuments(d.documents || []);
+  } catch(e) {
+    docsSection.innerHTML = `<div class="error-msg">読み込み失敗: ${escape(e.message)}</div>`;
+  }
+}
+
+function renderDocuments(docs){
+  if(!docs.length){
+    docsSection.innerHTML = '<div class="empty-msg">取り込み済み文書はまだありません</div>';
+    return;
+  }
+  const totalBytes = docs.reduce((s,d) => s + d.size_bytes, 0);
+  const totalChunks = docs.reduce((s,d) => s + d.n_chunks, 0);
+  const summary = `<div class="doc-summary"><b>${docs.length}文書</b> · 合計 <b>${fmtBytes(totalBytes)}</b> · チャンク <b>${totalChunks}</b></div>`;
+  const rows = docs.map(d => `
+    <tr data-filename="${escape(d.filename)}">
+      <td>
+        <div class="doc-name">${escape(d.filename)}</div>
+        <div class="doc-meta">${fmtBytes(d.size_bytes)} · ${d.n_chunks}チャンク</div>
+      </td>
+      <td class="col-modified" style="color:#6b7280;font-size:12px;white-space:nowrap">${fmtDate(d.modified_at)}</td>
+      <td style="text-align:right">
+        <button class="doc-delete-btn" data-filename="${escape(d.filename)}">削除</button>
+      </td>
+    </tr>
+  `).join('');
+  docsSection.innerHTML = summary + `
+    <table class="doc-table">
+      <thead><tr>
+        <th>ファイル名</th>
+        <th class="col-modified">最終更新</th>
+        <th style="text-align:right;width:80px">操作</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+  docsSection.querySelectorAll('.doc-delete-btn').forEach(btn => {
+    btn.onclick = () => deleteDocument(btn.dataset.filename, btn);
+  });
+}
+
+async function deleteDocument(filename, btn){
+  if(!confirm(`「${filename}」を削除します。よろしいですか？\n\nこの操作はインデックスから完全に取り除きます。`)) return;
+  btn.disabled = true;
+  btn.textContent = '削除中…';
+  try {
+    const r = await fetch('/api/admin/documents/' + encodeURIComponent(filename), {method:'DELETE'});
+    if(!r.ok){
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail || r.statusText);
+    }
+    const d = await r.json();
+    await loadDocuments();
+    // チャット側ヘッダの統計も更新したい場合は次回ロード時に反映される
+    alert(`削除しました: ${filename}\n残チャンク数: ${d.n_chunks_after}`);
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '削除';
+    alert('削除失敗: ' + e.message);
+  }
+}
+
+// 取り込み完了後に一覧を再読込するためのフック
+const _origConfirmHandler = confirmBtn.onclick;
+confirmBtn.onclick = async () => {
+  await _origConfirmHandler();
+  loadDocuments();
+};
+
+loadDocuments();
 </script>
 </body></html>"""
 
@@ -999,6 +1110,76 @@ async def admin_reload(user: dict = Depends(require_user)):
     idx = reload_index()
     audit.record("reload_index", user=user["email"], n_chunks=len(idx.chunks))
     return {"chunks": len(idx.chunks)}
+
+
+@app.get("/api/admin/documents")
+async def admin_list_documents(user: dict = Depends(require_user)):
+    """FAQマスターに取り込み済みの文書一覧を返す。"""
+    from datetime import datetime, timezone
+
+    faq_dir = settings.faq_master_dir
+    if not faq_dir.exists():
+        return {"documents": []}
+
+    idx = get_index()
+    chunks_per_source: dict[str, int] = {}
+    for c in idx.chunks:
+        chunks_per_source[c.source] = chunks_per_source.get(c.source, 0) + 1
+
+    docs = []
+    for path in sorted(faq_dir.glob("**/*")):
+        if not path.is_file() or path.suffix.lower() not in {".md", ".txt"}:
+            continue
+        rel = path.relative_to(faq_dir)
+        rel_str = str(rel)
+        stat = path.stat()
+        docs.append({
+            "filename": rel_str,
+            "size_bytes": stat.st_size,
+            "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            "n_chunks": chunks_per_source.get(rel_str, 0),
+        })
+    return {"documents": docs}
+
+
+@app.delete("/api/admin/documents/{filename:path}")
+async def admin_delete_document(filename: str, user: dict = Depends(require_user)):
+    """FAQマスターから1文書を削除。インデックスを再構築する。"""
+    import os
+    # パストラバーサル対策: ファイル名にスラッシュやドットドットがあれば拒否
+    if ".." in filename or filename.startswith("/") or "\x00" in filename:
+        raise HTTPException(status_code=400, detail="不正なファイル名です")
+
+    faq_dir = settings.faq_master_dir.resolve()
+    target = (faq_dir / filename).resolve()
+    # target が faq_dir 配下であることを保証
+    try:
+        target.relative_to(faq_dir)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="不正なファイル名です") from None
+
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail=f"見つかりません: {filename}")
+
+    # 削除実行
+    size_bytes = target.stat().st_size
+    os.remove(target)
+
+    # インデックス再構築
+    new_idx = reload_index()
+
+    audit.record(
+        "delete_document",
+        user=user["email"],
+        filename=filename,
+        size_bytes=size_bytes,
+        n_chunks_after=len(new_idx.chunks),
+    )
+    return {
+        "deleted": filename,
+        "size_bytes": size_bytes,
+        "n_chunks_after": len(new_idx.chunks),
+    }
 
 
 @app.post("/api/admin/analyze")
