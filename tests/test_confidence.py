@@ -70,6 +70,7 @@ def test_ask_returns_no_answer_when_score_too_low(monkeypatch, tmp_path):
     """関連性が低い場合 LLM を呼ばずに NO_ANSWER を返す（ハルシネーション抑制）。"""
     # 空のFAQマスターディレクトリ → 検索結果ゼロ → confidence=0
     monkeypatch.setattr(settings, "demo_mode", True)
+    monkeypatch.setattr(settings, "anthropic_api_key", "")
     monkeypatch.setattr(settings, "faq_master_dir", tmp_path)
 
     from app import rag
@@ -88,6 +89,7 @@ def test_ask_returns_no_answer_when_score_too_low(monkeypatch, tmp_path):
 def test_ask_returns_confidence_with_answer(monkeypatch, tmp_path):
     """関連文書がある場合は has_answer=True で confidence>0 を返す。"""
     monkeypatch.setattr(settings, "demo_mode", True)
+    monkeypatch.setattr(settings, "anthropic_api_key", "")
     (tmp_path / "vpn.md").write_text(
         "# VPN接続\n\nFortiClientを起動してログインしてください。",
         encoding="utf-8"

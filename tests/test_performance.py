@@ -23,6 +23,7 @@ def client(tmp_path, monkeypatch) -> TestClient:
     from app.main import app
 
     monkeypatch.setattr(settings, "demo_mode", True)
+    monkeypatch.setattr(settings, "anthropic_api_key", "")
     monkeypatch.setattr(settings, "faq_master_dir", tmp_path / "faq_master")
     monkeypatch.setattr(audit, "LOG_DIR", tmp_path / "audit")
     rag._index = None
