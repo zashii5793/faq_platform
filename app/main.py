@@ -492,7 +492,29 @@ async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskRes
             has_answer=False,
         )
 
-    response_text = answer(masked_q, chunks)
+    try:
+        response_text = answer(masked_q, chunks)
+    except Exception as e:
+        from anthropic import APIStatusError, APIConnectionError
+        if isinstance(e, APIStatusError):
+            if e.status_code == 401:
+                detail = "Anthropic API キーが無効です。.env の ANTHROPIC_API_KEY を確認してください。"
+            elif e.status_code == 400 and "credit" in str(e).lower():
+                detail = "Anthropic API のクレジット残高が不足しています。Console で購入してください。"
+            elif e.status_code == 429:
+                detail = "レートリミットに達しました。少し待ってから再試行してください。"
+            else:
+                detail = f"Anthropic API エラー ({e.status_code}): {str(e)[:200]}"
+        elif isinstance(e, APIConnectionError):
+            detail = "Anthropic API への接続に失敗しました（ネットワーク／プロキシを確認）。"
+        else:
+            detail = f"LLM 呼び出しエラー: {type(e).__name__}: {str(e)[:200]}"
+        audit.record(
+            "query_error", user=user["email"], question=masked_q,
+            error=type(e).__name__, detail=detail[:200],
+        )
+        raise HTTPException(status_code=502, detail=detail) from e
+
     audit.record(
         "query",
         user=user["email"],
