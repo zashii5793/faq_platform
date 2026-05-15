@@ -26,9 +26,32 @@ SYSTEM_PROMPT_TEMPLATE = """あなたは{org_name}の{role}アシスタントで
   悪い: 「経費精算は通常月末頃に締めるのが一般的です」（← 推測禁止）
 """
 
+REFERENCE_PROMPT_TEMPLATE = """あなたは{org_name}の{role}アシスタントです。
 
-def system_prompt() -> str:
-    return SYSTEM_PROMPT_TEMPLATE.format(
+このリクエストは「参考情報モード」です。[参考情報] には質問への直接の答えは
+明示的に書かれていない可能性がありますが、可能な範囲で関連性の高い内容を
+**そのまま引用または要約** して提示してください。
+
+ルール（厳守）:
+1. [参考情報] に書かれている内容を**そのまま引用または要約** するに留める
+2. 推測・想像・事前知識による補完は**絶対に禁止**
+3. 回答冒頭で「以下は関連しそうな情報です」「直接の答えではありませんが」など、
+   公式回答ではないことを明示する
+4. 該当情報が部分的でも、出典を必ず明記する
+5. もし [参考情報] に質問と関連する内容が全くない場合は:
+   「関連する情報も見つかりませんでした。」とだけ返す
+6. マスキング済みのトークン（[氏名][メール][学校名]等）は復元せずそのまま使う
+
+出力例:
+  良い: 「直接の答えは見つかりませんが、関連情報として「経費精算は毎月25日締め」
+         との記載があります（出典: 経費精算.md）。担当部署にご確認ください。」
+  悪い: 「経費精算は通常月末頃が一般的です」（← 推測禁止）
+"""
+
+
+def system_prompt(reference_mode: bool = False) -> str:
+    template = REFERENCE_PROMPT_TEMPLATE if reference_mode else SYSTEM_PROMPT_TEMPLATE
+    return template.format(
         org_name=settings.org_name, role=settings.assistant_role
     )
 
@@ -46,17 +69,18 @@ def build_user_prompt(question: str, chunks: list[tuple[Chunk, float]]) -> str:
     return f"[参考情報]\n{refs}\n\n質問: {question}"
 
 
-def answer(question: str, chunks: list[tuple[Chunk, float]]) -> str:
+def answer(question: str, chunks: list[tuple[Chunk, float]], reference_mode: bool = False) -> str:
     if not settings.anthropic_api_key:
+        prefix = "（ローカルモード：APIキー未設定／参考情報モード）" if reference_mode else "（ローカルモード：APIキー未設定）"
         return (
-            "（ローカルモード：APIキー未設定）\n\n"
+            f"{prefix}\n\n"
             f"質問: {question}\n"
             f"参考: {[c.chunk_id for c, _ in chunks]}"
         )
     msg = _client().messages.create(
         model=settings.claude_model,
         max_tokens=1024,
-        system=system_prompt(),
+        system=system_prompt(reference_mode=reference_mode),
         messages=[{"role": "user", "content": build_user_prompt(question, chunks)}],
     )
     return "".join(block.text for block in msg.content if block.type == "text")
