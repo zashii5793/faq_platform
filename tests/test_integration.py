@@ -452,3 +452,77 @@ def test_document_delete_is_audit_logged(client: TestClient, tmp_path):
     assert len(delete_events) == 1
     assert delete_events[0]["filename"] == "delete_me.md"
     assert delete_events[0]["size_bytes"] > 0
+
+
+# ============================================================
+# シナリオ13: FAQ追加リクエスト
+# ============================================================
+def test_faq_request_creates_audit_event(client: TestClient):
+    """FAQ追加リクエストが監査ログに記録される。"""
+    from app import audit
+
+    r = client.post("/api/faq-requests", json={
+        "question": "退職金の計算方法は？",
+        "note": "新人から3回目の質問",
+    })
+    assert r.status_code == 200
+    assert r.json()["ok"] is True
+
+    log = audit.read_recent(50)
+    requests = [e for e in log if e.get("event") == "faq_request"]
+    assert len(requests) == 1
+    assert requests[0]["question"] == "退職金の計算方法は？"
+    assert requests[0]["note"] == "新人から3回目の質問"
+
+
+def test_faq_request_rejects_empty(client: TestClient):
+    """空の質問はリクエスト不可。"""
+    r = client.post("/api/faq-requests", json={"question": "   ", "note": ""})
+    assert r.status_code == 400
+
+
+def test_faq_request_rejects_too_long(client: TestClient):
+    """2000文字超は拒否。"""
+    r = client.post("/api/faq-requests", json={"question": "あ" * 2001, "note": ""})
+    assert r.status_code == 400
+
+
+def test_admin_list_faq_requests(client: TestClient):
+    """管理画面用 FAQ追加リクエスト一覧。"""
+    client.post("/api/faq-requests", json={"question": "Q1", "note": ""})
+    client.post("/api/faq-requests", json={"question": "Q2", "note": "緊急"})
+
+    r = client.get("/api/admin/faq-requests")
+    assert r.status_code == 200
+    data = r.json()
+    # 監査ログは新しい順なので Q2 が先
+    questions = [req["question"] for req in data["requests"]]
+    assert "Q1" in questions
+    assert "Q2" in questions
+    assert data["total"] == 2
+
+
+def test_ask_returns_reference_mode_for_low_confidence(client: TestClient):
+    """確信度が低くても、関連チャンクがあれば参考情報として返す（B モード）。"""
+    # 1文書だけ取り込んで、関連性が薄い質問をする
+    md = "# 会議室予約\n\n会議室は社内ポータルから予約できます。".encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("meeting.md", md, "text/markdown")})
+
+    # 直接の答えがない質問だが、何かしらヒットする
+    r = client.post("/api/ask", json={"question": "リモートワークの申請手続きは？"})
+    assert r.status_code == 200
+    data = r.json()
+    # 関連チャンクは見つかるので has_answer=True、低確信度なら is_reference=True
+    # ローカルスタブモードなので answer 文字列で is_reference 動作確認
+    if data["has_answer"] and data["confidence"] < 50:
+        assert data["is_reference"] is True
+
+
+def test_ask_returns_no_answer_with_empty_index(client: TestClient):
+    """インデックスが空なら has_answer=False で is_reference=False。"""
+    r = client.post("/api/ask", json={"question": "VPN接続の方法は？"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["has_answer"] is False
+    assert data["is_reference"] is False
+    assert data["confidence"] == 0

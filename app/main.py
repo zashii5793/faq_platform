@@ -170,6 +170,16 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .confidence-bar{{display:inline-block;width:60px;height:4px;background:rgba(0,0,0,.1);border-radius:2px;overflow:hidden}}
 .confidence-bar > div{{height:100%;background:currentColor}}
 .no-answer{{color:#991b1b;font-style:italic}}
+.reference-answer{{background:#fffbeb;border-left:3px solid #f59e0b;padding:10px 14px;
+                   border-radius:8px;margin-bottom:4px;color:#78350f;font-size:13px;line-height:1.6}}
+.faq-request{{margin-top:10px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;
+              border-radius:10px;max-width:75%}}
+.faq-request-msg{{font-size:12px;color:#1e40af;margin-bottom:6px}}
+.faq-request-btn{{background:#1a73e8;color:#fff;border:0;padding:6px 14px;border-radius:8px;
+                  font-size:12px;cursor:pointer;font-weight:500}}
+.faq-request-btn:hover{{background:#1557b0}}
+.faq-request-btn:disabled{{opacity:.6;cursor:not-allowed}}
+.faq-request-done{{font-size:12px;color:#065f46;background:#d1fae5;padding:8px 12px;border-radius:6px}}
 .sources{{margin-top:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;
          padding:10px 14px;font-size:12px;max-width:75%}}
 .sources summary{{cursor:pointer;color:#4b5563;font-weight:500}}
@@ -349,6 +359,8 @@ form.onsubmit=async e=>{{
     let html='';
     if(!data.has_answer) {{
       html+='<div class="no-answer">'+escape(data.answer)+'</div>';
+    }} else if(data.is_reference) {{
+      html+='<div class="reference-answer">'+escape(data.answer).replace(/\\n/g,'<br>')+'</div>';
     }} else {{
       html+=escape(data.answer);
     }}
@@ -363,6 +375,14 @@ form.onsubmit=async e=>{{
       }}
       html+='</details>';
     }}
+    // FAQ追加リクエストボタン（has_answer=false または is_reference のとき表示）
+    const reqId='req-'+Date.now();
+    if(!data.has_answer || data.is_reference){{
+      html+=`<div class="faq-request" id="${{reqId}}">`
+        +`<div class="faq-request-msg">💡 この質問が公式FAQに登録されていません。管理者にFAQ追加をリクエストしますか？</div>`
+        +`<button class="faq-request-btn" data-q="${{escape(q)}}">📩 FAQ追加をリクエスト</button>`
+        +`</div>`;
+    }}
     const fbId='fb-'+Date.now();
     html+=`<div class="feedback" id="${{fbId}}"><button data-vote="up">👍 役に立った</button><button data-vote="down">👎 改善が必要</button></div>`;
     wait.querySelector('.bubble').innerHTML=html;
@@ -376,6 +396,23 @@ form.onsubmit=async e=>{{
                                      body:JSON.stringify({{question:q,vote,sources:(data.sources||[]).map(s=>s.source)}})}});
         loadStats();
       }});
+    }}
+    const reqBox=document.getElementById(reqId);
+    if(reqBox){{
+      const btn=reqBox.querySelector('.faq-request-btn');
+      btn.onclick=async()=>{{
+        btn.disabled=true; btn.textContent='送信中…';
+        try{{
+          const r=await fetch('/api/faq-requests',{{method:'POST',
+            headers:{{'Content-Type':'application/json'}},
+            body:JSON.stringify({{question:q,note:''}})}});
+          if(!r.ok) throw new Error((await r.json()).detail||r.statusText);
+          reqBox.innerHTML='<div class="faq-request-done">✅ 管理者にリクエストを送信しました。FAQに追加されるまでお待ちください。</div>';
+        }}catch(e){{
+          btn.disabled=false; btn.textContent='📩 FAQ追加をリクエスト';
+          alert('送信失敗: '+e.message);
+        }}
+      }};
     }}
     loadStats();
   }}catch(err){{wait.querySelector('.bubble').textContent='エラー: '+err.message}}
@@ -435,6 +472,7 @@ class AskResponse(BaseModel):
     sources: list[Source]
     confidence: int  # 0-100
     has_answer: bool
+    is_reference: bool = False  # 公式FAQ未登録の参考情報として返したか
 
 
 def _compute_confidence(scored_chunks: list[tuple]) -> int:
@@ -469,14 +507,17 @@ NO_ANSWER_TEXT = (
 )
 
 
+REFERENCE_PREFIX = "⚠ 公式FAQ未登録の参考情報です（正確性は保証されません）\n\n"
+
+
 @app.post("/api/ask", response_model=AskResponse)
 async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskResponse:
     masked_q = mask(payload.question)
     chunks = get_index().search(masked_q, top_k=5)
     confidence = _compute_confidence(chunks)
 
-    # 閾値未満なら LLM を呼ばずに「該当情報なし」を返す（ハルシネーション抑制）
-    if confidence == 0:
+    # チャンクが完全に空 → 「該当情報なし」を返す（FAQ追加リクエストを促す）
+    if not chunks:
         audit.record(
             "query",
             user=user["email"],
@@ -490,10 +531,18 @@ async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskRes
             sources=[],
             confidence=0,
             has_answer=False,
+            is_reference=False,
         )
 
+    # 確信度が低い場合は「参考情報」として返す（B モード）
+    # - confidence == 0: 完全該当なし、でも何かしらヒットしたチャンクはあるので参考情報として提示
+    # - confidence < 50: 低〜中確信度、参考情報フラグ付き
+    is_reference = confidence < 50
+
     try:
-        response_text = answer(masked_q, chunks)
+        response_text = answer(masked_q, chunks, reference_mode=is_reference)
+        if is_reference:
+            response_text = REFERENCE_PREFIX + response_text
     except Exception as e:
         from anthropic import APIStatusError, APIConnectionError
         if isinstance(e, APIStatusError):
@@ -522,6 +571,7 @@ async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskRes
         sources=[c.chunk_id for c, _ in chunks],
         confidence=confidence,
         answered=True,
+        is_reference=is_reference,
     )
     return AskResponse(
         answer=response_text,
@@ -530,6 +580,7 @@ async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskRes
         ],
         confidence=confidence,
         has_answer=True,
+        is_reference=is_reference,
     )
 
 
@@ -700,6 +751,11 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
 
     <div class="step-title" style="margin-top:32px"><span class="step-num">3</span>取り込み済み文書（メンテナンス）</div>
     <div id="docs-section" style="font-size:13px;color:#6b7280">
+      <div class="empty-msg">読み込み中…</div>
+    </div>
+
+    <div class="step-title" style="margin-top:32px"><span class="step-num">4</span>FAQ追加リクエスト</div>
+    <div id="faq-requests-section" style="font-size:13px;color:#6b7280">
       <div class="empty-msg">読み込み中…</div>
     </div>
   </div>
@@ -1053,9 +1109,52 @@ const _origConfirmHandler = confirmBtn.onclick;
 confirmBtn.onclick = async () => {
   await _origConfirmHandler();
   loadDocuments();
+  loadFaqRequests();
 };
 
+// === FAQ追加リクエスト一覧 ===
+const faqReqSection = document.getElementById('faq-requests-section');
+
+async function loadFaqRequests(){
+  faqReqSection.innerHTML = '<div class="empty-msg"><span class="spinner"></span>読み込み中…</div>';
+  try {
+    const r = await fetch('/api/admin/faq-requests');
+    if(!r.ok) throw new Error(r.statusText);
+    const d = await r.json();
+    renderFaqRequests(d.requests || [], d.total || 0);
+  } catch(e) {
+    faqReqSection.innerHTML = `<div class="error-msg">読み込み失敗: ${escape(e.message)}</div>`;
+  }
+}
+
+function renderFaqRequests(requests, total){
+  if(!requests.length){
+    faqReqSection.innerHTML = '<div class="empty-msg">未対応のFAQ追加リクエストはありません</div>';
+    return;
+  }
+  const summary = `<div class="doc-summary"><b>${total}件のリクエスト</b> · 最新${requests.length}件を表示</div>`;
+  const rows = requests.map(r => `
+    <tr>
+      <td>
+        <div class="doc-name">${escape(r.question)}</div>
+        <div class="doc-meta">${escape(r.user)} · ${fmtDate(r.ts)}</div>
+        ${r.note ? `<div style="margin-top:4px;color:#6b7280;font-size:12px">📝 ${escape(r.note)}</div>` : ''}
+      </td>
+    </tr>
+  `).join('');
+  faqReqSection.innerHTML = summary + `
+    <table class="doc-table">
+      <thead><tr><th>質問内容</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="margin-top:8px;font-size:11px;color:#9ca3af">
+      💡 これらの質問に対応するドキュメントを作成して、上の「ファイルを投入」から取り込んでください
+    </div>
+  `;
+}
+
 loadDocuments();
+loadFaqRequests();
 </script>
 </body></html>"""
 
@@ -1125,6 +1224,48 @@ async def api_feedback(payload: FeedbackRequest, user: dict = Depends(require_us
     # 検索ランキングへの学習反映
     record_feedback(payload.sources, payload.vote)
     return {"ok": True}
+
+
+class FaqRequest(BaseModel):
+    question: str
+    note: str = ""  # 任意の補足情報
+
+
+@app.post("/api/faq-requests")
+async def api_faq_request(payload: FaqRequest, user: dict = Depends(require_user)):
+    """FAQ追加リクエストを受け付ける。
+
+    ユーザーが質問しても回答が得られなかった場合、管理者にFAQ追加を依頼するためのエンドポイント。
+    監査ログに記録される。
+    """
+    q = (payload.question or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="質問本文が空です")
+    if len(q) > 2000:
+        raise HTTPException(status_code=400, detail="質問が長すぎます（2000文字以内）")
+    audit.record(
+        "faq_request",
+        user=user["email"],
+        question=q,
+        note=(payload.note or "")[:500],
+    )
+    return {"ok": True}
+
+
+@app.get("/api/admin/faq-requests")
+async def admin_list_faq_requests(user: dict = Depends(require_user)):
+    """未対応のFAQ追加リクエスト一覧を返す（直近100件）。"""
+    recent = audit.read_recent(1000)
+    requests = [
+        {
+            "question": e.get("question", ""),
+            "note": e.get("note", ""),
+            "user": e.get("user", ""),
+            "ts": e.get("ts", ""),
+        }
+        for e in recent if e.get("event") == "faq_request"
+    ]
+    return {"requests": requests[:100], "total": len(requests)}
 
 
 @app.post("/api/admin/reload-index")
