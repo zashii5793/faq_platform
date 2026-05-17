@@ -900,6 +900,105 @@ def test_pdf_not_a_pdf_returns_422(client: TestClient):
         assert r.json()["n_chunks"] == 0
 
 
+# ============================================================
+# シナリオ20: 埋め込み JavaScript の構文回帰防止
+# 過去に Python triple-quoted string 内の `\n` が実改行に変換され、
+# JS の文字列リテラルがブレークして UI 全体が止まる重大バグがあったため、
+# 全ページの <script> ブロックを抜き出して syntax チェックする。
+# ============================================================
+def test_admin_upload_js_has_valid_syntax(client: TestClient):
+    """/admin/upload の JS が文字列内に未エスケープ改行を含まないことを保証。
+
+    Python の \"\"\"..\"\"\" の中で `\\n` を書くと改行になってしまうため、JS の
+    文字列リテラル内では `\\\\n` を書く必要がある。これを忘れると JS が
+    SyntaxError で全停止する（ダッシュボード・PDF UI 含めて）。
+    """
+    import re
+    r = client.get("/admin/upload")
+    assert r.status_code == 200
+    scripts = re.findall(r"<script>(.*?)</script>", r.text, re.DOTALL)
+    assert scripts, "/admin/upload に <script> がない"
+
+    for idx, js in enumerate(scripts):
+        # 文字列リテラル内に未エスケープ改行が混入していないか検出
+        # シングルクォート / バッククォート / ダブルクォート で囲まれた文字列を抽出
+        _assert_no_raw_newline_in_js_strings(js, f"/admin/upload script[{idx}]")
+
+
+def test_chat_page_js_has_valid_syntax(client: TestClient):
+    """チャット画面（/）の JS も同じ回帰防止。"""
+    import re
+    r = client.get("/")
+    if r.status_code != 200:
+        # 認証必要の場合はスキップ（DEMO_MODE 想定なので通常は 200）
+        return
+    scripts = re.findall(r"<script>(.*?)</script>", r.text, re.DOTALL)
+    for idx, js in enumerate(scripts):
+        _assert_no_raw_newline_in_js_strings(js, f"/ script[{idx}]")
+
+
+def _assert_no_raw_newline_in_js_strings(js: str, label: str):
+    """JS 文字列リテラル内の未エスケープ改行を検出して failure させる。
+
+    対象: '...' および `...`（ダブルクォートは template の中で複雑なのでスキップ）
+    エスケープされた `\\n` は許可、実改行のみ NG。
+    """
+    # 簡易スキャナ: ストリングを舐めて、開始クォートから対応する終了クォートまで
+    # に未エスケープの \n があれば failure。
+    state = None  # None / "'" / "`"
+    line_no = 1
+    string_start_line = 0
+    string_content_lines: list[int] = []
+    i = 0
+    while i < len(js):
+        ch = js[i]
+        if ch == "\n":
+            line_no += 1
+            if state in ("'",):
+                # シングルクォート文字列の中に改行 → JS構文エラーになる
+                raise AssertionError(
+                    f"{label}: シングルクォート文字列内に未エスケープ改行 "
+                    f"(行 {string_start_line} 開始) — "
+                    f"Python triple-quoted の中で '\\n' を使うと改行になります。"
+                    f"JS で改行リテラルが必要なら '\\\\n' と書いてください。"
+                )
+        if state is None:
+            if ch == "'":
+                state = "'"
+                string_start_line = line_no
+            elif ch == "`":
+                state = "`"
+                string_start_line = line_no
+            elif ch == "/" and i + 1 < len(js) and js[i+1] == "/":
+                # 行コメント: 行末までスキップ
+                while i < len(js) and js[i] != "\n":
+                    i += 1
+                continue
+            elif ch == "/" and i + 1 < len(js) and js[i+1] == "*":
+                # ブロックコメント
+                end = js.find("*/", i + 2)
+                if end == -1:
+                    break
+                # コメント内の改行をカウント
+                line_no += js.count("\n", i, end)
+                i = end + 2
+                continue
+        elif state == "'":
+            if ch == "\\":
+                i += 2  # エスケープ次の文字をスキップ
+                continue
+            elif ch == "'":
+                state = None
+        elif state == "`":
+            if ch == "\\":
+                i += 2
+                continue
+            elif ch == "`":
+                state = None
+            # バッククォート（テンプレートリテラル）は改行 OK
+        i += 1
+
+
 def test_llm_system_prompt_uses_cache_control(client: TestClient, monkeypatch):
     """API キーがある場合、system が cache_control 付きの blocks で送られる。"""
     from app import llm

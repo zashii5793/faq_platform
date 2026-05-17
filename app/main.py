@@ -1228,7 +1228,7 @@ function renderDocuments(docs){
 }
 
 async function deleteDocument(filename, btn){
-  if(!confirm(`「${filename}」を削除します。よろしいですか？\n\nこの操作はインデックスから完全に取り除きます。`)) return;
+  if(!confirm(`「${filename}」を削除します。よろしいですか？\\n\\nこの操作はインデックスから完全に取り除きます。`)) return;
   btn.disabled = true;
   btn.textContent = '削除中…';
   try {
@@ -1240,7 +1240,7 @@ async function deleteDocument(filename, btn){
     const d = await r.json();
     await loadDocuments();
     // チャット側ヘッダの統計も更新したい場合は次回ロード時に反映される
-    alert(`削除しました: ${filename}\n残チャンク数: ${d.n_chunks_after}`);
+    alert(`削除しました: ${filename}\\n残チャンク数: ${d.n_chunks_after}`);
   } catch(e) {
     btn.disabled = false;
     btn.textContent = '削除';
@@ -1417,7 +1417,7 @@ async function saveSettings(){
 }
 
 async function resetSettings(){
-  if(!confirm('UIで編集した組織情報を全て削除し、.env のデフォルトに戻します。よろしいですか？\n（即座に反映されない項目もあります）')) return;
+  if(!confirm('UIで編集した組織情報を全て削除し、.env のデフォルトに戻します。よろしいですか？\\n（即座に反映されない項目もあります）')) return;
   try {
     const r = await fetch('/api/admin/settings', {method:'DELETE'});
     if(!r.ok) throw new Error(r.statusText);
