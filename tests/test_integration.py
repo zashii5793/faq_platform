@@ -526,3 +526,61 @@ def test_ask_returns_no_answer_with_empty_index(client: TestClient):
     assert data["has_answer"] is False
     assert data["is_reference"] is False
     assert data["confidence"] == 0
+
+
+# ============================================================
+# シナリオ14: 監査ログのエクスポート（顧客レポート用）
+# ============================================================
+def test_export_csv_query_history(client: TestClient):
+    """質問履歴を CSV でエクスポート。"""
+    md = "# VPN\n\nFortiClient で接続。".encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("vpn.md", md, "text/markdown")})
+    client.post("/api/ask", json={"question": "VPNの接続方法"})
+
+    r = client.get("/api/admin/export?days=30&format=csv&event=query")
+    assert r.status_code == 200
+    assert "text/csv" in r.headers["content-type"]
+    assert "attachment" in r.headers["content-disposition"]
+    body = r.content.decode("utf-8")
+    # UTF-8 BOM
+    assert body.startswith("﻿")
+    # CSV ヘッダ
+    assert "question" in body
+    assert "confidence" in body
+    assert "VPNの接続方法" in body
+
+
+def test_export_json_all_events(client: TestClient):
+    """全イベントを JSON でエクスポート。"""
+    client.post("/api/faq-requests", json={"question": "Q?", "note": ""})
+
+    r = client.get("/api/admin/export?days=30&format=json&event=all")
+    assert r.status_code == 200
+    data = r.json()
+    assert "entries" in data
+    assert data["n_rows"] >= 1
+
+
+def test_export_invalid_format_rejected(client: TestClient):
+    """xml など未対応の format は 400。"""
+    r = client.get("/api/admin/export?format=xml")
+    assert r.status_code == 400
+
+
+def test_export_invalid_days_rejected(client: TestClient):
+    """範囲外の days は 400。"""
+    r = client.get("/api/admin/export?days=999&format=csv")
+    assert r.status_code == 400
+    r = client.get("/api/admin/export?days=0&format=csv")
+    assert r.status_code == 400
+
+
+def test_export_audit_logged(client: TestClient):
+    """エクスポート自体も監査される（誰がいつ何を出力したか）。"""
+    from app import audit
+    client.get("/api/admin/export?format=csv&event=query")
+    log = audit.read_recent(10)
+    exports = [e for e in log if e.get("event") == "export"]
+    assert len(exports) == 1
+    assert exports[0]["format"] == "csv"
+    assert exports[0]["event_filter"] == "query"
