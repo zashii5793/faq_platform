@@ -756,6 +756,34 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
 .setting-reset-btn{padding:8px 16px;background:#fff;color:#6b7280;border:1px solid #d1d5db;
                    border-radius:6px;font-size:13px;cursor:pointer}
 .setting-reset-btn:hover{background:#f9fafb;color:#dc2626;border-color:#fecaca}
+/* ダッシュボード */
+.dash-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.dash-tile{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px}
+.dash-tile-label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.dash-tile-value{font-size:22px;font-weight:600;color:#111827;margin-top:4px}
+.dash-tile-sub{font-size:11px;color:#9ca3af;margin-top:2px}
+.dash-tile.good .dash-tile-value{color:#065f46}
+.dash-tile.warn .dash-tile-value{color:#92400e}
+.dash-tile.bad .dash-tile-value{color:#991b1b}
+.dash-bars{display:flex;align-items:flex-end;gap:2px;height:80px;padding:8px 0;
+           background:#fafbfc;border-radius:8px;padding-left:8px;padding-right:8px;overflow-x:auto}
+.dash-bar{flex:0 0 auto;width:18px;display:flex;flex-direction:column;align-items:center;
+          min-width:18px;height:100%;justify-content:flex-end;cursor:default;position:relative}
+.dash-bar-fill{width:100%;background:#1a73e8;border-radius:2px 2px 0 0;
+               min-height:1px;transition:background .15s}
+.dash-bar:hover .dash-bar-fill{background:#1557b0}
+.dash-bar-label{font-size:9px;color:#9ca3af;margin-top:3px;writing-mode:vertical-rl;
+                transform:rotate(180deg);max-height:36px}
+.dash-bar-tip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+              background:#111827;color:#fff;padding:4px 8px;border-radius:4px;
+              font-size:11px;white-space:nowrap;display:none;z-index:10;margin-bottom:4px}
+.dash-bar:hover .dash-bar-tip{display:block}
+.dash-section{margin-top:14px}
+.dash-section h4{margin:0 0 8px;font-size:13px;color:#374151;font-weight:600}
+.dash-list{display:flex;flex-direction:column;gap:4px}
+.dash-list-row{display:flex;justify-content:space-between;padding:6px 10px;background:#fafbfc;
+               border-radius:6px;font-size:12px}
+.dash-list-row b{color:#1a73e8;font-weight:600}
 @media (max-width:480px){
   .doc-table th.col-modified,.doc-table td.col-modified{display:none}
 }
@@ -788,22 +816,49 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
       <div class="empty-msg">ファイルをドロップすると、ここに解析結果が表示されます</div>
     </div>
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">3</span>取り込み済み文書（メンテナンス）</div>
+    <div class="step-title" style="margin-top:32px"><span class="step-num">3</span>利用状況ダッシュボード</div>
+    <div id="dashboard-section" style="font-size:13px;color:#6b7280">
+      <div class="empty-msg">読み込み中…</div>
+    </div>
+
+    <div class="step-title" style="margin-top:32px"><span class="step-num">4</span>取り込み済み文書（メンテナンス）</div>
     <div id="docs-section" style="font-size:13px;color:#6b7280">
       <div class="empty-msg">読み込み中…</div>
     </div>
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">4</span>FAQ追加リクエスト</div>
+    <div class="step-title" style="margin-top:32px"><span class="step-num">5</span>質問履歴を検索</div>
+    <div id="queries-search-section" style="font-size:13px;color:#6b7280">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+        <input type="text" id="querySearchInput" placeholder="🔍 質問本文で検索（部分一致）" style="flex:1;min-width:200px;padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"/>
+        <select id="querySearchAnswered" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px">
+          <option value="all">すべて</option>
+          <option value="yes">回答済</option>
+          <option value="no">未回答</option>
+          <option value="reference">参考情報</option>
+        </select>
+        <select id="querySearchDays" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px">
+          <option value="7">過去 7日</option>
+          <option value="30" selected>過去 30日</option>
+          <option value="90">過去 90日</option>
+        </select>
+        <button class="export-btn" id="querySearchBtn">検索</button>
+      </div>
+      <div id="queries-search-results">
+        <div class="empty-msg">検索条件を指定して「検索」を押してください</div>
+      </div>
+    </div>
+
+    <div class="step-title" style="margin-top:32px"><span class="step-num">6</span>FAQ追加リクエスト</div>
     <div id="faq-requests-section" style="font-size:13px;color:#6b7280">
       <div class="empty-msg">読み込み中…</div>
     </div>
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">5</span>組織情報（営業デモ・カスタマイズ用）</div>
+    <div class="step-title" style="margin-top:32px"><span class="step-num">7</span>組織情報（営業デモ・カスタマイズ用）</div>
     <div id="settings-section" style="font-size:13px;color:#6b7280">
       <div class="empty-msg">読み込み中…</div>
     </div>
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">6</span>レポート出力（顧客提出・分析用）</div>
+    <div class="step-title" style="margin-top:32px"><span class="step-num">8</span>レポート出力（顧客提出・分析用）</div>
     <div id="export-section" style="font-size:13px;color:#6b7280">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <label>期間:
@@ -1349,6 +1404,168 @@ async function resetSettings(){
   }
 }
 
+// === 利用状況ダッシュボード ===
+const dashboardSection = document.getElementById('dashboard-section');
+
+async function loadDashboard(){
+  dashboardSection.innerHTML = '<div class="empty-msg"><span class="spinner"></span>読み込み中…</div>';
+  try {
+    const r = await fetch('/api/admin/dashboard?days=14');
+    if(!r.ok) throw new Error(r.statusText);
+    const d = await r.json();
+    renderDashboard(d);
+  } catch(e) {
+    dashboardSection.innerHTML = `<div class="error-msg">読み込み失敗: ${escape(e.message)}</div>`;
+  }
+}
+
+function dashTile(label, value, sub, cls){
+  cls = cls || '';
+  return `<div class="dash-tile ${cls}">
+    <div class="dash-tile-label">${escape(label)}</div>
+    <div class="dash-tile-value">${escape(String(value))}</div>
+    ${sub ? `<div class="dash-tile-sub">${escape(sub)}</div>` : ''}
+  </div>`;
+}
+
+function renderDashboard(d){
+  const t = d.totals || {};
+  const daily = d.daily || [];
+
+  // タイル
+  const ansRateCls = t.answer_rate >= 70 ? 'good' : t.answer_rate >= 40 ? 'warn' : 'bad';
+  const confCls = t.avg_confidence >= 70 ? 'good' : t.avg_confidence >= 40 ? 'warn' : 'bad';
+  const tiles = [
+    dashTile('質問総数', t.queries || 0, `過去${d.days}日`),
+    dashTile('回答率', (t.answer_rate || 0)+'%',
+      `通常${t.answered||0}＋参考${t.reference||0} / ${t.queries||0}件`, ansRateCls),
+    dashTile('平均確信度', (t.avg_confidence || 0)+'%', '', confCls),
+    dashTile('未回答', t.no_answer || 0, t.queries ? `${Math.round((t.no_answer||0)/t.queries*100)}%` : '', t.no_answer ? 'bad' : ''),
+    dashTile('FAQ要望', t.faq_requests || 0, '管理者要対応'),
+    dashTile('ユニーク利用者', t.unique_users || 0, '期間内'),
+  ].join('');
+
+  // 日次バーチャート（質問数）
+  const maxQ = Math.max(1, ...daily.map(x => x.queries));
+  const bars = daily.map(x => {
+    const h = (x.queries / maxQ * 70) || 0;
+    const ml = x.date.slice(5);  // MM-DD
+    return `<div class="dash-bar" title="${escape(x.date)}: ${x.queries}件">
+      <div class="dash-bar-tip">${escape(x.date)}<br>質問 ${x.queries} / 確信度 ${x.avg_confidence}%</div>
+      <div class="dash-bar-fill" style="height:${h}px"></div>
+      <div class="dash-bar-label">${escape(ml)}</div>
+    </div>`;
+  }).join('');
+
+  // トピック・ユーザー
+  const topicRows = (d.top_topics || []).slice(0,6).map(t =>
+    `<div class="dash-list-row"><span>${escape(t.source)}</span><b>${t.count}件</b></div>`
+  ).join('') || '<div class="empty-msg" style="padding:8px">データなし</div>';
+  const userRows = (d.top_users || []).slice(0,6).map(u =>
+    `<div class="dash-list-row"><span>${escape(u.user)}</span><b>${u.count}件</b></div>`
+  ).join('') || '<div class="empty-msg" style="padding:8px">データなし</div>';
+
+  // LLM 利用量＆キャッシュ
+  const lu = d.llm_usage || {};
+  const llmBlock = lu.calls ? `
+    <div class="dash-section">
+      <h4>💰 LLM API 利用量（プロンプトキャッシュ効率）</h4>
+      <div class="dash-list">
+        <div class="dash-list-row"><span>API 呼び出し</span><b>${lu.calls} 回</b></div>
+        <div class="dash-list-row"><span>入力トークン（通常）</span><b>${lu.input_tokens.toLocaleString()}</b></div>
+        <div class="dash-list-row"><span>入力トークン（キャッシュ書込）</span><b>${lu.cache_creation_tokens.toLocaleString()}</b></div>
+        <div class="dash-list-row"><span>入力トークン（キャッシュ読込・割引対象）</span><b style="color:#065f46">${lu.cache_read_tokens.toLocaleString()}</b></div>
+        <div class="dash-list-row"><span>出力トークン</span><b>${lu.output_tokens.toLocaleString()}</b></div>
+        <div class="dash-list-row"><span>キャッシュヒット率</span><b style="color:${lu.cache_hit_rate >= 30 ? '#065f46' : '#9ca3af'}">${lu.cache_hit_rate}%</b></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:#9ca3af">
+        ※ キャッシュは Anthropic 側で最小トークン数を超えた場合のみ作成されます（Haiku 4.5 は 2048 tok）
+      </div>
+    </div>
+  ` : '';
+
+  dashboardSection.innerHTML = `
+    <div class="dash-tiles">${tiles}</div>
+    <div class="dash-section">
+      <h4>📊 日次質問数（過去${d.days}日）</h4>
+      <div class="dash-bars">${bars}</div>
+    </div>
+    <div class="dash-section" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+      <div>
+        <h4>🔥 質問が多いトピック TOP6</h4>
+        <div class="dash-list">${topicRows}</div>
+      </div>
+      <div>
+        <h4>👤 アクティブ利用者 TOP6</h4>
+        <div class="dash-list">${userRows}</div>
+      </div>
+    </div>
+    ${llmBlock}
+  `;
+}
+
+// === 質問履歴の検索 ===
+const querySearchBtn = document.getElementById('querySearchBtn');
+const querySearchInput = document.getElementById('querySearchInput');
+const querySearchResults = document.getElementById('queries-search-results');
+
+async function runQuerySearch(){
+  const q = querySearchInput.value.trim();
+  const days = document.getElementById('querySearchDays').value;
+  const answered = document.getElementById('querySearchAnswered').value;
+  querySearchResults.innerHTML = '<div class="empty-msg"><span class="spinner"></span>検索中…</div>';
+  try {
+    const url = `/api/admin/queries?q=${encodeURIComponent(q)}&days=${days}&answered=${answered}&limit=100`;
+    const r = await fetch(url);
+    if(!r.ok){
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail || r.statusText);
+    }
+    const d = await r.json();
+    renderQuerySearchResults(d);
+  } catch(e) {
+    querySearchResults.innerHTML = `<div class="error-msg">検索失敗: ${escape(e.message)}</div>`;
+  }
+}
+
+function renderQuerySearchResults(d){
+  const results = d.results || [];
+  if(!results.length){
+    querySearchResults.innerHTML = '<div class="empty-msg">該当する質問が見つかりませんでした</div>';
+    return;
+  }
+  const summary = `<div class="doc-summary"><b>${d.total}件ヒット</b> · 最新${results.length}件を表示</div>`;
+  const rows = results.map(r => {
+    const confCls = r.confidence >= 70 ? '#065f46' : r.confidence >= 40 ? '#92400e' : '#9ca3af';
+    const statusBadge = !r.answered
+      ? '<span class="setting-badge" style="background:#fee2e2;color:#991b1b">未回答</span>'
+      : r.is_reference
+      ? '<span class="setting-badge" style="background:#fef3c7;color:#92400e">参考情報</span>'
+      : '<span class="setting-badge" style="background:#d1fae5;color:#065f46">回答済</span>';
+    return `
+      <tr>
+        <td>
+          <div class="doc-name">${escape(r.question)}</div>
+          <div class="doc-meta">${escape(r.user)} · ${fmtDate(r.ts)} ${statusBadge} <span style="color:${confCls}">確信度${r.confidence}%</span></div>
+          ${r.sources && r.sources.length ? `<div style="margin-top:4px;font-size:11px;color:#6b7280">📎 ${escape(r.sources.slice(0,3).join(', '))}</div>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+  querySearchResults.innerHTML = summary + `
+    <table class="doc-table"><thead><tr><th>質問・コンテキスト</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+  `;
+}
+
+if(querySearchBtn){
+  querySearchBtn.onclick = runQuerySearch;
+  querySearchInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') runQuerySearch();
+  });
+}
+
+loadDashboard();
 loadDocuments();
 loadFaqRequests();
 loadSettings();
@@ -1525,6 +1742,211 @@ async def admin_reset_settings(user: dict = Depends(require_user)):
     runtime_settings.reset()
     audit.record("settings_reset", user=user["email"])
     return {"ok": True, "note": "再起動で .env 値が反映されます"}
+
+
+@app.get("/api/admin/queries")
+async def admin_search_queries(
+    q: str = "",
+    days: int = 30,
+    min_confidence: int = 0,
+    max_confidence: int = 100,
+    answered: str = "all",
+    limit: int = 100,
+    user: dict = Depends(require_user),
+):
+    """質問履歴の検索・絞り込み（管理者向け）。
+
+    Args:
+      q: 質問本文の部分一致（大文字小文字無視）
+      days: 過去 N 日（1〜365）
+      min_confidence, max_confidence: 確信度の範囲
+      answered: "all" / "yes"（answered=True）/ "no"（answered=False）/ "reference"
+      limit: 返却件数上限（最大 500）
+    """
+    if days < 1 or days > 365:
+        raise HTTPException(status_code=400, detail="days は 1〜365 の範囲")
+    if min_confidence < 0 or max_confidence > 100 or min_confidence > max_confidence:
+        raise HTTPException(status_code=400, detail="confidence の範囲が不正")
+    if answered not in ("all", "yes", "no", "reference"):
+        raise HTTPException(status_code=400, detail="answered は all/yes/no/reference")
+    if limit < 1 or limit > 500:
+        raise HTTPException(status_code=400, detail="limit は 1〜500")
+
+    entries = audit.read_range(days=days)
+    queries = [e for e in entries if e.get("event") == "query"]
+
+    q_lower = q.lower().strip()
+    results = []
+    for e in queries:
+        question = e.get("question", "")
+        conf = e.get("confidence", 0)
+        ans = bool(e.get("answered"))
+        ref = bool(e.get("is_reference"))
+        if q_lower and q_lower not in question.lower():
+            continue
+        if conf < min_confidence or conf > max_confidence:
+            continue
+        if answered == "yes" and not ans:
+            continue
+        if answered == "no" and ans:
+            continue
+        if answered == "reference" and not ref:
+            continue
+        results.append({
+            "ts": e.get("ts", ""),
+            "user": e.get("user", ""),
+            "question": question,
+            "confidence": conf,
+            "answered": ans,
+            "is_reference": ref,
+            "sources": e.get("sources", []),
+        })
+
+    # 新しい順
+    results.sort(key=lambda r: r["ts"], reverse=True)
+    return {
+        "results": results[:limit],
+        "total": len(results),
+        "filters": {
+            "q": q, "days": days,
+            "min_confidence": min_confidence, "max_confidence": max_confidence,
+            "answered": answered,
+        },
+    }
+
+
+@app.get("/api/admin/dashboard")
+async def admin_dashboard(days: int = 14, user: dict = Depends(require_user)):
+    """日次の使用量ダッシュボード用集計。
+
+    過去 days 日分の以下を返す:
+      - daily: [{date, queries, answered, reference, no_answer, avg_confidence, unique_users}]
+      - totals: 期間合計
+      - top_topics: トピック別質問数（ソースファイル別）
+      - top_users: ユーザー別質問数（個人特定避けたい場合は集計のみ）
+      - faq_requests_count: 期間内のFAQ追加リクエスト件数
+    """
+    from collections import Counter, defaultdict
+    from datetime import datetime, timedelta, timezone
+
+    if days < 1 or days > 365:
+        raise HTTPException(status_code=400, detail="days は 1〜365 の範囲")
+
+    entries = audit.read_range(days=days)
+    queries = [e for e in entries if e.get("event") == "query"]
+    faq_requests = [e for e in entries if e.get("event") == "faq_request"]
+    llm_usages = [e for e in entries if e.get("event") == "llm_usage"]
+
+    # 日次集計（UTC 日付で grouping、表示側でローカルに変換）
+    by_date: dict[str, dict] = defaultdict(lambda: {
+        "queries": 0, "answered": 0, "reference": 0, "no_answer": 0,
+        "confidence_sum": 0, "confidence_n": 0, "users": set(),
+    })
+    for q in queries:
+        ts = q.get("ts", "")
+        if not ts:
+            continue
+        date = ts[:10]  # YYYY-MM-DD
+        bucket = by_date[date]
+        bucket["queries"] += 1
+        if q.get("answered") is True:
+            if q.get("is_reference") is True:
+                bucket["reference"] += 1
+            else:
+                bucket["answered"] += 1
+        else:
+            bucket["no_answer"] += 1
+        if "confidence" in q:
+            bucket["confidence_sum"] += q["confidence"]
+            bucket["confidence_n"] += 1
+        if q.get("user"):
+            bucket["users"].add(q["user"])
+
+    # 過去 days 日の全日付を埋める（質問ゼロの日も 0 として表示）
+    today = datetime.now(timezone.utc).date()
+    daily = []
+    for i in range(days - 1, -1, -1):
+        d = (today - timedelta(days=i)).isoformat()
+        b = by_date.get(d, {
+            "queries": 0, "answered": 0, "reference": 0, "no_answer": 0,
+            "confidence_sum": 0, "confidence_n": 0, "users": set(),
+        })
+        avg_conf = round(b["confidence_sum"] / b["confidence_n"]) if b["confidence_n"] else 0
+        daily.append({
+            "date": d,
+            "queries": b["queries"],
+            "answered": b["answered"],
+            "reference": b["reference"],
+            "no_answer": b["no_answer"],
+            "avg_confidence": avg_conf,
+            "unique_users": len(b["users"]) if isinstance(b["users"], set) else 0,
+        })
+
+    # 期間合計
+    totals = {
+        "queries": sum(d["queries"] for d in daily),
+        "answered": sum(d["answered"] for d in daily),
+        "reference": sum(d["reference"] for d in daily),
+        "no_answer": sum(d["no_answer"] for d in daily),
+        "unique_users": len({q.get("user") for q in queries if q.get("user")}),
+        "faq_requests": len(faq_requests),
+    }
+    if totals["queries"]:
+        totals["answer_rate"] = round(
+            (totals["answered"] + totals["reference"]) / totals["queries"] * 100
+        )
+        confs = [q.get("confidence", 0) for q in queries if "confidence" in q]
+        totals["avg_confidence"] = round(sum(confs) / len(confs)) if confs else 0
+    else:
+        totals["answer_rate"] = 0
+        totals["avg_confidence"] = 0
+
+    # トピック別（出典の1つ目の文書名で集計）
+    topic_counter: Counter = Counter()
+    for q in queries:
+        srcs = q.get("sources") or []
+        if srcs:
+            topic = srcs[0].split("#")[0] if isinstance(srcs[0], str) else ""
+            if topic:
+                topic_counter[topic] += 1
+    top_topics = [
+        {"source": s, "count": c} for s, c in topic_counter.most_common(10)
+    ]
+
+    # ユーザー別（集計のみ、個人特定を避けたい場合は count のみ参考）
+    user_counter: Counter = Counter(
+        q.get("user", "(unknown)") for q in queries if q.get("user")
+    )
+    top_users = [
+        {"user": u, "count": c} for u, c in user_counter.most_common(10)
+    ]
+
+    # LLM 使用量・キャッシュ集計（プロンプトキャッシュ実装の効果可視化）
+    input_tok = sum(u.get("input_tokens", 0) or 0 for u in llm_usages)
+    output_tok = sum(u.get("output_tokens", 0) or 0 for u in llm_usages)
+    cache_creation = sum(u.get("cache_creation_input_tokens", 0) or 0 for u in llm_usages)
+    cache_read = sum(u.get("cache_read_input_tokens", 0) or 0 for u in llm_usages)
+    cache_hit_rate = (
+        round(cache_read / (cache_read + input_tok + cache_creation) * 100)
+        if (cache_read + input_tok + cache_creation) > 0 else 0
+    )
+    llm_usage = {
+        "calls": len(llm_usages),
+        "input_tokens": input_tok,
+        "output_tokens": output_tok,
+        "cache_creation_tokens": cache_creation,
+        "cache_read_tokens": cache_read,
+        "cache_hit_rate": cache_hit_rate,
+    }
+
+    return {
+        "days": days,
+        "daily": daily,
+        "totals": totals,
+        "top_topics": top_topics,
+        "top_users": top_users,
+        "llm_usage": llm_usage,
+    }
 
 
 @app.get("/api/admin/export")

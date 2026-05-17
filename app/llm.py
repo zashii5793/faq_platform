@@ -1,8 +1,9 @@
-"""Anthropic Claude 呼び出しのラッパー。"""
+"""Anthropic Claude 呼び出しのラッパー（プロンプトキャッシュ対応）。"""
 from __future__ import annotations
 
 from anthropic import Anthropic
 
+from . import audit
 from .config import settings
 from .rag import Chunk
 
@@ -77,10 +78,40 @@ def answer(question: str, chunks: list[tuple[Chunk, float]], reference_mode: boo
             f"質問: {question}\n"
             f"参考: {[c.chunk_id for c, _ in chunks]}"
         )
+
+    # プロンプトキャッシュ: system を構造化（テキストブロック）して cache_control を付与
+    # Anthropic のキャッシュは最小トークン数（Haiku 4.5 は 2048 tok）に満たない場合は
+    # 自動的にキャッシュ対象外になる（エラーにはならない）。
+    system_blocks = [
+        {
+            "type": "text",
+            "text": system_prompt(reference_mode=reference_mode),
+            "cache_control": {"type": "ephemeral"},
+        }
+    ]
+
     msg = _client().messages.create(
         model=settings.claude_model,
         max_tokens=1024,
-        system=system_prompt(reference_mode=reference_mode),
+        system=system_blocks,
         messages=[{"role": "user", "content": build_user_prompt(question, chunks)}],
     )
+
+    # キャッシュヒット状況を監査ログに記録（コスト最適化の可視化用）
+    try:
+        usage = getattr(msg, "usage", None)
+        if usage is not None:
+            audit.record(
+                "llm_usage",
+                model=settings.claude_model,
+                input_tokens=getattr(usage, "input_tokens", 0),
+                output_tokens=getattr(usage, "output_tokens", 0),
+                cache_creation_input_tokens=getattr(usage, "cache_creation_input_tokens", 0) or 0,
+                cache_read_input_tokens=getattr(usage, "cache_read_input_tokens", 0) or 0,
+                reference_mode=reference_mode,
+            )
+    except Exception:
+        # 監査記録が失敗しても主処理は止めない（フォールバック）
+        pass
+
     return "".join(block.text for block in msg.content if block.type == "text")
