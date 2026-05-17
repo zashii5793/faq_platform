@@ -717,6 +717,10 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
 .doc-summary{padding:10px 12px;background:#f9fafb;border-radius:8px;font-size:12px;
              color:#6b7280;margin-bottom:8px}
 .doc-summary b{color:#111827}
+.export-btn{padding:6px 12px;background:#fff;color:#1a73e8;border:1px solid #bfdbfe;
+            border-radius:6px;font-size:12px;cursor:pointer;font-weight:500}
+.export-btn:hover{background:#eff6ff;border-color:#1a73e8}
+.export-btn:disabled{opacity:.5;cursor:not-allowed}
 @media (max-width:480px){
   .doc-table th.col-modified,.doc-table td.col-modified{display:none}
 }
@@ -757,6 +761,27 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
     <div class="step-title" style="margin-top:32px"><span class="step-num">4</span>FAQ追加リクエスト</div>
     <div id="faq-requests-section" style="font-size:13px;color:#6b7280">
       <div class="empty-msg">読み込み中…</div>
+    </div>
+
+    <div class="step-title" style="margin-top:32px"><span class="step-num">5</span>レポート出力（顧客提出・分析用）</div>
+    <div id="export-section" style="font-size:13px;color:#6b7280">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <label>期間:
+          <select id="exportDays" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px">
+            <option value="7">過去 7日</option>
+            <option value="30" selected>過去 30日</option>
+            <option value="90">過去 90日</option>
+            <option value="365">過去 1年</option>
+          </select>
+        </label>
+        <button class="export-btn" data-event="query" data-format="csv">📊 質問履歴 CSV</button>
+        <button class="export-btn" data-event="faq_request" data-format="csv">📩 FAQリクエスト CSV</button>
+        <button class="export-btn" data-event="feedback" data-format="csv">👍 フィードバック CSV</button>
+        <button class="export-btn" data-event="all" data-format="json">🗂 全ログ JSON</button>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:#9ca3af">
+        💡 CSV は Excel/Numbers で開けます（UTF-8 BOM 付き）。月次顧客レポートや改善分析にお使いください
+      </div>
     </div>
   </div>
   <div class="modal-footer">
@@ -1153,6 +1178,42 @@ function renderFaqRequests(requests, total){
   `;
 }
 
+// === エクスポート機能 ===
+document.querySelectorAll('.export-btn').forEach(btn => {
+  btn.onclick = async () => {
+    const days = document.getElementById('exportDays').value;
+    const event = btn.dataset.event;
+    const format = btn.dataset.format;
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ 生成中…';
+    try {
+      const url = `/api/admin/export?days=${days}&format=${format}&event=${event}`;
+      const r = await fetch(url);
+      if(!r.ok){
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.detail || r.statusText);
+      }
+      // ファイルダウンロード
+      const blob = await r.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      const cd = r.headers.get('Content-Disposition') || '';
+      const m = cd.match(/filename="([^"]+)"/);
+      link.download = m ? m[1] : `export.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    } catch(e){
+      alert('エクスポート失敗: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  };
+});
+
 loadDocuments();
 loadFaqRequests();
 </script>
@@ -1266,6 +1327,98 @@ async def admin_list_faq_requests(user: dict = Depends(require_user)):
         for e in recent if e.get("event") == "faq_request"
     ]
     return {"requests": requests[:100], "total": len(requests)}
+
+
+@app.get("/api/admin/export")
+async def admin_export(
+    days: int = 30,
+    format: str = "csv",
+    event: str = "query",
+    user: dict = Depends(require_user),
+):
+    """質問履歴・監査ログを CSV または JSON でエクスポート。
+
+    Args:
+      days: 何日前まで取得するか（デフォルト30日）
+      format: 'csv' または 'json'
+      event: フィルタするイベント種別（query / feedback / faq_request / all）
+    """
+    import csv
+    import io
+    from datetime import datetime
+    from fastapi.responses import StreamingResponse, JSONResponse
+
+    if format not in ("csv", "json"):
+        raise HTTPException(status_code=400, detail="format は 'csv' または 'json'")
+    if days < 1 or days > 365:
+        raise HTTPException(status_code=400, detail="days は 1〜365 の範囲")
+
+    entries = audit.read_range(days=days)
+    if event != "all":
+        entries = [e for e in entries if e.get("event") == event]
+
+    audit.record(
+        "export", user=user["email"], format=format,
+        event_filter=event, days=days, n_rows=len(entries),
+    )
+
+    filename_stem = f"inquira-{event}-{datetime.now().strftime('%Y%m%d')}"
+
+    if format == "json":
+        return JSONResponse(
+            content={"entries": entries, "n_rows": len(entries), "days": days, "event": event},
+            headers={"Content-Disposition": f'attachment; filename="{filename_stem}.json"'},
+        )
+
+    # CSV - 質問履歴向けに整形
+    buf = io.StringIO()
+    if event == "query":
+        cols = ["ts", "user", "question", "confidence", "answered",
+                "is_reference", "sources"]
+        writer = csv.DictWriter(buf, fieldnames=cols, extrasaction="ignore")
+        writer.writeheader()
+        for e in entries:
+            row = {c: e.get(c, "") for c in cols}
+            if isinstance(row["sources"], list):
+                row["sources"] = "; ".join(row["sources"])
+            writer.writerow(row)
+    elif event == "faq_request":
+        cols = ["ts", "user", "question", "note"]
+        writer = csv.DictWriter(buf, fieldnames=cols, extrasaction="ignore")
+        writer.writeheader()
+        for e in entries:
+            writer.writerow({c: e.get(c, "") for c in cols})
+    elif event == "feedback":
+        cols = ["ts", "user", "question", "vote", "sources"]
+        writer = csv.DictWriter(buf, fieldnames=cols, extrasaction="ignore")
+        writer.writeheader()
+        for e in entries:
+            row = {c: e.get(c, "") for c in cols}
+            if isinstance(row["sources"], list):
+                row["sources"] = "; ".join(row["sources"])
+            writer.writerow(row)
+    else:
+        # 全イベント or その他: 全フィールド出力
+        all_keys: list[str] = []
+        seen: set[str] = set()
+        for e in entries:
+            for k in e.keys():
+                if k not in seen:
+                    seen.add(k)
+                    all_keys.append(k)
+        writer = csv.DictWriter(buf, fieldnames=all_keys, extrasaction="ignore")
+        writer.writeheader()
+        for e in entries:
+            row = {k: ("; ".join(v) if isinstance(v, list) else v) for k, v in e.items()}
+            writer.writerow(row)
+
+    # Excel互換のため UTF-8 BOM を先頭に
+    csv_bytes = ("﻿" + buf.getvalue()).encode("utf-8")
+    return StreamingResponse(
+        io.BytesIO(csv_bytes),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename_stem}.csv"'},
+    )
 
 
 @app.post("/api/admin/reload-index")
