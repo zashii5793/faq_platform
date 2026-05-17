@@ -584,3 +584,104 @@ def test_export_audit_logged(client: TestClient):
     assert len(exports) == 1
     assert exports[0]["format"] == "csv"
     assert exports[0]["event_filter"] == "query"
+
+
+# ============================================================
+# シナリオ15: 組織情報のランタイム編集
+# ============================================================
+def test_settings_get_returns_defaults(client: TestClient, tmp_path, monkeypatch):
+    """初期状態では .env の値が effective として返る。"""
+    from app import runtime_settings
+    monkeypatch.setattr(runtime_settings, "OVERRIDES_PATH", tmp_path / "org_settings.json")
+
+    r = client.get("/api/admin/settings")
+    assert r.status_code == 200
+    data = r.json()
+    assert "effective" in data
+    assert "org_name" in data["effective"]
+    assert data["overrides"] == {}
+    assert "org_name" in data["editable_keys"]
+
+
+def test_settings_update_persists(client: TestClient, tmp_path, monkeypatch):
+    """更新後は overrides に保存され、effective にも反映される。"""
+    from app import runtime_settings
+    monkeypatch.setattr(runtime_settings, "OVERRIDES_PATH", tmp_path / "org_settings.json")
+
+    r = client.put("/api/admin/settings", json={
+        "org_name": "テスト商事株式会社",
+        "assistant_role": "総務サポート",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert body["applied"]["org_name"] == "テスト商事株式会社"
+
+    # ファイルが書かれている
+    saved = json.loads((tmp_path / "org_settings.json").read_text(encoding="utf-8"))
+    assert saved["org_name"] == "テスト商事株式会社"
+
+    # GET でも反映
+    r2 = client.get("/api/admin/settings")
+    assert r2.json()["effective"]["org_name"] == "テスト商事株式会社"
+
+
+def test_settings_update_rejects_empty(client: TestClient):
+    """空 payload は 400。"""
+    r = client.put("/api/admin/settings", json={})
+    assert r.status_code == 400
+
+
+def test_settings_update_rejects_too_long(client: TestClient, tmp_path, monkeypatch):
+    """200文字超は 400。"""
+    from app import runtime_settings
+    monkeypatch.setattr(runtime_settings, "OVERRIDES_PATH", tmp_path / "org_settings.json")
+    r = client.put("/api/admin/settings", json={"org_name": "あ" * 201})
+    assert r.status_code == 400
+
+
+def test_settings_reset_clears_overrides(client: TestClient, tmp_path, monkeypatch):
+    """DELETE で全オーバーライドが消える。"""
+    from app import runtime_settings
+    monkeypatch.setattr(runtime_settings, "OVERRIDES_PATH", tmp_path / "org_settings.json")
+
+    client.put("/api/admin/settings", json={"org_name": "Foo"})
+    assert (tmp_path / "org_settings.json").exists()
+
+    r = client.delete("/api/admin/settings")
+    assert r.status_code == 200
+    assert not (tmp_path / "org_settings.json").exists()
+
+
+# ============================================================
+# シナリオ16: 人気質問のサジェスト
+# ============================================================
+def test_popular_queries_in_stats(client: TestClient):
+    """同じ質問を2回以上聞かれたら popular_queries に出る。"""
+    md = "# 経費精算\n\n毎月25日締めです。".encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("expense.md", md, "text/markdown")})
+
+    # 同じ質問を3回
+    for _ in range(3):
+        client.post("/api/ask", json={"question": "経費精算の締め日は？"})
+
+    r = client.get("/api/admin/stats")
+    assert r.status_code == 200
+    data = r.json()
+    assert "popular_queries" in data
+    popular = data["popular_queries"]
+    questions = [p["question"] for p in popular]
+    assert "経費精算の締め日は？" in questions
+    found = next(p for p in popular if p["question"] == "経費精算の締め日は？")
+    assert found["count"] >= 2
+
+
+def test_single_query_not_in_popular(client: TestClient):
+    """1回しか聞かれていない質問はサジェストされない。"""
+    md = "# VPN\n\nFortiClient で接続。".encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("vpn.md", md, "text/markdown")})
+    client.post("/api/ask", json={"question": "VPN設定"})
+
+    r = client.get("/api/admin/stats")
+    popular = r.json().get("popular_queries", [])
+    questions = [p["question"] for p in popular]
+    assert "VPN設定" not in questions
