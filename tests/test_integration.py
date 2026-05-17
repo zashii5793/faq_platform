@@ -802,6 +802,104 @@ def test_query_search_respects_limit(client: TestClient):
 # ============================================================
 # シナリオ19: プロンプトキャッシュ（system を構造化ブロックで送る）
 # ============================================================
+# ============================================================
+# シナリオ19: PDF 取り込みの実シナリオ（E2E）
+# テキスト抽出可能PDF / 画像のみPDF / 壊れたPDF をカバー
+# ============================================================
+def _make_text_pdf(text: str) -> bytes:
+    """テキスト抽出可能な最小 PDF を手書きで生成（pypdf で読める）。"""
+    return (
+        b"%PDF-1.4\n"
+        b"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+        b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
+        b"3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+        b"/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >> endobj\n"
+        b"4 0 obj << /Length 60 >> stream\n"
+        b"BT /F1 12 Tf 50 700 Td ("
+        + text.encode("latin-1", errors="replace") + b") Tj ET\n"
+        b"endstream endobj\n"
+        b"5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n"
+        b"xref\n0 6\n0000000000 65535 f\n"
+        b"0000000009 00000 n\n0000000058 00000 n\n0000000111 00000 n\n"
+        b"0000000226 00000 n\n0000000316 00000 n\n"
+        b"trailer << /Size 6 /Root 1 0 R >>\nstartxref\n388\n%%EOF\n"
+    )
+
+
+def _make_image_only_pdf() -> bytes:
+    """テキストを含まない PDF（画像のみページを想定）"""
+    return (
+        b"%PDF-1.4\n"
+        b"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+        b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
+        b"3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >> endobj\n"
+        b"xref\n0 4\n0000000000 65535 f\n"
+        b"0000000009 00000 n\n0000000058 00000 n\n0000000111 00000 n\n"
+        b"trailer << /Size 4 /Root 1 0 R >>\nstartxref\n200\n%%EOF\n"
+    )
+
+
+def test_pdf_with_text_full_workflow(client: TestClient):
+    """テキスト抽出可能PDF: analyze → ingest → 質問できる。"""
+    pdf = _make_text_pdf("VPN connection requires FortiClient")
+
+    r = client.post("/api/admin/analyze", files={"file": ("vpn.pdf", pdf, "application/pdf")})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["format"] == "pdf"
+    assert d["n_chunks"] >= 1
+    assert d["recommendation"] in ("ok", "warn")
+
+    r = client.post("/api/admin/ingest", files={"file": ("vpn.pdf", pdf, "application/pdf")})
+    assert r.status_code == 200
+    assert r.json()["ingested_chunks"] >= 1
+
+
+def test_pdf_image_only_analyze_returns_warning_card(client: TestClient):
+    """画像のみPDFは 200 で n_chunks=0 + warn を返す（フロントが警告カードを出せる）。"""
+    pdf = _make_image_only_pdf()
+
+    r = client.post("/api/admin/analyze", files={"file": ("scan.pdf", pdf, "application/pdf")})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["n_chunks"] == 0
+    assert d["recommendation"] == "warn"
+    assert "テキスト" in d["reason"]  # 明確な理由メッセージ
+
+
+def test_pdf_image_only_ingest_rejected_with_clear_message(client: TestClient):
+    """画像のみPDFのingestは 422 + OCR案内付きで拒否される（無反応を防止）。"""
+    pdf = _make_image_only_pdf()
+
+    r = client.post("/api/admin/ingest", files={"file": ("scan.pdf", pdf, "application/pdf")})
+    assert r.status_code == 422
+    detail = r.json()["detail"]
+    assert "テキスト" in detail
+    assert "OCR" in detail or "ocr" in detail.lower()
+
+
+def test_pdf_corrupted_returns_422_not_500(client: TestClient):
+    """壊れたPDFは 500 ではなく 422 で明確に拒否される（500 はフロントの無反応につながる）。"""
+    broken = b"%PDF-1.4\n%binary garbage\xff\xff\xff\n%%EOF\n"
+
+    r = client.post("/api/admin/analyze", files={"file": ("broken.pdf", broken, "application/pdf")})
+    # analyze は安全に処理 → n_chunks=0 の warn 扱い、または 422 のどちらか
+    # （pypdf がreaderコンストラクタで例外を吐く場合は422、握って空ならanalyzeが200で0チャンク）
+    assert r.status_code in (200, 422), r.text
+    if r.status_code == 200:
+        assert r.json()["n_chunks"] == 0
+
+
+def test_pdf_not_a_pdf_returns_422(client: TestClient):
+    """拡張子だけ.pdfで中身がテキストの場合も 200 で n_chunks=0 になる（500を吐かない）。"""
+    fake = b"this is plain text pretending to be a pdf"
+
+    r = client.post("/api/admin/analyze", files={"file": ("fake.pdf", fake, "application/pdf")})
+    assert r.status_code in (200, 422)
+    if r.status_code == 200:
+        assert r.json()["n_chunks"] == 0
+
+
 def test_llm_system_prompt_uses_cache_control(client: TestClient, monkeypatch):
     """API キーがある場合、system が cache_control 付きの blocks で送られる。"""
     from app import llm

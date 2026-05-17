@@ -1086,6 +1086,30 @@ async function analyzeFile(file){
       return;
     }
     const analysis = await r.json();
+    // 0チャンク（画像のみPDF・空ファイル等）はそもそも取り込み不可なので、明確に警告カードに置き換える
+    if(!analysis.chunks || analysis.chunks.length === 0){
+      pending.outerHTML = `<div class="file-card danger">
+        <div class="fc-header">
+          <div class="fc-title">
+            <span class="fc-icon">⚠</span>
+            <div>
+              <div class="fc-name">${escape(file.name)}</div>
+              <div class="fc-meta">${fmtBytes(file.size)} · ${escape(analysis.format||'?')} · 0チャンク</div>
+            </div>
+          </div>
+          <span class="fc-badge danger">取り込み不可</span>
+        </div>
+        <div style="padding:12px;background:#fef2f2;border-radius:8px;margin-top:8px;font-size:13px;color:#991b1b">
+          📋 <b>${escape(analysis.reason||'テキストを抽出できませんでした')}</b><br><br>
+          <b>原因と対策:</b><br>
+          ・スキャン PDF / 画像のみ PDF → OCR が必要（v2 で対応予定）<br>
+          ・パスワード保護 PDF → 解除してから再投入<br>
+          ・空ファイル → ファイルが空でないか確認<br><br>
+          💡 <b>回避策</b>: PDF を Word/Markdown に変換するか、PDF からテキストをコピー&ペーストして .txt として投入してください
+        </div>
+      </div>`;
+      return;
+    }
     // ファイル全体が danger でも、安全なチャンクが残るなら included にする（チャンク除外で対応）
     const hasNonDanger = (analysis.chunks||[]).some(c => c.recommendation !== 'danger');
     const state = (analysis.recommendation === 'danger' && !hasNonDanger) ? 'danger' : 'included';
@@ -2132,12 +2156,28 @@ async def admin_analyze(file: UploadFile = File(...), user: dict = Depends(requi
         result = ingest_analyze(file.filename or "uploaded", content, settings.masking_industry)
     except ValueError as e:
         raise HTTPException(status_code=415, detail=str(e))
+    except Exception as e:
+        # パーサが予期せぬ例外（壊れたPDF/Excel等）を投げても 500 にしない
+        audit.record(
+            "analyze_error",
+            user=user["email"],
+            filename=file.filename or "uploaded",
+            error=type(e).__name__,
+            detail=str(e)[:200],
+        )
+        raise HTTPException(
+            status_code=422,
+            detail=f"ファイル解析に失敗しました（{type(e).__name__}）。"
+                   f"ファイルが壊れているか、対応していない形式の可能性があります。"
+                   f" 詳細: {str(e)[:200]}",
+        ) from e
     audit.record(
         "analyze",
         user=user["email"],
         filename=result.filename,
         sha256=result.sha256[:12],
         recommendation=result.recommendation,
+        n_chunks=result.n_chunks,
     )
     chunks_payload = []
     for c, cf in zip(result.chunks, result.chunk_findings):
@@ -2189,6 +2229,20 @@ async def admin_ingest(
         result = ingest_analyze(file.filename or "uploaded", content, settings.masking_industry)
     except ValueError as e:
         raise HTTPException(status_code=415, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=422,
+            detail=f"ファイル解析に失敗しました（{type(e).__name__}）。"
+                   f"ファイルが壊れているか、対応していない形式の可能性があります。",
+        ) from e
+
+    if result.n_chunks == 0:
+        raise HTTPException(
+            status_code=422,
+            detail="テキストを抽出できなかったため取り込めません。"
+                   "スキャン PDF や画像のみの PDF は OCR 処理が必要です（v2 で対応予定）。"
+                   "テキスト埋込み済みの PDF または Markdown/Word での提供をお願いします。",
+        )
 
     excluded = {x.strip() for x in excluded_chunk_ids.split(",") if x.strip()}
 
