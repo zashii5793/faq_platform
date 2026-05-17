@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import audit
+from . import audit, runtime_settings
 from .auth import is_email_allowed, oauth, require_user
 from .config import settings
 from .ingest import analyze as ingest_analyze, ingest as ingest_commit
@@ -15,6 +15,9 @@ from .masking import mask
 from .rag import get_index, record_feedback, reload_index
 
 app = FastAPI(title="Servicenet Internal FAQ (PoC)")
+
+# 起動時に保存済みの組織情報オーバーライドを反映
+runtime_settings.load_and_apply()
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 
 
@@ -135,6 +138,10 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .chip:hover{{background:#1a73e8;color:#fff;border-color:#1a73e8}}
 .chip .src-hint{{color:#9ca3af;font-size:10px;margin-left:6px}}
 .chip:hover .src-hint{{color:#bfdbfe}}
+.chip.popular{{background:#fef3c7;border-color:#fcd34d;color:#78350f}}
+.chip.popular:hover{{background:#f59e0b;color:#fff;border-color:#f59e0b}}
+.chip.popular .src-hint{{color:#92400e}}
+.chip.popular:hover .src-hint{{color:#fff7ed}}
 .msg{{margin-bottom:20px}}
 .msg.user{{text-align:right}}
 .msg.user .bubble{{background:#1a73e8;color:#fff;margin-left:auto}}
@@ -321,15 +328,26 @@ async function loadStats(){{
     issues.innerHTML=s.feedback.down_questions.length
       ? s.feedback.down_questions.map(q=>`<li>${{escape(q.slice(0,40))}}${{q.length>40?'…':''}}</li>`).join('')
       : '<li class="empty-list" style="list-style:none;padding-left:0">なし</li>';
-    // サジェストを文書から動的生成
-    if(suggestionsEl && s.knowledge.documents.length){{
+    // サジェスト：人気質問（過去30日に2回以上聞かれたもの）を優先、
+    // 不足分は文書から動的生成で補完
+    if(suggestionsEl){{
+      const pop=s.popular_queries||[];
+      const docs=s.knowledge.documents||[];
+      const chips=[];
+      // 人気質問を優先（実際にユーザーが聞いている質問なのでヒット率高）
+      for(const p of pop.slice(0,4)){{
+        chips.push(`<div class="chip popular" data-q="${{escape(p.question)}}">🔥 ${{escape(p.question.slice(0,40))}}${{p.question.length>40?'…':''}} <span class="src-hint">${{p.count}}回</span></div>`);
+      }}
+      // 文書ベースで残り埋め
       const templates=['{{}}について教えて','{{}}の使い方は？','{{}}の手順を知りたい','{{}}でトラブルが起きた時'];
-      suggestionsEl.innerHTML=s.knowledge.documents.slice(0,6).map((d,i)=>{{
-        const topic=d.replace('.md','');
+      const need=Math.max(0,6-chips.length);
+      for(let i=0;i<need && i<docs.length;i++){{
+        const topic=docs[i].replace('.md','');
         const tpl=templates[i%templates.length];
         const q=tpl.replace('{{}}',topic);
-        return `<div class="chip" data-q="${{escape(q)}}">${{escape(q)}} <span class="src-hint">${{escape(d)}}</span></div>`;
-      }}).join('');
+        chips.push(`<div class="chip" data-q="${{escape(q)}}">${{escape(q)}} <span class="src-hint">${{escape(docs[i])}}</span></div>`);
+      }}
+      suggestionsEl.innerHTML=chips.join('');
       suggestionsEl.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{{input.value=c.dataset.q;form.requestSubmit();}});
     }}
   }} catch(e) {{ console.error('stats error', e); }}
@@ -721,6 +739,23 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
             border-radius:6px;font-size:12px;cursor:pointer;font-weight:500}
 .export-btn:hover{background:#eff6ff;border-color:#1a73e8}
 .export-btn:disabled{opacity:.5;cursor:not-allowed}
+.setting-row{margin-bottom:12px}
+.setting-label{display:block;font-size:12px;color:#374151;font-weight:500;margin-bottom:4px;
+               display:flex;align-items:center;gap:8px}
+.setting-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:400;
+               background:#dbeafe;color:#1e40af}
+.setting-badge.default{background:#f3f4f6;color:#6b7280}
+.setting-row input[type=text]{width:100%;padding:8px 10px;border:1px solid #d1d5db;
+                              border-radius:6px;font-size:13px;box-sizing:border-box}
+.setting-row input[type=text]:focus{outline:0;border-color:#1a73e8;box-shadow:0 0 0 3px rgba(26,115,232,.15)}
+.setting-hint{margin-top:2px;font-size:11px;color:#9ca3af}
+.setting-save-btn{padding:8px 16px;background:#1a73e8;color:#fff;border:0;border-radius:6px;
+                  font-size:13px;cursor:pointer;font-weight:500}
+.setting-save-btn:hover{background:#1557b0}
+.setting-save-btn:disabled{opacity:.6;cursor:not-allowed}
+.setting-reset-btn{padding:8px 16px;background:#fff;color:#6b7280;border:1px solid #d1d5db;
+                   border-radius:6px;font-size:13px;cursor:pointer}
+.setting-reset-btn:hover{background:#f9fafb;color:#dc2626;border-color:#fecaca}
 @media (max-width:480px){
   .doc-table th.col-modified,.doc-table td.col-modified{display:none}
 }
@@ -763,7 +798,12 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
       <div class="empty-msg">読み込み中…</div>
     </div>
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">5</span>レポート出力（顧客提出・分析用）</div>
+    <div class="step-title" style="margin-top:32px"><span class="step-num">5</span>組織情報（営業デモ・カスタマイズ用）</div>
+    <div id="settings-section" style="font-size:13px;color:#6b7280">
+      <div class="empty-msg">読み込み中…</div>
+    </div>
+
+    <div class="step-title" style="margin-top:32px"><span class="step-num">6</span>レポート出力（顧客提出・分析用）</div>
     <div id="export-section" style="font-size:13px;color:#6b7280">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <label>期間:
@@ -1214,8 +1254,104 @@ document.querySelectorAll('.export-btn').forEach(btn => {
   };
 });
 
+// === 組織情報の編集 ===
+const settingsSection = document.getElementById('settings-section');
+
+const SETTINGS_LABELS = {
+  product_name: 'プロダクト名',
+  org_name: '組織名',
+  assistant_role: 'アシスタント役割',
+  masking_industry: 'マスキング業界プリセット',
+};
+const SETTINGS_HINTS = {
+  product_name: 'チャット画面のタイトルに表示されます（例: Inquira）',
+  org_name: 'AIの自己紹介に使われます（例: 株式会社○○）',
+  assistant_role: 'AIの役割設定（例: 社内ヘルプデスク / 顧客サポート）',
+  masking_industry: 'PII検出の業界辞書（general / education / medical / finance）',
+};
+
+async function loadSettings(){
+  settingsSection.innerHTML = '<div class="empty-msg"><span class="spinner"></span>読み込み中…</div>';
+  try {
+    const r = await fetch('/api/admin/settings');
+    if(!r.ok) throw new Error(r.statusText);
+    const d = await r.json();
+    renderSettings(d);
+  } catch(e) {
+    settingsSection.innerHTML = `<div class="error-msg">読み込み失敗: ${escape(e.message)}</div>`;
+  }
+}
+
+function renderSettings(data){
+  const eff = data.effective || {};
+  const overrides = data.overrides || {};
+  const keys = data.editable_keys || [];
+  const rows = keys.map(k => {
+    const isOverride = k in overrides;
+    return `
+      <div class="setting-row">
+        <label class="setting-label">
+          ${SETTINGS_LABELS[k] || k}
+          ${isOverride ? '<span class="setting-badge">UIから編集済</span>' : '<span class="setting-badge default">.env デフォルト</span>'}
+        </label>
+        <input type="text" data-key="${k}" value="${escape(eff[k] || '')}" maxlength="200"/>
+        <div class="setting-hint">${escape(SETTINGS_HINTS[k] || '')}</div>
+      </div>
+    `;
+  }).join('');
+  settingsSection.innerHTML = `
+    <div class="doc-summary">💡 ここで変更した内容は <b>即時反映＋次回起動時にも保持</b> されます。営業デモで貴社用にカスタマイズしてください。</div>
+    ${rows}
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="setting-save-btn">💾 変更を保存</button>
+      <button class="setting-reset-btn">↩ .env デフォルトに戻す</button>
+    </div>
+  `;
+  settingsSection.querySelector('.setting-save-btn').onclick = saveSettings;
+  settingsSection.querySelector('.setting-reset-btn').onclick = resetSettings;
+}
+
+async function saveSettings(){
+  const inputs = settingsSection.querySelectorAll('input[data-key]');
+  const updates = {};
+  for(const inp of inputs){
+    updates[inp.dataset.key] = inp.value.trim();
+  }
+  const btn = settingsSection.querySelector('.setting-save-btn');
+  btn.disabled = true; btn.textContent = '保存中…';
+  try {
+    const r = await fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(updates),
+    });
+    if(!r.ok){
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail || r.statusText);
+    }
+    await loadSettings();
+    alert('✅ 保存しました。チャット画面（/）でも反映されています');
+  } catch(e){
+    btn.disabled = false; btn.textContent = '💾 変更を保存';
+    alert('保存失敗: ' + e.message);
+  }
+}
+
+async function resetSettings(){
+  if(!confirm('UIで編集した組織情報を全て削除し、.env のデフォルトに戻します。よろしいですか？\n（即座に反映されない項目もあります）')) return;
+  try {
+    const r = await fetch('/api/admin/settings', {method:'DELETE'});
+    if(!r.ok) throw new Error(r.statusText);
+    await loadSettings();
+    alert('✅ オーバーライドを削除しました');
+  } catch(e){
+    alert('失敗: ' + e.message);
+  }
+}
+
 loadDocuments();
 loadFaqRequests();
+loadSettings();
 </script>
 </body></html>"""
 
@@ -1246,6 +1382,21 @@ async def admin_stats(user: dict = Depends(require_user)):
     avg_confidence = round(sum(confs) / len(confs)) if confs else 0
     answer_rate = round(answered / len(queries) * 100) if queries else 0
 
+    # 人気質問サジェスト：回答に成功した質問の出現頻度トップ
+    # （個人特定可能な質問でも、複数回出てきたものは「みんなが聞いてる」サイン）
+    long_range = audit.read_range(days=30)
+    answered_queries = [
+        (q.get("question") or "").strip()
+        for q in long_range
+        if q.get("event") == "query" and q.get("answered") is True
+    ]
+    question_counts: Counter = Counter(q for q in answered_queries if len(q) >= 4)
+    popular_queries = [
+        {"question": q, "count": c}
+        for q, c in question_counts.most_common(8)
+        if c >= 2  # 2回以上聞かれたものだけサジェスト
+    ]
+
     fb_up = sum(1 for f in feedback if f.get("vote") == "up")
     fb_down = sum(1 for f in feedback if f.get("vote") == "down")
     down_questions = [f.get("question", "") for f in feedback if f.get("vote") == "down"][:3]
@@ -1266,6 +1417,7 @@ async def admin_stats(user: dict = Depends(require_user)):
         },
         "history": history,
         "feedback": {"up": fb_up, "down": fb_down, "down_questions": down_questions},
+        "popular_queries": popular_queries,
     }
 
 
@@ -1327,6 +1479,52 @@ async def admin_list_faq_requests(user: dict = Depends(require_user)):
         for e in recent if e.get("event") == "faq_request"
     ]
     return {"requests": requests[:100], "total": len(requests)}
+
+
+@app.get("/api/admin/settings")
+async def admin_get_settings(user: dict = Depends(require_user)):
+    """組織情報の現在値と、ファイル保存されているオーバーライドを返す。"""
+    return {
+        "effective": runtime_settings.get_effective(),
+        "overrides": runtime_settings.current_overrides(),
+        "editable_keys": sorted(runtime_settings.EDITABLE_KEYS),
+    }
+
+
+class SettingsUpdate(BaseModel):
+    product_name: str | None = None
+    org_name: str | None = None
+    assistant_role: str | None = None
+    masking_industry: str | None = None
+
+
+@app.put("/api/admin/settings")
+async def admin_update_settings(
+    payload: SettingsUpdate,
+    user: dict = Depends(require_user),
+):
+    """組織情報を更新（即時反映＋ファイル保存）。"""
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="更新項目が空です")
+    try:
+        applied = runtime_settings.update(updates)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    audit.record(
+        "settings_update",
+        user=user["email"],
+        keys=sorted(applied.keys()),
+    )
+    return {"applied": applied, "effective": runtime_settings.get_effective()}
+
+
+@app.delete("/api/admin/settings")
+async def admin_reset_settings(user: dict = Depends(require_user)):
+    """全オーバーライドを削除し `.env` のデフォルトに戻す（再起動が必要な項目あり）。"""
+    runtime_settings.reset()
+    audit.record("settings_reset", user=user["email"])
+    return {"ok": True, "note": "再起動で .env 値が反映されます"}
 
 
 @app.get("/api/admin/export")
