@@ -154,12 +154,18 @@ def test_api_analyze_with_traversal_filename(client: TestClient):
     assert "../" not in data["filename"]
 
 
-def test_api_ingest_empty_file_gracefully(client: TestClient):
-    """空ファイルの取り込みは 200 で 0 チャンク。"""
+def test_api_ingest_empty_file_rejected_with_clear_message(client: TestClient):
+    """空ファイル/0チャンクファイルは 422 で明確に拒否される。
+
+    旧仕様は 200 で 0チャンク返却していたが、フロントが「成功した」と誤認する
+    UX バグ（画像のみ PDF を投入したら無反応）の原因となっていたため、明確に
+    エラーとして返す。
+    """
     r = client.post("/api/admin/ingest",
                     files={"file": ("empty.md", b"", "text/markdown")})
-    assert r.status_code == 200
-    assert r.json()["ingested_chunks"] == 0
+    assert r.status_code == 422
+    detail = r.json()["detail"]
+    assert "テキスト" in detail
 
 
 def test_api_analyze_returns_warn_for_no_text(client: TestClient):

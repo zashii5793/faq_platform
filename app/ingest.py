@@ -179,13 +179,30 @@ def _parse_csv(filename: str, content: bytes) -> list[Chunk]:
 
 
 def _parse_pdf(filename: str, content: bytes) -> list[Chunk]:
-    """PDF: ページ単位でチャンク化（chunk_id にページ番号を含める）。"""
-    from pypdf import PdfReader
+    """PDF: ページ単位でチャンク化（chunk_id にページ番号を含める）。
 
-    reader = PdfReader(io.BytesIO(content))
+    壊れた PDF・パースできない PDF は例外を握って空リストを返す。
+    （呼び出し側の analyze() で「テキスト抽出できませんでした」として警告表示する）
+    """
+    try:
+        from pypdf import PdfReader
+        from pypdf.errors import PdfReadError
+    except ImportError:
+        return []
+
+    try:
+        reader = PdfReader(io.BytesIO(content))
+    except (PdfReadError, ValueError, OSError, Exception):
+        # 壊れた PDF / PDF でない / 暗号化済み 等
+        return []
+
     chunks: list[Chunk] = []
     for i, page in enumerate(reader.pages):
-        text = (page.extract_text() or "").strip()
+        try:
+            text = (page.extract_text() or "").strip()
+        except Exception:
+            # 個別ページの抽出失敗はスキップ（次のページを試す）
+            continue
         if not text:
             continue
         # 600字超は段落分割
