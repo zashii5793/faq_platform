@@ -252,7 +252,7 @@ const industrySelect = document.getElementById('industry');
 const orgLabel = document.getElementById('orgLabel');
 
 industrySelect.onchange = () => {
-  const labels = {general:'○○株式会社', education:'教育系A社様', finance:'△△銀行', healthcare:'□□病院'};
+  const labels = {general:'○○株式会社', education:'導入企業', finance:'△△銀行', healthcare:'□□病院'};
   orgLabel.textContent = labels[industrySelect.value] + 'の社内ヘルプデスク';
 };
 

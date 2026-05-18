@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""タカヤモーター実データで検索精度をベンチマーク。
+"""デモ会社実データで検索精度をベンチマーク。
 
 各質問について：
   - 正解とされる文書（expected）が top1 に来ているか
@@ -43,8 +43,8 @@ TEST_CASES: list[tuple[str, str]] = [
     ("保証適用外のケース", "保証規定.md"),
     ("整備受付の流れ", "整備受付マニュアル.md"),
     ("代車利用時に必要な書類", "整備受付マニュアル.md"),
-    ("タカヤCarEditにログインできない", "タカヤCarEdit操作.md"),
-    ("二要素認証アプリを再インストール", "タカヤCarEdit操作.md"),
+    ("デモ会社CarEditにログインできない", "デモ会社CarEdit操作.md"),
+    ("二要素認証アプリを再インストール", "デモ会社CarEdit操作.md"),
     ("トルクレンチの校正", "工具管理ルール.md"),
     ("工具を紛失した時", "工具管理ルール.md"),
     # ハルシネーション抑制用（NO ANSWER期待）
@@ -73,7 +73,7 @@ def _compute_confidence(scored):
 
 
 def main() -> int:
-    faq_dir = Path("./data/takaya_faq")
+    faq_dir = Path("./data/demo_company_faq")
     if not faq_dir.exists():
         print(f"❌ {faq_dir} がありません")
         return 1

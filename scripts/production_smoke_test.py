@@ -10,7 +10,7 @@ Anthropic API キーを使って、実際の Claude 回答が出る状態を E2E
 検証項目:
     1. APIキー疎通（test_anthropic.py 相当の最小リクエスト）
     2. システムプロンプトでの回答抑制（推測禁止が効いているか）
-    3. タカヤモーター実 FAQ で 5 質問の実回答品質
+    3. デモ会社実 FAQ で 5 質問の実回答品質
     4. 関係ない質問で「該当情報なし」が出るか
     5. 出典が回答末尾に明記されるか
     6. マスキング済みトークンが復元されないか
@@ -37,7 +37,7 @@ from app.rag import FaqIndex, load_chunks
 TEST_CASES: list[tuple[str, str, bool]] = [
     ("VPN接続の方法を教えて", "VPN接続マニュアル.md", False),
     ("リフト作業の安全ルール", "作業安全マニュアル.md", False),
-    ("タカヤCarEditにログインできない時", "タカヤCarEdit操作.md", False),
+    ("デモ会社CarEditにログインできない時", "デモ会社CarEdit操作.md", False),
     ("有給を当日朝に取りたい", "勤怠・有給.md", False),
     ("バッテリー上がりの対応", "緊急ロードサービス.md", False),
     # ハルシネーション抑制
@@ -100,9 +100,9 @@ def main() -> int:
     if not _check_anthropic():
         return 1
 
-    faq_dir = Path("./data/takaya_faq")
+    faq_dir = Path("./data/demo_company_faq")
     if not faq_dir.exists():
-        print(f"❌ {faq_dir} がありません。タカヤ用デモデータが必要です")
+        print(f"❌ {faq_dir} がありません。デモ会社用デモデータが必要です")
         return 1
 
     print(f"📚 取り込み済み FAQ: {faq_dir}")

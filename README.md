@@ -113,9 +113,9 @@ HOST=0.0.0.0 ./scripts/demo.sh
 pip install -e ".[embedding]"
 
 # 2. 環境変数で指定して起動（小: 470MB / 大: 2.2GB）
-EMBEDDING_BACKEND=e5-small ./scripts/demo_takaya.sh
+EMBEDDING_BACKEND=e5-small ./scripts/demo_company.sh
 # または
-EMBEDDING_BACKEND=e5-large ./scripts/demo_takaya.sh
+EMBEDDING_BACKEND=e5-large ./scripts/demo_company.sh
 ```
 
 | バックエンド | モデルサイズ | 精度 | 起動時間 | メモリ |
@@ -177,7 +177,7 @@ scripts/
   classify_tickets.py  チケットCSV を Claude で自動分類するデモ
 docs/
   specification.md           技術仕様書
-  requirements_demo_education.md 教育系A社様向け導入事例（要件）
+  requirements_demo_education.md 導入企業向け導入事例（要件）
   business_analysis.md       ビジネス用途分析
 tests/                      pytest
 ```
@@ -249,11 +249,11 @@ pytest
 - [docs/specification.md](./docs/specification.md) — 技術仕様書
 - [docs/ui_specification.md](./docs/ui_specification.md) — UI設計仕様
 - [docs/business_analysis.md](./docs/business_analysis.md) — ビジネス用途分析
-- [docs/requirements_demo_education.md](./docs/requirements_demo_education.md) — 教育系A社様 導入事例
+- [docs/requirements_demo_education.md](./docs/requirements_demo_education.md) — 導入企業 導入事例
 
 ### スクリプト・ツール
 
-- [scripts/demo_takaya.sh](./scripts/demo_takaya.sh) — タカヤモーター想定デモ起動
+- [scripts/demo_company.sh](./scripts/demo_company.sh) — デモ会社想定デモ起動
 - [scripts/test_anthropic.py](./scripts/test_anthropic.py) — API キー疎通確認
 - **[scripts/production_smoke_test.py](./scripts/production_smoke_test.py) — 本番動作確認（実回答品質テスト）**
 - [scripts/benchmark_search.py](./scripts/benchmark_search.py) — 検索精度ベンチマーク

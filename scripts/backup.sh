@@ -26,7 +26,7 @@ ARCHIVE="$OUT_DIR/inquira-backup-$TS.tar.gz"
 # バックアップ対象（存在するものだけ）
 ITEMS=()
 [ -d "data/faq_master" ] && ITEMS+=("data/faq_master")
-[ -d "data/takaya_faq" ] && ITEMS+=("data/takaya_faq")
+[ -d "data/demo_company_faq" ] && ITEMS+=("data/demo_company_faq")
 [ -d "data/demo_faq" ] && ITEMS+=("data/demo_faq")
 [ -d "data/audit" ] && ITEMS+=("data/audit")
 [ -f "data/feedback_scores.json" ] && ITEMS+=("data/feedback_scores.json")

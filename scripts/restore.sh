@@ -7,7 +7,7 @@
 # 注意:
 #   - 既存の data/ や .env を **上書き** します
 #   - 実行前に現状の状態をもう一度バックアップすることを推奨
-#   - 復元後は ./scripts/demo_takaya.sh を再起動してください
+#   - 復元後は ./scripts/demo_company.sh を再起動してください
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -70,5 +70,5 @@ echo "   （問題なければ削除可: rm -rf $SAFETY_DIR）"
 echo ""
 echo "📝 次のステップ:"
 echo "   1. サーバが起動中なら Ctrl+C で停止"
-echo "   2. ./scripts/demo_takaya.sh で再起動"
+echo "   2. ./scripts/demo_company.sh で再起動"
 echo "   3. ブラウザで /admin/upload を開き、文書一覧と監査ログを確認"

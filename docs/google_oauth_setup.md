@@ -151,7 +151,7 @@ SESSION_SECRET=（下のコマンドで生成）
 
 # 組織情報
 PRODUCT_NAME=Inquira
-ORG_NAME=教育系A社様
+ORG_NAME=導入企業
 ASSISTANT_ROLE=社内ヘルプデスク
 
 # 業界マスキング
