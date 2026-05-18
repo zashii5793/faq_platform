@@ -27,8 +27,22 @@ GENERIC_RULES: list[MaskRule] = [
         "[メール]",
     ),
     MaskRule(
+        "phone_intl",
+        # +81-3-1234-5678 / +1 (212) 555-1234 など国際電話
+        re.compile(r"\+\d{1,3}[\s\-(]*\d{1,4}[\s\-)]*\d{1,4}[\s\-]*\d{3,4}"),
+        "[電話番号]",
+    ),
+    MaskRule(
         "phone_jp",
-        re.compile(r"\b0\d{1,4}[-(]?\d{1,4}[-)]?\d{3,4}\b"),
+        # 半角: 03-1234-5678 / 090-1234-5678 / 0312345678
+        # 全角括弧: （03）1234-5678
+        re.compile(r"[(（]?\b0\d{1,4}[)）]?[-\s]?\d{1,4}[-\s]?\d{3,4}\b"),
+        "[電話番号]",
+    ),
+    MaskRule(
+        "phone_jp_zenkaku",
+        # 全角数字: ０３−１２３４−５６７８
+        re.compile(r"[(（]?０[０-９]{1,4}[)）]?[\-−ー－\s]?[０-９]{1,4}[\-−ー－\s]?[０-９]{3,4}"),
         "[電話番号]",
     ),
     MaskRule(
@@ -42,13 +56,20 @@ GENERIC_RULES: list[MaskRule] = [
         "[マイナンバー]",
     ),
     MaskRule(
+        "ipv6",
+        # IPv6 (フル形式 + 省略形 ::）— 先に評価して IPv4 と競合させない
+        re.compile(r"\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b|::[0-9a-fA-F:]+|[0-9a-fA-F:]+::[0-9a-fA-F:]*"),
+        "[IPアドレス]",
+    ),
+    MaskRule(
         "ip_address",
         re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"),
         "[IPアドレス]",
     ),
     MaskRule(
         "url",
-        re.compile(r"https?://[^\s]+"),
+        # 末尾の日本語句読点（。、）と半角句読点（.,;!?）が URL に含まれないようにする
+        re.compile(r"https?://[^\s。、，．！？]+"),
         "[URL]",
     ),
 ]
@@ -58,7 +79,11 @@ GENERIC_RULES: list[MaskRule] = [
 EDUCATION_RULES: list[MaskRule] = [
     MaskRule(
         "school_name",
-        re.compile(r"[一-鿿ぁ-んァ-ヶー々〇○]+(?:学園|学院|高校|中学|小学校|大学|短大|専門学校)"),
+        # 漢字・ひらがな・カタカナ・全角英数字（Ａ-Ｚ Ａ-ｚ ０-９）・記号 ＋ 校種
+        re.compile(
+            r"[一-鿿ぁ-んァ-ヶー々〇○Ａ-Ｚａ-ｚ０-９]+"
+            r"(?:学園|学院|高校|中学校|中学|小学校|大学|短大|専門学校)"
+        ),
         "[学校名]",
     ),
 ]

@@ -17,3 +17,6 @@ data/faq_master/*
 .ruff_cache/
 .DS_Store
 .private/
+
+.coverage
+data/org_settings.json

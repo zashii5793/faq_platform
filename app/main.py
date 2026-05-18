@@ -1,6 +1,8 @@
 """FastAPI エントリポイント。Google SSO + 簡易 RAG + Claude 呼び出し。"""
 from __future__ import annotations
 
+from html import escape as _html_escape
+
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
@@ -13,6 +15,12 @@ from .ingest import analyze as ingest_analyze, ingest as ingest_commit
 from .llm import answer
 from .masking import mask
 from .rag import get_index, record_feedback, reload_index
+
+
+def _esc(s: str | None) -> str:
+    """HTML エスケープ（XSS 防止）。組織名等のユーザー設定値を HTML に埋め込む前に必ず通す。"""
+    return _html_escape(str(s or ""), quote=True)
+
 
 app = FastAPI(title="Servicenet Internal FAQ (PoC)")
 
@@ -52,7 +60,7 @@ def _demo_banner_html() -> str:
 def _login_page() -> str:
     return f"""<!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
-<title>{settings.product_name} - {settings.org_name}</title>
+<title>{_esc(settings.product_name)} - {_esc(settings.org_name)}</title>
 <style>
 body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
      background:#f7f8fa;display:flex;align-items:center;justify-content:center;
@@ -69,8 +77,8 @@ p{{color:#6b7280;margin:0 0 24px}}
 </style></head><body>
 <div class="card">
   <div class="tag">社内専用</div>
-  <h1>{settings.product_name}</h1>
-  <p>{settings.org_name}の{settings.assistant_role}<br>
+  <h1>{_esc(settings.product_name)}</h1>
+  <p>{_esc(settings.org_name)}の{_esc(settings.assistant_role)}<br>
      社内ドキュメントから即座に回答します</p>
   <a class="btn" href="/auth/login">🔐 Googleでログイン</a>
 </div></body></html>"""
@@ -80,7 +88,7 @@ def _chat_page(user_email: str) -> str:
     return f"""<!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>{settings.product_name}</title>
+<title>{_esc(settings.product_name)}</title>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',sans-serif;
@@ -214,8 +222,8 @@ button.send:disabled{{background:#9ca3af}}
 
 <aside>
   <div class="brand">
-    <h1>{settings.product_name}</h1>
-    <p>{settings.org_name}</p>
+    <h1>{_esc(settings.product_name)}</h1>
+    <p>{_esc(settings.org_name)}</p>
   </div>
 
   <div class="section">
@@ -257,7 +265,7 @@ button.send:disabled{{background:#9ca3af}}
 <main>
   <header>
     <button class="menu-btn" id="menuBtn" aria-label="メニューを開く">☰</button>
-    <div class="org">{settings.org_name}の{settings.assistant_role}</div>
+    <div class="org">{_esc(settings.org_name)}の{_esc(settings.assistant_role)}</div>
     <div class="user">{user_email}<a href="/auth/logout">ログアウト</a></div>
   </header>
   {_demo_banner_html()}
