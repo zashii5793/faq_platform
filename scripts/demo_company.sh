@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# タカヤモーター株式会社 想定デモ起動
+# デモ会社株式会社 想定デモ起動
 #
-# 使い方: ./scripts/demo_takaya.sh
+# 使い方: ./scripts/demo_company.sh
 #   通常版: ./scripts/demo.sh と同じ流れで venv 作成・テスト・起動
-#   組織名・FAQ 文書だけタカヤモーター用に切り替えます
+#   組織名・FAQ 文書だけデモ会社用に切り替えます
 
 set -e
 cd "$(dirname "$0")/.."
@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.."
 PYTHON="${PYTHON:-python3}"
 PORT="${PORT:-8000}"
 
-echo "🚗 タカヤモーター株式会社 — 社内ヘルプデスク 起動"
+echo "🚗 デモ会社株式会社 — 社内ヘルプデスク 起動"
 echo ""
 
 # 既存の .venv が Python 3.11+ ならそれを優先利用（システム python3 が 3.9 でも OK）
@@ -56,12 +56,12 @@ if [ "$USE_EXISTING_VENV" -eq 0 ]; then
     echo "    uv venv --python 3.11"
     echo "    source .venv/bin/activate"
     echo "    uv pip install -e \".[dev]\""
-    echo "    DEMO_MODE=1 FAQ_MASTER_DIR=./data/takaya_faq SESSION_SECRET=demo \\"
-    echo "      ORG_NAME=\"タカヤモーター株式会社\" ASSISTANT_ROLE=\"整備工場サポート\" \\"
+    echo "    DEMO_MODE=1 FAQ_MASTER_DIR=./data/demo_company_faq SESSION_SECRET=demo \\"
+    echo "      ORG_NAME=\"デモ会社株式会社\" ASSISTANT_ROLE=\"整備工場サポート\" \\"
     echo "      uvicorn app.main:app --host 127.0.0.1 --port 8000"
     echo ""
     echo "  方法B: brew install python@3.11 してから"
-    echo "    rm -rf .venv && PYTHON=python3.11 ./scripts/demo_takaya.sh"
+    echo "    rm -rf .venv && PYTHON=python3.11 ./scripts/demo_company.sh"
     echo ""
     echo "  方法C: Docker"
     echo "    docker compose up --build"
@@ -109,11 +109,11 @@ fi
 HOST="${HOST:-127.0.0.1}"
 
 echo ""
-echo "🚗 タカヤモーター 社内ヘルプデスク 起動準備完了"
+echo "🚗 デモ会社 社内ヘルプデスク 起動準備完了"
 echo ""
-echo "   組織名:    タカヤモーター株式会社"
+echo "   組織名:    デモ会社株式会社"
 echo "   役割:      整備工場サポート"
-echo "   取り込み済み: data/takaya_faq/ の 10 文書"
+echo "   取り込み済み: data/demo_company_faq/ の 10 文書"
 echo ""
 if [ "$HOST" = "0.0.0.0" ] && [ -n "$LAN_IP" ]; then
   echo "   ┌─────────────────────────────────────────────────────────┐"
@@ -130,7 +130,7 @@ else
   if [ -n "$LAN_IP" ]; then
     echo ""
     echo "   📱 工場のスマホから試したい場合:"
-    echo "      HOST=0.0.0.0 ./scripts/demo_takaya.sh"
+    echo "      HOST=0.0.0.0 ./scripts/demo_company.sh"
   fi
 fi
 echo ""
@@ -139,16 +139,16 @@ echo "     ・「車検の法定費用はいくら？」"
 echo "     ・「部品発注の締め時間は？」"
 echo "     ・「ロードサービスの夜間対応どうするの」"
 echo "     ・「リフト作業の安全ルール」"
-echo "     ・「タカヤCarEditにログインできない時」"
+echo "     ・「デモ会社CarEditにログインできない時」"
 echo ""
 echo "   (Ctrl+C で停止)"
 echo ""
 
-# テナント分離: 監査ログ・フィードバックもタカヤ専用ディレクトリに
+# テナント分離: 監査ログ・フィードバックもデモ会社専用ディレクトリに
 DEMO_MODE=1 \
-  FAQ_MASTER_DIR=./data/takaya_faq \
-  SESSION_SECRET=takaya-demo-secret \
+  FAQ_MASTER_DIR=./data/demo_company_faq \
+  SESSION_SECRET=demo_company-demo-secret \
   PRODUCT_NAME=Inquira \
-  ORG_NAME="タカヤモーター株式会社" \
+  ORG_NAME="デモ会社株式会社" \
   ASSISTANT_ROLE="整備工場サポート" \
   uvicorn app.main:app --host "${HOST}" --port "${PORT}"

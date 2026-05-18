@@ -61,7 +61,7 @@ ALLOWED_DOMAIN=example-edu.co.jp
 SESSION_SECRET=（openssl rand -hex 32 の出力）
 
 PRODUCT_NAME=Inquira
-ORG_NAME=教育系A社様
+ORG_NAME=導入企業
 ASSISTANT_ROLE=社内ヘルプデスク
 MASKING_INDUSTRY=education
 EMBEDDING_BACKEND=tfidf  # 最初は軽量設定で

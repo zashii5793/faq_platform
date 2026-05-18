@@ -47,7 +47,7 @@ grep "ANTHROPIC_API_KEY" .env 2>/dev/null
 
 1. ログイン後 → 左メニュー **「API Keys」**
 2. **「Create Key」** ボタン
-3. キー名を入力（例：`inquira-takaya-demo`）
+3. キー名を入力（例：`inquira-demo_company-demo`）
 4. **`sk-ant-xxxxxxxxxx...`** が表示される
 5. **このキーは1回しか表示されない** ので、必ずコピーして保管
 
@@ -113,10 +113,10 @@ CLAUDE_MODEL=claude-sonnet-4-6
 `.env` 設定後、`DEMO_MODE` を外して起動：
 
 ```bash
-# タカヤモーター用（実APIで動作）
-FAQ_MASTER_DIR=./data/takaya_faq \
+# デモ会社用（実APIで動作）
+FAQ_MASTER_DIR=./data/demo_company_faq \
   SESSION_SECRET="$(openssl rand -hex 32)" \
-  ORG_NAME="タカヤモーター株式会社" \
+  ORG_NAME="デモ会社株式会社" \
   ASSISTANT_ROLE="整備工場サポート" \
   uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
@@ -142,7 +142,7 @@ FAQ_MASTER_DIR=./data/takaya_faq \
 
 | 利用者 | 質問/日 | 営業日 | 月の質問数 | Sonnet 月額 |
 |---|---|---|---|---|
-| 5名（タカヤ） | 5 | 22 | 550 | **約 4,400円** |
+| 5名（デモ会社） | 5 | 22 | 550 | **約 4,400円** |
 | 35名（教育系A社） | 10 | 22 | 7,700 | **約 6万円** |
 | 100名（中堅企業） | 15 | 22 | 33,000 | **約 26万円** |
 

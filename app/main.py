@@ -853,12 +853,12 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
       <div class="empty-msg">読み込み中…</div>
     </div>
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">7</span>組織情報（営業デモ・カスタマイズ用）</div>
+    <div class="step-title" style="margin-top:32px"><span class="step-num">7</span>組織情報（デモ・カスタマイズ用）</div>
     <div id="settings-section" style="font-size:13px;color:#6b7280">
       <div class="empty-msg">読み込み中…</div>
     </div>
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">8</span>レポート出力（顧客提出・分析用）</div>
+    <div class="step-title" style="margin-top:32px"><span class="step-num">8</span>レポート出力（社内提出・分析用）</div>
     <div id="export-section" style="font-size:13px;color:#6b7280">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <label>期間:
@@ -1379,7 +1379,7 @@ function renderSettings(data){
     `;
   }).join('');
   settingsSection.innerHTML = `
-    <div class="doc-summary">💡 ここで変更した内容は <b>即時反映＋次回起動時にも保持</b> されます。営業デモで貴社用にカスタマイズしてください。</div>
+    <div class="doc-summary">💡 ここで変更した内容は <b>即時反映＋次回起動時にも保持</b> されます。デモ用に貴社向けへカスタマイズしてください。</div>
     ${rows}
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="setting-save-btn">💾 変更を保存</button>

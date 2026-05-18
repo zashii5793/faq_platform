@@ -349,7 +349,7 @@ crontab -e
 - Python バージョンが 3.11 以上か（`python --version`）
 
 ### 詳細なログを見たい
-- 起動時のコンソール出力（`./scripts/demo_takaya.sh` のターミナル）
+- 起動時のコンソール出力（`./scripts/demo_company.sh` のターミナル）
 - 監査ログ: `data/audit/audit-YYYY-MM-DD.jsonl`
 
 ---

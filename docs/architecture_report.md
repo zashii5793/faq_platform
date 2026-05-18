@@ -308,8 +308,8 @@ _取り込み元: a3b89f4c..._
 
 1行ごとにJSON形式：
 ```json
-{"ts":"2026-04-27T22:34:23Z","event":"query","user":"taro@zaxel.co.jp","question":"VPN繋がらない","sources":["VPN接続.md#0"],"confidence":95,"answered":true}
-{"ts":"2026-04-27T22:35:01Z","event":"ingest","user":"taro@zaxel.co.jp","filename":"経費規程.pdf","sha256":"a3b89f4c","n_chunks":47,"masked":true}
+{"ts":"2026-04-27T22:34:23Z","event":"query","user":"taro@example.com","question":"VPN繋がらない","sources":["VPN接続.md#0"],"confidence":95,"answered":true}
+{"ts":"2026-04-27T22:35:01Z","event":"ingest","user":"taro@example.com","filename":"経費規程.pdf","sha256":"a3b89f4c","n_chunks":47,"masked":true}
 ```
 
 → あとから「誰がいつ何を聞いたか」「どのファイルを取り込んだか」が **完全追跡可能**。
@@ -322,14 +322,14 @@ _取り込み元: a3b89f4c..._
 
 ### 第1層：誰が使うか（認証・認可）
 - Google SSO（会社のGoogleアカウントでログイン）
-- 許可されたドメイン（例：`@zaxel.co.jp`）のみアクセス可
+- 許可されたドメイン（例：`@example.com`）のみアクセス可
 - それ以外は **403 拒否**
 
 ### 第2層：何が外に出るか（マスキング）
 質問にPIIが含まれていても、Claude API に送る前に伏せ字化：
 | 元の表現 | マスク後 |
 |---|---|
-| `tanaka@zaxel.co.jp` | `[メール]` |
+| `tanaka@example.com` | `[メール]` |
 | `03-1234-5678` | `[電話番号]` |
 | `1234 5678 9012`（マイナンバー） | `[マイナンバー]` |
 | `××学園の山田先生` | `[学校名]の山田先生` (教育プリセット時) |
@@ -406,7 +406,7 @@ _取り込み元: a3b89f4c..._
 ### 事業的な強み
 1. **既存資産活用** → 新規データ作成不要、既存PDFをそのまま使える
 2. **段階導入** → 小さく始めて拡大可能（PoC → 部門 → 全社）
-3. **業界横展開** → 業界プリセット化で営業効率化
+3. **業界横展開** → 業界プリセット化で導入効率化
 4. **コスト構造** → 月¥10万 × 10社 で月100万 ARR が見える
 
 ### 利用者にとっての価値
