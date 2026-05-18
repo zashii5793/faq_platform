@@ -239,6 +239,7 @@ pytest
 ### セットアップ手順
 
 - [docs/setup_guide_mac.md](./docs/setup_guide_mac.md) — Mac 開発環境
+- [docs/setup_guide_windows.md](./docs/setup_guide_windows.md) — Windows 開発環境
 - [docs/api_key_setup.md](./docs/api_key_setup.md) — Anthropic API キー
 - **[docs/google_oauth_setup.md](./docs/google_oauth_setup.md) — Google OAuth 設定**
 - **[docs/https_deployment.md](./docs/https_deployment.md) — HTTPS デプロイ手順**
