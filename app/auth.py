@@ -17,7 +17,14 @@ oauth.register(
 
 
 def is_email_allowed(email: str) -> bool:
-    email = email.lower()
+    email = email.strip().lower()
+    # 最低限のメール形式バリデーション: ローカル部 + @ + ドメイン部
+    # 空ローカル部 (@example.com) や 二重@ (a@@b.com) を弾く
+    if email.count("@") != 1:
+        return False
+    local, _, domain = email.partition("@")
+    if not local or not domain:
+        return False
     if settings.allowed_emails and email in settings.allowed_email_set:
         return True
     if settings.allowed_domain and email.endswith("@" + settings.allowed_domain.lower()):

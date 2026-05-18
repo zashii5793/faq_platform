@@ -273,7 +273,8 @@ def parse(filename: str, content: bytes) -> list[Chunk]:
     filename = _safe_filename(filename)
     fmt = _detect_format(filename)
     if fmt in ("markdown", "text", "json"):
-        return _parse_text(filename, content.decode("utf-8", errors="replace"))
+        text = content.decode("utf-8-sig", errors="replace")
+        return _parse_text(filename, text)
     if fmt == "csv":
         return _parse_csv(filename, content)
     if fmt == "pdf":
