@@ -203,6 +203,137 @@ Docker Desktop の **Resources** で割り当てメモリを 4GB 以上に。
 
 ---
 
+## 本番キー・OAuth情報の取得
+
+本番運用には以下の2つが必要です。順番に取得してください。
+
+### A. Anthropic API キー（必須・所要5分）
+
+#### A-1. Anthropic Console にサインアップ
+
+1. [https://console.anthropic.com/](https://console.anthropic.com/) にアクセス
+2. 右上 **「Sign up」**
+3. メールアドレス入力 → 認証メールから登録
+4. 組織情報を入力（個人なら個人名でOK）
+5. クレジットカード登録 OR プリペイドクレジット入金
+
+> 💡 初回登録時に **無料クレジット $5** が付与されます（テスト用に十分）。
+
+> ⚠ Claude Pro / Team サブスクリプションとは **別契約**です。APIプラン専用のアカウントが必要。
+
+#### A-2. API キー生成
+
+1. ログイン後 → 左メニュー **「API Keys」**
+2. **「Create Key」** ボタン
+3. キー名を入力（例: `inquira-prod`）
+4. `sk-ant-api03-xxxxxxxxxx...` が表示される
+5. **このキーは1回しか表示されません**。必ずコピーして保管
+6. メモアプリやパスワードマネージャに保存
+
+> 🔒 キーは **パスワードと同じ機密情報** です。リポジトリへのコミット禁止。`.env` ファイル経由でのみ使用（`.gitignore` 登録済み）。
+
+#### A-3. 動作確認
+
+ターミナルで：
+```bash
+cd ~/Documents/faq_platform
+source .venv/bin/activate
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxx python scripts/test_anthropic.py
+```
+
+成功すると：
+```
+🔑 APIキー: sk-ant-api03...XXXX (長さ: 108文字)
+📡 接続テスト中... (約2秒)
+✅ 接続成功（1.85秒）
+   モデル:     claude-sonnet-4-6
+   応答:       OK
+💰 このリクエストの料金: $0.000114 (約 0.0177円)
+✅ APIキーは正常に動作しています。
+```
+
+> 詳細・料金体系・トラブルシュート → [`docs/api_key_setup.md`](./api_key_setup.md)
+
+---
+
+### B. Google OAuth クライアント ID / Secret（社内認証用・所要30〜60分）
+
+社員ログインに Google Workspace アカウントを使うための設定です。
+DEMO_MODE では不要ですが、**本番運用では必須**（認証なしで LAN 公開は危険）。
+
+> 前提: 顧客が Google Workspace を契約していること
+
+#### B-1. Google Cloud プロジェクトを作成
+
+1. [https://console.cloud.google.com/](https://console.cloud.google.com/) にアクセス
+2. 顧客 Google Workspace 管理者アカウントでログイン
+3. 上部「プロジェクトの選択」→ **「新しいプロジェクト」**
+4. プロジェクト名: `Inquira-<顧客名>` （例: `Inquira-AcmeCorp`）
+5. 組織: 顧客の組織（Workspace 配下）を選択 ← **重要**
+6. **作成** をクリック
+
+#### B-2. OAuth 同意画面を構成
+
+左メニュー → **API とサービス** → **OAuth 同意画面**
+
+1. **ユーザータイプ: 内部 (Internal)** を選択 ← 必須
+   - これにより Workspace 内のメンバーのみログイン可能になる
+   - External だと Google の審査が必要になる
+
+2. アプリ情報を入力：
+
+   | 項目 | 入力例 |
+   |---|---|
+   | アプリ名 | `Inquira 社内ヘルプデスク` |
+   | ユーザーサポートメール | `support@your-company.co.jp` |
+   | 承認済みドメイン | `your-company.co.jp`（顧客ドメイン） |
+   | デベロッパーの連絡先 | `support@your-company.co.jp` |
+
+3. **保存して次へ**
+
+4. スコープ画面で「**スコープを追加または削除**」→ 以下にチェック：
+   - `.../auth/userinfo.email`
+   - `.../auth/userinfo.profile`
+   - `openid`
+
+   > これだけで OK。**ファイル等のアクセス権は不要**。
+
+5. **保存して次へ** → テストユーザーは内部アプリなのでスキップ可
+
+#### B-3. OAuth クライアント ID を作成
+
+左メニュー → **API とサービス** → **認証情報**
+
+1. 上部 **+ 認証情報を作成** → **OAuth クライアント ID**
+2. アプリケーションの種類: **ウェブアプリケーション**
+3. 名前: `Inquira Web Client`
+
+4. **承認済みの JavaScript 生成元** に以下を追加：
+   ```
+   https://inquira.your-company.co.jp
+   http://localhost:8000
+   http://127.0.0.1:8000
+   ```
+
+5. **承認済みのリダイレクト URI** に以下を追加：
+   ```
+   https://inquira.your-company.co.jp/auth/callback
+   http://localhost:8000/auth/callback
+   http://127.0.0.1:8000/auth/callback
+   ```
+
+   > ⚠ パス `/auth/callback` の末尾に **スラッシュを付けない**。Inquira のコードは正確にこのパスを期待します。
+
+6. **作成** をクリック
+
+7. ポップアップに表示される **2つの値を必ずコピー**：
+   - **クライアント ID**: `123456789-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com`
+   - **クライアント シークレット**: `GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxx`
+
+> 詳細・チェックリスト・トラブルシュート → [`docs/google_oauth_setup.md`](./google_oauth_setup.md)
+
+---
+
 ## 本番運用へ進む場合の追加設定
 
 デモモードではなく本番設定にする場合は `.env` ファイルを作成：
@@ -214,9 +345,11 @@ cp .env.example .env
 
 ```env
 # Anthropic API（学習に使われない商用契約）
+# → 上記「本番キー・OAuth情報の取得」§A で取得した値
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxx
 
 # Google OAuth（社内アカウントログイン）
+# → 上記「本番キー・OAuth情報の取得」§B で取得した値
 GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=xxxxx
 GOOGLE_REDIRECT_URI=https://your-domain.com/auth/callback
