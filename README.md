@@ -248,6 +248,7 @@ pytest
 ### 設計・仕組み
 
 - [docs/architecture_report.md](./docs/architecture_report.md) — アーキテクチャ解説（非エンジニア向け）
+- [docs/scale_benchmark.md](./docs/scale_benchmark.md) — **スケーラビリティ・ベンチマーク（5000文書の応答時間実測）**
 - [docs/specification.md](./docs/specification.md) — 技術仕様書
 - [docs/ui_specification.md](./docs/ui_specification.md) — UI設計仕様
 - [docs/business_analysis.md](./docs/business_analysis.md) — ビジネス用途分析
