@@ -8,8 +8,52 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
-from typing import Iterable
+from dataclasses import dataclass, field
+from typing import Callable, Iterable
+
+
+def _luhn_valid(s: str) -> bool:
+    """Luhn 桁検証。クレジットカード番号の整合性チェック。
+
+    13-19桁の数字列で、Luhn アルゴリズムを通過する場合のみ True。
+    ハイフン・スペース・その他の区切り文字は無視。
+    """
+    digits = [int(c) for c in s if c.isdigit()]
+    if not (13 <= len(digits) <= 19):
+        return False
+    checksum = 0
+    for i, d in enumerate(reversed(digits)):
+        if i % 2 == 1:
+            d *= 2
+            if d > 9:
+                d -= 9
+        checksum += d
+    return checksum % 10 == 0
+
+
+def _is_likely_credit_card(s: str) -> bool:
+    """Luhn + 数字グループ構造で誤検知を抑える厳密判定。
+
+    除外する代表パターン:
+      - タイムスタンプ 「2024-06-24 084412」（グループサイズ 4-2-2-6）
+      - 4桁未満や8桁超の塊が混ざるもの
+    カード番号の典型構造（4-4-4-4, 4-6-5, 16桁連続 等）のみ True。
+    """
+    if not _luhn_valid(s):
+        return False
+    groups = [g for g in re.split(r"[\s-]+", s.strip()) if g]
+    if not groups:
+        return False
+    # 連続数字なら OK（区切りなし16桁等）
+    if len(groups) == 1:
+        return True
+    # 各グループサイズはカード番号の典型範囲（3-7）に収まる必要
+    if any(not (3 <= len(g) <= 7) for g in groups):
+        return False
+    # 「YYYY-MM-...」の日付プレフィックスを弾く
+    if len(groups[0]) == 4 and len(groups) >= 2 and len(groups[1]) == 2:
+        return False
+    return True
 
 
 @dataclass
@@ -17,6 +61,8 @@ class MaskRule:
     name: str
     pattern: re.Pattern[str]
     replacement: str
+    # マッチ後の追加検証（True を返したマッチのみ置換対象に。誤検知抑制用）
+    validator: Callable[[str], bool] | None = field(default=None)
 
 
 # --- 汎用パターン（どの業界でも共通） ---
@@ -49,6 +95,7 @@ GENERIC_RULES: list[MaskRule] = [
         "credit_card",
         re.compile(r"\b(?:\d[ -]?){13,19}\b"),
         "[カード番号]",
+        validator=_is_likely_credit_card,  # Luhn + 構造チェックで誤検知（タイムスタンプ・ID列）を除外
     ),
     MaskRule(
         "my_number",
@@ -127,5 +174,12 @@ def mask(text: str, rules: list[MaskRule] | None = None) -> str:
         rules = build_rules(settings.masking_industry)
     out = text
     for r in rules:
-        out = r.pattern.sub(r.replacement, out)
+        if r.validator is None:
+            out = r.pattern.sub(r.replacement, out)
+        else:
+            # validator が True を返したマッチのみ置換（誤検知抑制）
+            out = r.pattern.sub(
+                lambda m, r=r: r.replacement if r.validator(m.group(0)) else m.group(0),
+                out,
+            )
     return out

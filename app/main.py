@@ -665,6 +665,12 @@ input[type=file]{display:none}
 .fc-grid{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font-size:13px;line-height:1.5;margin-bottom:10px}
 .fc-grid dt{color:#6b7280}
 .fc-grid dd{color:#1f2937}
+.fc-counts{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px;font-size:13px}
+.fc-counts .total{font-weight:600;color:#111827}
+.fc-counts .chip{padding:2px 8px;border-radius:6px;font-size:12px}
+.fc-counts .chip.ok{background:#d1fae5;color:#065f46}
+.fc-counts .chip.warn{background:#fef3c7;color:#92400e}
+.fc-counts .chip.danger{background:#fee2e2;color:#991b1b}
 .concern{display:flex;align-items:flex-start;gap:6px;margin:3px 0}
 .concern.warn{color:#92400e}
 .concern.danger{color:#991b1b;font-weight:500}
@@ -980,10 +986,15 @@ function renderCard(item){
       </div>
       <span class="fc-badge ${analysis.recommendation}">${badge(analysis.recommendation)}</span>
     </div>
+    <div class="fc-counts">
+      <span class="total">📊 データ件数: ${analysis.n_chunks.toLocaleString()}チャンク</span>
+      <span class="chip ok">✅ 取り込み可 ${(analysis.n_chunks - warnChunks - dangerChunks).toLocaleString()}件</span>
+      ${warnChunks > 0 ? `<span class="chip warn">⚠ 要確認 ${warnChunks.toLocaleString()}件</span>` : ''}
+      ${dangerChunks > 0 ? `<span class="chip danger">🔴 危険 ${dangerChunks.toLocaleString()}件</span>` : ''}
+    </div>
     <dl class="fc-grid">
       <dt>判定理由</dt><dd>${escape(analysis.reason)}</dd>
       <dt>検出された懸念</dt><dd>${renderConcerns(analysis)}</dd>
-      <dt>チャンク内訳</dt><dd>OK ${analysis.n_chunks - warnChunks - dangerChunks} / 要確認 ${warnChunks} / 危険 ${dangerChunks}</dd>
     </dl>
     <details class="chunk-list">
       <summary>📋 チャンク単位で確認・選択（${analysis.n_chunks}件）</summary>
@@ -1165,6 +1176,40 @@ confirmBtn.onclick = async () => {
       err.textContent = '取り込み失敗: ' + e.message;
       item.card.appendChild(err);
       failed++;
+      // 赤色（danger）判定なら「警告を無視して取り込む」ボタンを常に提示
+      // マスキング処理は適用されるので、検出された PII は [メール] 等の記号に置換される
+      if(item.analysis.recommendation === 'danger') {
+        const force = document.createElement('button');
+        force.textContent = '⚠ 警告を無視して取り込む（PIIは自動マスク）';
+        force.style.cssText = 'margin-top:10px;background:#dc2626;color:#fff;padding:8px 14px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500';
+        force.onclick = async () => {
+          if(!confirm('PII (氏名・メール等) が大量に検出されています。マスキング処理は適用されますが、本当に取り込みますか？')) return;
+          force.disabled = true;
+          force.textContent = '⏳ 取り込み中…';
+          const fd2 = new FormData();
+          fd2.append('file', item.file);
+          const url2 = '/api/admin/ingest?force=true&excluded_chunk_ids=' + encodeURIComponent(excludedIds);
+          try {
+            const r2 = await fetch(url2, {method:'POST', body:fd2});
+            if(!r2.ok) throw new Error((await r2.json()).detail || r2.statusText);
+            const d2 = await r2.json();
+            item.state = 'ingested';
+            item.card.querySelector('.fc-badge').textContent = `⚠ 強制取り込み済み (${d2.ingested_chunks}チャンク・マスク済)`;
+            item.card.querySelector('.fc-badge').className = 'fc-badge warn';
+            err.remove();
+            force.remove();
+            failed--;
+            success++;
+            ingestedChunks += d2.ingested_chunks;
+            updateSummary();
+          } catch(e2) {
+            force.disabled = false;
+            force.textContent = '⚠ 警告を無視して取り込む（PIIは自動マスク）';
+            err.textContent = '強制取り込みも失敗: ' + e2.message;
+          }
+        };
+        item.card.appendChild(force);
+      }
     }
   }
   updateSummary();
