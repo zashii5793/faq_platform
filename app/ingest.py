@@ -290,10 +290,13 @@ def parse(filename: str, content: bytes) -> list[Chunk]:
 # 検出
 # =====================================================
 def _scan_pii(text: str, industry: str = "general") -> dict[str, int]:
-    """PII検出: 各ルールにマッチした件数を返す。"""
+    """PII検出: 各ルールにマッチした件数を返す（validator があれば通過したマッチのみ計上）。"""
     counts: dict[str, int] = {}
     for rule in build_rules(industry):
-        n = len(rule.pattern.findall(text))
+        matches = rule.pattern.findall(text)
+        if rule.validator is not None:
+            matches = [m for m in matches if rule.validator(m)]
+        n = len(matches)
         if n:
             counts[rule.name] = counts.get(rule.name, 0) + n
     return counts

@@ -87,12 +87,35 @@ class TestCreditCardMasking:
         assert "[カード番号]" not in out, f"電話番号がカード扱いされた: {out}"
 
     def test_isbn_not_misdetected(self):
-        """ISBN13(13桁) は別物。一律カード扱いは過剰だが、現状は誤検知する想定。"""
+        """ISBN13 は Luhn を通過しないため誤検知されない。"""
         text = "ISBN: 978-4-12-345678-9"
         out = mask(text, build_rules("general"))
-        # 望ましい挙動: ISBN は誤検知しない（実装上は誤検知する可能性あり）
-        if "[カード番号]" in out:
-            pytest.xfail(f"ISBN が誤検知された（既知の弱点）: {out}")
+        assert "[カード番号]" not in out, f"ISBN が誤検知された: {out}"
+
+    def test_timestamp_not_misdetected(self):
+        """タイムスタンプ「2024-06-24 084412」を誤ってカード判定しない（Backlog データで報告済み）。"""
+        text = "スクリーンショット 2024-06-24 084412.png"
+        out = mask(text, build_rules("general"))
+        assert "[カード番号]" not in out, f"タイムスタンプが誤検知された: {out}"
+
+    def test_id_sequence_not_misdetected(self):
+        """連番 ID（タイムスタンプ風）も誤検知しない。"""
+        text = "ID: 42079622 / プロジェクトID: 48954 / キーID: 830"
+        out = mask(text, build_rules("general"))
+        assert "[カード番号]" not in out
+
+    def test_real_visa_detected(self):
+        """正しい VISA テスト番号は検出される。"""
+        # VISA テスト番号 (Luhn 通過)
+        text = "カード: 4111-1111-1111-1111"
+        out = mask(text, build_rules("general"))
+        assert "[カード番号]" in out
+
+    def test_real_amex_detected(self):
+        """AMEX テスト番号 (15桁・Luhn 通過) も検出される。"""
+        text = "AMEX: 3782-822463-10005"
+        out = mask(text, build_rules("general"))
+        assert "[カード番号]" in out
 
 
 # ============================================================
