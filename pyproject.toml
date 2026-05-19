@@ -2,7 +2,7 @@
 name = "faq-platform"
 # バージョンは app/__init__.py の __version__ と同期させること
 # Semantic Versioning (https://semver.org/lang/ja/) に従う
-version = "0.6.0"
+version = "0.7.0"
 description = "Inquira — 社内ヘルプデスク用 RAG プラットフォーム"
 requires-python = ">=3.11"
 dependencies = [

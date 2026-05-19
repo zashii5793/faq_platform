@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import __version__, audit, runtime_settings
+from . import __version__, audit, runtime_settings, shared_qa
 from .auth import is_email_allowed, oauth, require_user
 from .config import settings
 from .ingest import analyze as ingest_analyze, ingest as ingest_commit
@@ -136,6 +136,33 @@ aside{{width:300px;background:#fff;border-right:1px solid #e5e7eb;display:flex;f
 #popular-queries{{max-height:280px;overflow-y:auto;padding-right:4px}}
 #popular-queries::-webkit-scrollbar{{width:6px}}
 #popular-queries::-webkit-scrollbar-thumb{{background:#d1d5db;border-radius:3px}}
+/* みんなのナレッジ */
+.kb-item{{padding:10px 12px;margin:4px -12px;border-radius:8px;cursor:pointer;
+          font-size:13.5px;color:#1f2937;line-height:1.5;
+          border-bottom:1px solid #f3f4f6;transition:background .12s;font-weight:500}}
+.kb-item:last-of-type{{border-bottom:0}}
+.kb-item:hover{{background:#ecfdf5;color:#065f46}}
+.kb-q-line{{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.kb-meta{{display:flex;gap:6px;align-items:center;margin-top:4px;font-size:11px;
+          font-weight:400;color:#9ca3af}}
+.kb-vote{{background:#d1fae5;color:#065f46;padding:1px 7px;border-radius:10px;
+          font-weight:600;font-size:11px}}
+.kb-vote.res{{background:#fef3c7;color:#92400e}}
+.kb-author{{margin-left:auto;color:#6b7280}}
+/* 入力中サジェスト */
+.input-suggest{{max-width:960px;margin:0 auto;padding:10px 16px;background:#fffbeb;
+                 border:1px solid #fde68a;border-radius:10px 10px 0 0;border-bottom:0;
+                 font-size:13px;color:#78350f}}
+.input-suggest .sg-title{{font-size:11px;color:#92400e;font-weight:600;
+                           letter-spacing:.04em;margin-bottom:6px}}
+.input-suggest .sg-item{{padding:6px 8px;border-radius:6px;cursor:pointer;
+                          display:flex;justify-content:space-between;align-items:center;
+                          gap:8px;transition:background .12s}}
+.input-suggest .sg-item:hover{{background:#fef3c7}}
+.input-suggest .sg-q{{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+                       white-space:nowrap}}
+.input-suggest .sg-tag{{background:#f59e0b;color:#fff;padding:1px 8px;border-radius:10px;
+                         font-size:10.5px;font-weight:600;flex-shrink:0}}
 .stat{{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px}}
 .stat .label{{color:#6b7280}}
 .stat .value{{color:#1f2937;font-weight:600}}
@@ -444,6 +471,12 @@ button.send:disabled{{background:#9ca3af;box-shadow:none;transform:none;cursor:n
     <div id="popular-queries"><div class="empty-list">読み込み中…</div></div>
   </details>
 
+  <details class="section" open>
+    <summary>💬 みんなのナレッジ <span id="kb-count"></span></summary>
+    <div id="kb-list"><div class="empty-list">読み込み中…</div></div>
+    <a class="upload-link" href="/knowledge-base" style="margin-top:8px">📚 すべて見る</a>
+  </details>
+
   <!-- ===== 管理者向け（折りたたみ可・デフォルト閉じる） ===== -->
   <div class="section-divider">— 管理者ビュー —</div>
 
@@ -599,6 +632,8 @@ async function loadStats(){{
         : '<div class="empty-list">まだ集計データがありません</div>';
       popList.querySelectorAll('.pop-item').forEach(el=>el.onclick=()=>{{input.value=el.dataset.q;form.requestSubmit();}});
     }}
+    // サイドバー「みんなのナレッジ」: 共有Q&A の直近を表示
+    loadSidebarKB();
     // 改善要望のあった質問のカウント表示
     const fbCnt = document.getElementById('fb-issues-count');
     if(fbCnt) fbCnt.textContent = s.feedback.down_questions.length ? `(${{s.feedback.down_questions.length}}件)` : '';
@@ -1065,6 +1100,83 @@ function openShareAnswerModal(question, onSubmit){{
 
 loadStats();
 setInterval(loadStats, 30000);
+
+// サイドバー「みんなのナレッジ」: 共有Q&A の直近5件を表示
+async function loadSidebarKB(){{
+  const list = document.getElementById('kb-list');
+  const cnt = document.getElementById('kb-count');
+  if(!list) return;
+  try {{
+    const r = await fetch('/api/knowledge-base?limit=5');
+    if(!r.ok) throw new Error(r.statusText);
+    const data = await r.json();
+    if(cnt) cnt.textContent = data.total ? `(${{data.total}}件)` : '';
+    if(!data.items.length){{
+      list.innerHTML = '<div class="empty-list">まだ共有された回答はありません</div>';
+      return;
+    }}
+    list.innerHTML = data.items.map(x => {{
+      const upBadge = x.votes_up > 0 ? `<span class="kb-vote">👍${{x.votes_up}}</span>` : '';
+      const resBadge = x.resolved_count > 0 ? `<span class="kb-vote res">✅${{x.resolved_count}}</span>` : '';
+      return `<div class="kb-item" data-q="${{escape(x.question)}}" title="クリックでこの質問を投げる">
+        <div class="kb-q-line">${{escape(x.question.slice(0,55))}}${{x.question.length>55?'…':''}}</div>
+        <div class="kb-meta">${{upBadge}}${{resBadge}}<span class="kb-author">${{escape((x.contributor||'').split('@')[0]||'匿名')}}</span></div>
+      </div>`;
+    }}).join('');
+    list.querySelectorAll('.kb-item').forEach(el => el.onclick = ()=>{{
+      input.value = el.dataset.q;
+      form.requestSubmit();
+    }});
+  }} catch(e) {{
+    list.innerHTML = '<div class="empty-list">読み込み失敗</div>';
+  }}
+}}
+
+// 入力中のリアルタイムサジェスト（人気質問・共有Q&A から類似抽出）
+let suggestionTimer;
+const suggestionBox = document.createElement('div');
+suggestionBox.className = 'input-suggest';
+suggestionBox.hidden = true;
+input.parentElement.parentElement.insertBefore(suggestionBox, input.parentElement.parentElement.firstChild);
+
+async function showInputSuggestions(){{
+  const q = input.value.trim();
+  if(q.length < 2){{ suggestionBox.hidden = true; return; }}
+  // 共有Q&A の検索 API を流用
+  try {{
+    const r = await fetch('/api/knowledge-base?q=' + encodeURIComponent(q) + '&limit=5');
+    if(!r.ok){{ suggestionBox.hidden = true; return; }}
+    const data = await r.json();
+    if(!data.items.length){{ suggestionBox.hidden = true; return; }}
+    suggestionBox.innerHTML = '<div class="sg-title">💡 似た質問が既にあります</div>' +
+      data.items.map(x => `<div class="sg-item" data-q="${{escape(x.question)}}">
+        <span class="sg-q">${{escape(x.question.slice(0,60))}}${{x.question.length>60?'…':''}}</span>
+        ${{x.resolved_count>0?`<span class="sg-tag">✅${{x.resolved_count}}</span>`:''}}
+      </div>`).join('');
+    suggestionBox.hidden = false;
+    suggestionBox.querySelectorAll('.sg-item').forEach(el => el.onclick = ()=>{{
+      input.value = el.dataset.q;
+      suggestionBox.hidden = true;
+      form.requestSubmit();
+    }});
+  }} catch(e) {{ suggestionBox.hidden = true; }}
+}}
+input.addEventListener('input', () => {{
+  clearTimeout(suggestionTimer);
+  suggestionTimer = setTimeout(showInputSuggestions, 280);
+}});
+input.addEventListener('blur', () => setTimeout(()=>suggestionBox.hidden=true, 200));
+
+// URL の ?q=... があれば自動で質問を投入（共有Q&A 一覧から飛ばすため）
+(() => {{
+  const params = new URLSearchParams(location.search);
+  const auto = params.get('q');
+  if(auto){{
+    input.value = auto;
+    setTimeout(()=>form.requestSubmit(), 100);
+    history.replaceState(null, '', '/');
+  }}
+}})();
 
 // モバイル: ハンバーガーメニュー
 const aside=document.querySelector('aside'),scrim=document.getElementById('scrim'),menuBtn=document.getElementById('menuBtn');
@@ -3196,6 +3308,277 @@ async def api_get_chunk(chunk_id: str, user: dict = Depends(require_user)):
         },
         "neighbors": same_file[:50],  # 同じファイル内の他チャンク一覧（上限50）
     }
+
+
+@app.get("/api/knowledge-base")
+async def api_knowledge_base(
+    q: str = "",
+    limit: int = 50,
+    user: dict = Depends(require_user),
+):
+    """共有Q&A 一覧 / 検索 API（社員提供のナレッジ）。"""
+    items = shared_qa.search(q, limit=limit) if q else shared_qa.list_shared_qas()[:limit]
+    return {
+        "total": len(shared_qa.list_shared_qas()),
+        "shown": len(items),
+        "query": q,
+        "items": [
+            {
+                "file_id": x.file_id,
+                "source": x.source,
+                "question": x.question,
+                "answer": x.answer,
+                "contributor": x.contributor,
+                "shared_at": x.shared_at,
+                "votes_up": x.votes_up,
+                "votes_down": x.votes_down,
+                "resolved_count": x.resolved_count,
+            }
+            for x in items
+        ],
+    }
+
+
+class SharedQAVote(BaseModel):
+    file_id: str
+    kind: str  # "up" / "down" / "resolved"
+
+
+@app.post("/api/knowledge-base/vote")
+async def api_knowledge_base_vote(payload: SharedQAVote, user: dict = Depends(require_user)):
+    """共有Q&A への投票（役立った / 役に立たなかった / 解決した）。"""
+    if payload.kind not in ("up", "down", "resolved"):
+        raise HTTPException(status_code=400, detail="kind は up / down / resolved")
+    qa = shared_qa.get_shared_qa(payload.file_id)
+    if qa is None:
+        raise HTTPException(status_code=404, detail="共有Q&A が見つかりません")
+    entry = shared_qa.vote(payload.file_id, payload.kind)
+    audit.record(
+        "kb_vote",
+        user=user["email"],
+        file_id=payload.file_id,
+        kind=payload.kind,
+    )
+    return {"ok": True, "meta": entry}
+
+
+@app.get("/knowledge-base", response_class=HTMLResponse)
+async def knowledge_base_page(request: Request) -> HTMLResponse:
+    """社員が共有した Q&A を閲覧するページ。"""
+    if not settings.demo_mode:
+        user = request.session.get("user")
+        if not user or not is_email_allowed(user.get("email", "")):
+            return HTMLResponse('<a href="/auth/login">Googleでログイン</a>', status_code=200)
+    return HTMLResponse(_knowledge_base_page().replace("__VERSION__", __version__))
+
+
+def _knowledge_base_page() -> str:
+    return """<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>みんなのナレッジ — Inquira</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',sans-serif;
+     background:#f7f8fa;color:#1f2937;min-height:100vh;font-size:15px;
+     -webkit-font-smoothing:antialiased}
+.page{max-width:920px;margin:0 auto;padding:32px 24px}
+.page-header{display:flex;justify-content:space-between;align-items:flex-end;
+             margin-bottom:24px;flex-wrap:wrap;gap:12px}
+h1{font-size:26px;color:#111827;font-weight:700;letter-spacing:-.02em}
+h1 .version-badge{display:inline-block;background:#e5e7eb;color:#6b7280;font-size:11px;
+                  font-weight:500;padding:2px 9px;border-radius:12px;margin-left:8px;
+                  vertical-align:middle}
+.subtitle{color:#6b7280;font-size:14px;margin-top:4px}
+.back-link{color:#1a73e8;text-decoration:none;font-size:14px;font-weight:500}
+.back-link:hover{text-decoration:underline}
+.toolbar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.search-input{flex:1;min-width:260px;padding:12px 16px;border:1px solid #d1d5db;
+              border-radius:10px;font-size:15px;background:#fff;font-family:inherit}
+.search-input:focus{outline:none;border-color:#1a73e8;box-shadow:0 0 0 4px rgba(26,115,232,.12)}
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.stat-card{flex:1;min-width:140px;background:#fff;border:1px solid #e5e7eb;
+           border-radius:12px;padding:16px}
+.stat-card .label{font-size:12px;color:#6b7280;font-weight:500;text-transform:uppercase;
+                   letter-spacing:.04em}
+.stat-card .value{font-size:28px;color:#1a73e8;font-weight:700;margin-top:4px;letter-spacing:-.02em}
+.qa-list{display:flex;flex-direction:column;gap:14px}
+.qa-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px 22px;
+         transition:box-shadow .15s}
+.qa-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.qa-q{font-size:16px;font-weight:600;color:#111827;line-height:1.5;margin-bottom:6px;
+       cursor:pointer}
+.qa-q:hover{color:#1a73e8}
+.qa-q::before{content:"❓ ";color:#1a73e8}
+.qa-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#9ca3af;
+          margin-bottom:10px}
+.qa-meta .badge{background:#f3f4f6;padding:2px 8px;border-radius:10px;font-weight:500}
+.qa-meta .badge.contributor{background:#dbeafe;color:#1e40af}
+.qa-meta .badge.up{background:#d1fae5;color:#065f46}
+.qa-meta .badge.resolved{background:#fef3c7;color:#92400e}
+.qa-a{background:#f9fafb;border-left:3px solid #10b981;border-radius:0 8px 8px 0;
+       padding:12px 16px;font-size:14px;line-height:1.7;color:#1f2937;
+       white-space:pre-wrap;word-break:break-word;
+       max-height:120px;overflow:hidden;position:relative;transition:max-height .25s}
+.qa-a.expanded{max-height:none}
+.qa-a-fade{position:absolute;bottom:0;left:0;right:0;height:32px;
+            background:linear-gradient(transparent,#f9fafb);pointer-events:none}
+.qa-a.expanded .qa-a-fade{display:none}
+.qa-toggle{margin-top:8px;background:transparent;color:#6b7280;border:0;font-size:12px;
+            cursor:pointer;padding:4px 0;font-weight:500}
+.qa-toggle:hover{color:#1a73e8}
+.qa-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.qa-actions button{background:#fff;border:1px solid #e5e7eb;padding:6px 14px;
+                    border-radius:8px;font-size:13px;color:#4b5563;cursor:pointer;
+                    font-weight:500;transition:all .15s}
+.qa-actions button:hover{background:#f9fafb;border-color:#9ca3af}
+.qa-actions button.voted{background:#d1fae5;border-color:#10b981;color:#065f46}
+.qa-actions button.resolved{background:#fef3c7;border-color:#f59e0b;color:#92400e}
+.qa-actions button:disabled{cursor:not-allowed;opacity:.7}
+.empty{text-align:center;color:#9ca3af;padding:60px 20px;font-size:15px}
+.empty h2{color:#374151;font-size:20px;margin-bottom:8px}
+@media (max-width: 600px){
+  .page{padding:20px 14px}
+  h1{font-size:22px}
+}
+</style></head><body>
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>💬 みんなのナレッジ <span class="version-badge">v__VERSION__</span></h1>
+      <div class="subtitle">社員が共有した質問と回答の蓄積</div>
+    </div>
+    <a class="back-link" href="/">← チャットに戻る</a>
+  </div>
+
+  <div class="stats-row" id="stats-row"></div>
+
+  <div class="toolbar">
+    <input type="text" class="search-input" id="kbSearch"
+           placeholder="🔍 質問・回答を検索（部分一致）" autocomplete="off">
+  </div>
+
+  <div class="qa-list" id="qaList">
+    <div class="empty">読み込み中…</div>
+  </div>
+</div>
+
+<script>
+function escape(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])}
+function fmtDate(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  if(isNaN(d)) return iso;
+  return d.toLocaleDateString('ja-JP') + ' ' + d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+}
+
+let voted = JSON.parse(localStorage.getItem('kb_voted') || '{}');
+let resolved = JSON.parse(localStorage.getItem('kb_resolved') || '{}');
+
+async function loadKB(q=''){
+  const url = '/api/knowledge-base' + (q ? '?q=' + encodeURIComponent(q) : '');
+  const r = await fetch(url);
+  if(!r.ok){
+    document.getElementById('qaList').innerHTML = '<div class="empty"><h2>読み込み失敗</h2></div>';
+    return;
+  }
+  const data = await r.json();
+  renderStats(data);
+  renderList(data.items);
+}
+
+function renderStats(data){
+  const totalUp = (data.items||[]).reduce((a,x)=>a+x.votes_up, 0);
+  const totalResolved = (data.items||[]).reduce((a,x)=>a+x.resolved_count, 0);
+  const contributors = new Set((data.items||[]).map(x=>x.contributor).filter(Boolean)).size;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="label">📚 蓄積されたQ&A</div><div class="value">${data.total}</div></div>
+    <div class="stat-card"><div class="label">👍 役立った投票</div><div class="value">${totalUp}</div></div>
+    <div class="stat-card"><div class="label">✅ 解決報告</div><div class="value">${totalResolved}</div></div>
+    <div class="stat-card"><div class="label">👥 貢献した社員</div><div class="value">${contributors}</div></div>
+  `;
+}
+
+function renderList(items){
+  const list = document.getElementById('qaList');
+  if(!items.length){
+    list.innerHTML = '<div class="empty"><h2>該当するQ&Aがありません</h2><p>検索条件を変えるか、チャットで質問してみてください</p></div>';
+    return;
+  }
+  list.innerHTML = items.map(x => {
+    const upDone = voted[x.file_id] === 'up';
+    const resDone = !!resolved[x.file_id];
+    return `
+    <div class="qa-card" data-id="${escape(x.file_id)}">
+      <div class="qa-q" data-q="${escape(x.question)}">${escape(x.question)}</div>
+      <div class="qa-meta">
+        ${x.contributor ? `<span class="badge contributor">📝 ${escape(x.contributor)}</span>` : ''}
+        <span class="badge">${fmtDate(x.shared_at)}</span>
+        ${x.votes_up > 0 ? `<span class="badge up">👍 ${x.votes_up}</span>` : ''}
+        ${x.resolved_count > 0 ? `<span class="badge resolved">✅ ${x.resolved_count}人が解決</span>` : ''}
+      </div>
+      <div class="qa-a">${escape(x.answer)}<div class="qa-a-fade"></div></div>
+      <button class="qa-toggle">▾ 全文を表示</button>
+      <div class="qa-actions">
+        <button class="vote-up ${upDone?'voted':''}" data-kind="up" ${upDone?'disabled':''}>👍 役立った ${upDone?'(済)':''}</button>
+        <button class="vote-resolved ${resDone?'resolved':''}" data-kind="resolved" ${resDone?'disabled':''}>✅ 解決した ${resDone?'(済)':''}</button>
+        <button class="vote-down" data-kind="down">👎 違うかも</button>
+        <button class="reask">💬 これと同じ質問をする</button>
+      </div>
+    </div>
+    `;
+  }).join('');
+  // クリックハンドラ
+  list.querySelectorAll('.qa-toggle').forEach(btn => {
+    btn.onclick = () => {
+      const a = btn.previousElementSibling;
+      const expanded = a.classList.toggle('expanded');
+      btn.textContent = expanded ? '▴ 折りたたむ' : '▾ 全文を表示';
+    };
+  });
+  list.querySelectorAll('.qa-q').forEach(el => {
+    el.onclick = () => location.href = '/?q=' + encodeURIComponent(el.dataset.q);
+  });
+  list.querySelectorAll('.reask').forEach(btn => {
+    btn.onclick = () => {
+      const card = btn.closest('.qa-card');
+      const q = card.querySelector('.qa-q').dataset.q;
+      location.href = '/?q=' + encodeURIComponent(q);
+    };
+  });
+  list.querySelectorAll('.vote-up, .vote-resolved, .vote-down').forEach(btn => {
+    btn.onclick = async () => {
+      const card = btn.closest('.qa-card');
+      const fileId = card.dataset.id;
+      const kind = btn.dataset.kind;
+      btn.disabled = true;
+      try {
+        const r = await fetch('/api/knowledge-base/vote', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({file_id: fileId, kind})
+        });
+        if(!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        if(kind === 'up'){ voted[fileId] = 'up'; localStorage.setItem('kb_voted', JSON.stringify(voted)); }
+        if(kind === 'resolved'){ resolved[fileId] = true; localStorage.setItem('kb_resolved', JSON.stringify(resolved)); }
+        loadKB(document.getElementById('kbSearch').value.trim());
+      } catch(e) {
+        alert('投票失敗: ' + e.message);
+        btn.disabled = false;
+      }
+    };
+  });
+}
+
+let searchTimer;
+document.getElementById('kbSearch').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadKB(e.target.value.trim()), 250);
+});
+
+loadKB();
+</script>
+</body></html>"""
 
 
 @app.get("/api/version", response_class=HTMLResponse)
