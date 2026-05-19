@@ -104,6 +104,47 @@ class TestFaqRequestContract:
         r = client.post("/api/faq-requests", json={"question": long_q})
         assert r.status_code in (200, 400, 413, 422)
 
+    def test_share_answer_creates_answer_shared_kind(self, client: TestClient):
+        """ユーザー提供回答付きで送ると kind=answer_shared として記録される。"""
+        r = client.post("/api/faq-requests", json={
+            "question": "年度更新の手順",
+            "answer": "部長に確認したら、人事マスタを最初に更新する必要があるとのこと",
+            "share": True,
+        })
+        assert r.status_code == 200
+        body = r.json()
+        assert body["kind"] == "answer_shared"
+
+    def test_question_only_kind(self, client: TestClient):
+        """回答なしで送ると kind=question_only。"""
+        r = client.post("/api/faq-requests", json={"question": "テスト質問"})
+        assert r.status_code == 200
+        assert r.json()["kind"] == "question_only"
+
+    def test_admin_list_returns_answer_and_share(self, client: TestClient):
+        """管理画面API が answer / share / kind を返すか。"""
+        client.post("/api/faq-requests", json={
+            "question": "回答共有テスト",
+            "answer": "教えてもらった答え",
+            "share": True,
+        })
+        r = client.get("/api/admin/faq-requests")
+        assert r.status_code == 200
+        reqs = r.json()["requests"]
+        shared = [x for x in reqs if x["question"] == "回答共有テスト"]
+        assert shared, "送信したリクエストが取得できない"
+        assert shared[0]["answer"] == "教えてもらった答え"
+        assert shared[0]["share"] is True
+        assert shared[0]["kind"] == "answer_shared"
+
+    def test_oversized_answer_rejected(self, client: TestClient):
+        """5000文字超の回答は拒否。"""
+        r = client.post("/api/faq-requests", json={
+            "question": "テスト",
+            "answer": "x" * 5001,
+        })
+        assert r.status_code == 400
+
 
 # ============================================================
 # /api/admin/settings

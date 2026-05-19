@@ -211,13 +211,43 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
                    margin:8px 0;overflow-x:auto;font-size:12.5px}}
 .md-body .md-pre code{{background:transparent;color:inherit;padding:0;font-size:inherit}}
 .faq-request{{margin-top:10px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;
-              border-radius:10px;max-width:75%}}
-.faq-request-msg{{font-size:12px;color:#1e40af;margin-bottom:6px}}
-.faq-request-btn{{background:#1a73e8;color:#fff;border:0;padding:6px 14px;border-radius:8px;
+              border-radius:10px;max-width:85%}}
+.faq-request-msg{{font-size:12px;color:#1e40af;margin-bottom:8px}}
+.faq-request-actions{{display:flex;flex-wrap:wrap;gap:6px}}
+.faq-request-btn,.faq-share-btn{{border:0;padding:7px 14px;border-radius:8px;
                   font-size:12px;cursor:pointer;font-weight:500}}
+.faq-request-btn{{background:#1a73e8;color:#fff}}
 .faq-request-btn:hover{{background:#1557b0}}
-.faq-request-btn:disabled{{opacity:.6;cursor:not-allowed}}
+.faq-share-btn{{background:#fff;color:#1a73e8;border:1px solid #1a73e8}}
+.faq-share-btn:hover{{background:#eff6ff}}
+.faq-request-btn:disabled,.faq-share-btn:disabled{{opacity:.6;cursor:not-allowed}}
 .faq-request-done{{font-size:12px;color:#065f46;background:#d1fae5;padding:8px 12px;border-radius:6px}}
+/* 共有モーダル */
+.share-modal-overlay{{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9000;
+                     display:flex;align-items:center;justify-content:center;padding:16px}}
+.share-modal{{background:#fff;border-radius:14px;padding:24px;max-width:520px;width:100%;
+              box-shadow:0 12px 40px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}}
+.share-modal h3{{margin:0 0 12px;font-size:16px;color:#111827}}
+.share-modal .label{{display:block;font-size:12px;color:#374151;margin:10px 0 4px;font-weight:500}}
+.share-modal .q-preview{{background:#f9fafb;padding:10px 12px;border-radius:8px;
+                         border-left:3px solid #9ca3af;font-size:13px;color:#1f2937;
+                         margin-bottom:6px;word-break:break-word}}
+.share-modal textarea{{width:100%;min-height:120px;padding:10px;font-family:inherit;font-size:13px;
+                       border:1px solid #d1d5db;border-radius:8px;resize:vertical;line-height:1.6}}
+.share-modal textarea:focus{{outline:0;border-color:#1a73e8}}
+.share-modal .hint{{font-size:11px;color:#6b7280;margin-top:4px;line-height:1.5}}
+.share-modal .check-row{{display:flex;align-items:flex-start;gap:8px;margin-top:14px;
+                         padding:10px;background:#fef3c7;border-radius:8px}}
+.share-modal .check-row input{{margin-top:2px}}
+.share-modal .check-label{{font-size:12px;color:#78350f;line-height:1.5}}
+.share-modal .check-label b{{font-weight:600}}
+.share-modal .actions{{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}}
+.share-modal .btn-primary{{background:#1a73e8;color:#fff;border:0;padding:8px 18px;
+                            border-radius:8px;font-size:13px;cursor:pointer;font-weight:500}}
+.share-modal .btn-primary:hover{{background:#1557b0}}
+.share-modal .btn-cancel{{background:#fff;color:#6b7280;border:1px solid #d1d5db;
+                          padding:8px 18px;border-radius:8px;font-size:13px;cursor:pointer}}
+.share-modal .btn-cancel:hover{{background:#f9fafb}}
 .sources{{margin-top:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;
          padding:10px 14px;font-size:12px;max-width:85%}}
 .sources summary{{cursor:pointer;color:#4b5563;font-weight:500;padding:2px 0}}
@@ -530,8 +560,11 @@ form.onsubmit=async e=>{{
     const reqId='req-'+Date.now();
     if(!data.has_answer || data.is_reference){{
       html+=`<div class="faq-request" id="${{reqId}}">`
-        +`<div class="faq-request-msg">💡 この質問が公式FAQに登録されていません。管理者にFAQ追加をリクエストしますか？</div>`
-        +`<button class="faq-request-btn" data-q="${{escape(q)}}">📩 FAQ追加をリクエスト</button>`
+        +`<div class="faq-request-msg">💡 この質問が公式FAQに登録されていません。どちらか選んで管理者に届けましょう。</div>`
+        +`<div class="faq-request-actions">`
+        +  `<button class="faq-request-btn" data-q="${{escape(q)}}">📩 FAQ追加をリクエスト</button>`
+        +  `<button class="faq-share-btn" data-q="${{escape(q)}}">💬 自分で見つけた答えを共有</button>`
+        +`</div>`
         +`</div>`;
     }}
     const fbId='fb-'+Date.now();
@@ -564,11 +597,79 @@ form.onsubmit=async e=>{{
           alert('送信失敗: '+e.message);
         }}
       }};
+      // 「自分で見つけた答えを共有」モーダル
+      const shareBtn=reqBox.querySelector('.faq-share-btn');
+      if(shareBtn){{
+        shareBtn.onclick=()=>{{
+          openShareAnswerModal(q, async ({{answer, share}})=>{{
+            try{{
+              const r=await fetch('/api/faq-requests',{{method:'POST',
+                headers:{{'Content-Type':'application/json'}},
+                body:JSON.stringify({{question:q, answer, share}})}});
+              if(!r.ok) throw new Error((await r.json()).detail||r.statusText);
+              const msg = share
+                ? '✅ 教えてもらった回答を共有しました。管理者が確認後、公式FAQに追加されます。'
+                : '✅ 自分用メモとして記録しました。管理者には共有されません。';
+              reqBox.innerHTML='<div class="faq-request-done">'+msg+'</div>';
+            }}catch(e){{
+              alert('送信失敗: '+e.message);
+            }}
+          }});
+        }};
+      }}
     }}
     loadStats();
   }}catch(err){{wait.querySelector('.bubble').textContent='エラー: '+err.message}}
   sendBtn.disabled=false;input.focus();
 }};
+
+// 「自分で見つけた答えを共有」モーダルを開く
+function openShareAnswerModal(question, onSubmit){{
+  const overlay = document.createElement('div');
+  overlay.className = 'share-modal-overlay';
+  overlay.innerHTML = `
+    <div class="share-modal">
+      <h3>💬 自分で見つけた答えを共有</h3>
+      <span class="label">質問</span>
+      <div class="q-preview">${{escape(question)}}</div>
+      <span class="label">人から教えてもらった、または自分で見つけた回答</span>
+      <textarea id="share-answer-text" placeholder="例: 部長に聞いたところ、年度更新は人事マスタを最初に更新する必要があるとのこと。手順書は社内Wikiにあり..."></textarea>
+      <div class="hint">空欄でも送信できますが、回答があると他の人がすぐ参照できます。</div>
+      <div class="check-row">
+        <input type="checkbox" id="share-checkbox" checked>
+        <label for="share-checkbox" class="check-label">
+          <b>他の人にも役立つと思うので、管理者に共有する</b><br>
+          チェックを外すと「自分用メモ」として記録され、管理者には届きません。
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn-cancel" id="share-cancel">キャンセル</button>
+        <button class="btn-primary" id="share-submit">📤 送信</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const textarea = overlay.querySelector('#share-answer-text');
+  const checkbox = overlay.querySelector('#share-checkbox');
+  const submit = overlay.querySelector('#share-submit');
+  const cancel = overlay.querySelector('#share-cancel');
+  textarea.focus();
+  const close = ()=> overlay.remove();
+  cancel.onclick = close;
+  overlay.onclick = e => {{ if(e.target === overlay) close(); }};
+  submit.onclick = async ()=>{{
+    submit.disabled = true; submit.textContent = '送信中…';
+    try {{
+      await onSubmit({{
+        answer: textarea.value.trim(),
+        share: checkbox.checked
+      }});
+      close();
+    }} catch(e) {{
+      submit.disabled = false; submit.textContent = '📤 送信';
+    }}
+  }};
+}}
 
 loadStats();
 setInterval(loadStats, 30000);
@@ -1496,23 +1597,41 @@ function renderFaqRequests(requests, total){
     faqReqSection.innerHTML = '<div class="empty-msg">未対応のFAQ追加リクエストはありません</div>';
     return;
   }
-  const summary = `<div class="doc-summary"><b>${total}件のリクエスト</b> · 最新${requests.length}件を表示</div>`;
-  const rows = requests.map(r => `
+  const shared = requests.filter(r => r.kind === 'answer_shared' && r.share).length;
+  const summary = `<div class="doc-summary"><b>${total}件のリクエスト</b> · 最新${requests.length}件を表示`
+    + (shared ? ` · <span style="color:#065f46;font-weight:600">💬 ユーザー提供回答 ${shared}件</span>` : '')
+    + `</div>`;
+  const rows = requests.map(r => {
+    const isShared = r.kind === 'answer_shared' && r.share;
+    const isAnswerPrivate = r.kind === 'answer_shared' && !r.share;
+    const badge = isShared
+      ? '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-left:6px">💬 回答付き(共有)</span>'
+      : isAnswerPrivate
+        ? '<span style="background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px">🔒 個人メモ</span>'
+        : '';
+    const answerBlock = r.answer
+      ? `<div style="margin-top:6px;padding:8px 10px;background:#ecfdf5;border-left:3px solid #10b981;border-radius:6px;font-size:12px;color:#065f46;white-space:pre-wrap;word-break:break-word">
+           <div style="font-weight:600;margin-bottom:3px">💬 ユーザーが教えてもらった回答:</div>
+           ${escape(r.answer)}
+         </div>`
+      : '';
+    return `
     <tr>
       <td>
-        <div class="doc-name">${escape(r.question)}</div>
+        <div class="doc-name">${escape(r.question)}${badge}</div>
         <div class="doc-meta">${escape(r.user)} · ${fmtDate(r.ts)}</div>
         ${r.note ? `<div style="margin-top:4px;color:#6b7280;font-size:12px">📝 ${escape(r.note)}</div>` : ''}
+        ${answerBlock}
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
   faqReqSection.innerHTML = summary + `
     <table class="doc-table">
       <thead><tr><th>質問内容</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div style="margin-top:8px;font-size:11px;color:#9ca3af">
-      💡 これらの質問に対応するドキュメントを作成して、上の「ファイルを投入」から取り込んでください
+      💡 「💬 回答付き」のリクエストは、その回答をMarkdownファイルにして「ファイルを投入」から取り込めば即FAQ化できます
     </div>
   `;
 }
@@ -1903,42 +2022,63 @@ async def api_feedback(payload: FeedbackRequest, user: dict = Depends(require_us
 class FaqRequest(BaseModel):
     question: str
     note: str = ""  # 任意の補足情報
+    answer: str = ""  # ユーザーが別途人から教えてもらった回答（任意）
+    share: bool = False  # 「他の人にも役立つので管理者に共有する」フラグ
 
 
 @app.post("/api/faq-requests")
 async def api_faq_request(payload: FaqRequest, user: dict = Depends(require_user)):
     """FAQ追加リクエストを受け付ける。
 
-    ユーザーが質問しても回答が得られなかった場合、管理者にFAQ追加を依頼するためのエンドポイント。
-    監査ログに記録される。
+    用途:
+      1. 質問しても回答が得られなかった → 管理者に FAQ 追加を依頼
+      2. ユーザーが別途人から答えを教えてもらった → その回答を共有して FAQ 化を依頼
     """
     q = (payload.question or "").strip()
+    a = (payload.answer or "").strip()
     if not q:
         raise HTTPException(status_code=400, detail="質問本文が空です")
     if len(q) > 2000:
         raise HTTPException(status_code=400, detail="質問が長すぎます（2000文字以内）")
+    if len(a) > 5000:
+        raise HTTPException(status_code=400, detail="回答が長すぎます（5000文字以内）")
+    # ユーザー提供回答がある場合は kind="answer_shared" としてサブカテゴリ化
+    kind = "answer_shared" if a else "question_only"
     audit.record(
         "faq_request",
         user=user["email"],
         question=q,
         note=(payload.note or "")[:500],
+        answer=a[:5000],
+        share=bool(payload.share),
+        kind=kind,
     )
-    return {"ok": True}
+    return {"ok": True, "kind": kind}
 
 
 @app.get("/api/admin/faq-requests")
 async def admin_list_faq_requests(user: dict = Depends(require_user)):
-    """未対応のFAQ追加リクエスト一覧を返す（直近100件）。"""
+    """未対応のFAQ追加リクエスト一覧を返す（直近100件）。
+    answer_shared（ユーザー提供回答付き）が先頭に来るようソート。
+    """
     recent = audit.read_recent(1000)
     requests = [
         {
             "question": e.get("question", ""),
             "note": e.get("note", ""),
+            "answer": e.get("answer", ""),
+            "share": bool(e.get("share", False)),
+            "kind": e.get("kind", "question_only"),
             "user": e.get("user", ""),
             "ts": e.get("ts", ""),
         }
         for e in recent if e.get("event") == "faq_request"
     ]
+    # ユーザー提供回答付き && 共有許可ありを優先表示
+    requests.sort(key=lambda r: (
+        0 if (r["kind"] == "answer_shared" and r["share"]) else 1,
+        0 if r["kind"] == "answer_shared" else 1,
+    ))
     return {"requests": requests[:100], "total": len(requests)}
 
 
