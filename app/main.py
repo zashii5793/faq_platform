@@ -123,22 +123,30 @@ aside{{width:300px;background:#fff;border-right:1px solid #e5e7eb;display:flex;f
 .section h3{{font-size:12.5px;color:#9ca3af;font-weight:600;letter-spacing:.04em;
             text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}}
 /* よく聞かれる質問リスト */
-.pop-item{{padding:8px 10px;margin:4px -10px;border-radius:8px;cursor:pointer;
-           font-size:13.5px;color:#374151;line-height:1.5;display:flex;
-           justify-content:space-between;align-items:center;gap:8px;transition:background .12s}}
-.pop-item:hover{{background:#fff7ed}}
-.pop-item .pop-count{{background:#fef3c7;color:#92400e;padding:2px 9px;
-                      border-radius:12px;font-size:11.5px;font-weight:600;flex-shrink:0}}
-#popular-queries{{max-height:260px;overflow-y:auto;padding-right:4px}}
+.pop-item{{padding:10px 12px;margin:4px -12px;border-radius:8px;cursor:pointer;
+           font-size:14px;color:#1f2937;line-height:1.5;display:flex;
+           justify-content:space-between;align-items:center;gap:10px;
+           transition:background .12s;font-weight:500;
+           border-bottom:1px solid #f3f4f6}}
+.pop-item:last-child{{border-bottom:0}}
+.pop-item:hover{{background:#fff7ed;color:#1a73e8}}
+.pop-item .pop-q{{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}}
+.pop-item .pop-count{{background:#fef3c7;color:#92400e;padding:3px 10px;
+                      border-radius:12px;font-size:12px;font-weight:700;flex-shrink:0}}
+#popular-queries{{max-height:280px;overflow-y:auto;padding-right:4px}}
+#popular-queries::-webkit-scrollbar{{width:6px}}
+#popular-queries::-webkit-scrollbar-thumb{{background:#d1d5db;border-radius:3px}}
 .stat{{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px}}
 .stat .label{{color:#6b7280}}
 .stat .value{{color:#1f2937;font-weight:600}}
 .stat .value.big{{font-size:24px;color:#1a73e8;letter-spacing:-.02em}}
 .topic-item{{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#374151}}
 .topic-item .count{{color:#9ca3af;font-size:11px}}
-.history-item{{padding:8px 10px;margin:4px -10px;border-radius:8px;cursor:pointer;
-              font-size:13.5px;color:#374151;line-height:1.5;transition:background .12s}}
-.history-item:hover{{background:#f3f4f6}}
+.history-item{{padding:10px 12px;margin:4px -12px;border-radius:8px;cursor:pointer;
+              font-size:14px;color:#1f2937;line-height:1.5;transition:background .12s;
+              font-weight:500;border-bottom:1px solid #f3f4f6}}
+.history-item:last-child{{border-bottom:0}}
+.history-item:hover{{background:#eff6ff;color:#1a73e8}}
 #history{{max-height:380px;overflow-y:auto;padding-right:4px}}
 #history::-webkit-scrollbar{{width:6px}}
 #history::-webkit-scrollbar-thumb{{background:#d1d5db;border-radius:3px}}
@@ -405,7 +413,7 @@ button.send:disabled{{background:#9ca3af;box-shadow:none;transform:none;cursor:n
   <!-- ===== 管理者向け（折りたたみ可・デフォルト閉じる） ===== -->
   <div class="section-divider">— 管理者ビュー —</div>
 
-  <details class="section section-admin">
+  <details class="section section-admin" open>
     <summary>📊 分析（直近）</summary>
     <div class="stat"><span class="label">質問数</span><span class="value big" id="stat-queries">-</span></div>
     <div class="stat"><span class="label">回答率</span><span class="value" id="stat-answerrate">-</span></div>
@@ -414,20 +422,20 @@ button.send:disabled{{background:#9ca3af;box-shadow:none;transform:none;cursor:n
     <div id="top-topics"><div class="empty-list">読み込み中…</div></div>
   </details>
 
-  <details class="section section-admin">
+  <details class="section section-admin" open>
     <summary>📚 取り込み状況</summary>
     <div class="stat"><span class="label">取り込み済み文書</span><span class="value" id="stat-docs">-</span></div>
     <div class="stat"><span class="label">総チャンク数</span><span class="value" id="stat-chunks">-</span></div>
     <a class="upload-link" href="/admin/upload">📁 ファイルを追加</a>
   </details>
 
-  <details class="section section-admin">
+  <details class="section section-admin" open>
     <summary>📁 カバー領域</summary>
     <div style="font-size:11px;color:#6b7280;margin-bottom:4px">取り込み済み文書のタグ</div>
     <div class="cov-tags" id="cov-tags"></div>
   </details>
 
-  <details class="section section-admin">
+  <details class="section section-admin" open>
     <summary>💬 フィードバック</summary>
     <div class="fb-row">
       <div class="fb-pill up"><span class="num" id="fb-up">0</span>👍 役立った</div>
@@ -435,7 +443,7 @@ button.send:disabled{{background:#9ca3af;box-shadow:none;transform:none;cursor:n
     </div>
   </details>
 
-  <details class="section section-admin">
+  <details class="section section-admin" open>
     <summary>⚠ 改善要望のあった質問 <span id="fb-issues-count"></span></summary>
     <ul id="fb-issues"><li class="empty-list" style="list-style:none;padding-left:0">なし</li></ul>
   </details>
@@ -506,7 +514,7 @@ async function loadStats(){{
     const histCount=document.getElementById('history-count');
     if(histCount) histCount.textContent = s.history.length ? `(${{s.history.length}}件)` : '';
     hist.innerHTML=s.history.length
-      ? s.history.map(h=>`<div class="history-item" data-q="${{escape(h.question)}}"><div>${{escape(h.question.slice(0,40))}}${{h.question.length>40?'…':''}}</div><div style="color:#9ca3af;font-size:10px">${{relTime(h.ts)}}</div></div>`).join('')
+      ? s.history.map(h=>`<div class="history-item" data-q="${{escape(h.question)}}"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${{escape(h.question.slice(0,60))}}${{h.question.length>60?'…':''}}</div><div style="color:#9ca3af;font-size:11px;font-weight:400;margin-top:2px">${{relTime(h.ts)}}</div></div>`).join('')
       : '<div class="empty-list">まだ履歴がありません</div>';
     hist.querySelectorAll('.history-item').forEach(el=>el.onclick=()=>{{input.value=el.dataset.q;form.requestSubmit();}});
     const tags=document.getElementById('cov-tags');
@@ -524,7 +532,7 @@ async function loadStats(){{
     if(popList){{
       if(popCount) popCount.textContent = popData.length ? `(${{popData.length}}件)` : '';
       popList.innerHTML = popData.length
-        ? popData.slice(0,30).map(p=>`<div class="pop-item" data-q="${{escape(p.question)}}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${{escape(p.question.slice(0,50))}}${{p.question.length>50?'…':''}}</span><span class="pop-count">${{p.count}}回</span></div>`).join('')
+        ? popData.slice(0,30).map(p=>`<div class="pop-item" data-q="${{escape(p.question)}}"><span class="pop-q">${{escape(p.question.slice(0,60))}}${{p.question.length>60?'…':''}}</span><span class="pop-count">${{p.count}}回</span></div>`).join('')
         : '<div class="empty-list">まだ集計データがありません</div>';
       popList.querySelectorAll('.pop-item').forEach(el=>el.onclick=()=>{{input.value=el.dataset.q;form.requestSubmit();}});
     }}
