@@ -22,22 +22,17 @@ PORT="${PORT:-8000}"
 HOST="${HOST:-127.0.0.1}"
 EVAL_DIR="./data/client_eval"
 
-# データディレクトリの存在チェック
-if [ ! -d "${EVAL_DIR}/faq_master" ] || [ -z "$(ls -A ${EVAL_DIR}/faq_master 2>/dev/null)" ]; then
-  echo "❌ ${EVAL_DIR}/faq_master/ にデータが置かれていません。"
-  echo ""
-  echo "   📁 データをこのフォルダにコピーしてから再実行してください:"
-  echo "      ${EVAL_DIR}/faq_master/"
-  echo ""
-  echo "   例（受領した zip を解凍する場合）:"
-  echo "      mkdir -p ${EVAL_DIR}/faq_master"
-  echo "      unzip ~/Downloads/受領データ.zip -d ${EVAL_DIR}/faq_master/"
-  echo ""
-  echo "   対応フォーマット: .md / .txt / .pdf / .xlsx / .docx / .pptx / .csv"
-  exit 1
-fi
+# データディレクトリを自動作成（空でも起動OK）
+mkdir -p "${EVAL_DIR}/faq_master"
 
-N_FILES=$(find "${EVAL_DIR}/faq_master" -type f | wc -l | tr -d ' ')
+# 中身があるかチェック（無くても起動継続、ブラウザからアップロード可能）
+N_FILES=$(find "${EVAL_DIR}/faq_master" -type f 2>/dev/null | wc -l | tr -d ' ')
+N_FILES="${N_FILES:-0}"
+if [ "$N_FILES" -eq 0 ]; then
+  DATA_STATUS="📭 データ未投入 → ブラウザの /admin/upload からドラッグ&ドロップで取り込み"
+else
+  DATA_STATUS="📚 ${N_FILES} ファイル取り込み済み (${EVAL_DIR}/faq_master/)"
+fi
 
 # venv チェック（既存があれば再利用）
 if [ ! -d .venv ]; then
@@ -58,7 +53,7 @@ fi
 echo ""
 echo "🧪 クライアント評価環境 — 社内ヘルプデスク"
 echo ""
-echo "   データ:    ${EVAL_DIR}/faq_master/ (${N_FILES} ファイル)"
+echo "   ${DATA_STATUS}"
 echo "   組織名:    [評価環境]"
 echo "   役割:      社内ヘルプデスク"
 echo ""
