@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import audit, runtime_settings
+from . import __version__, audit, runtime_settings
 from .auth import is_email_allowed, oauth, require_user
 from .config import settings
 from .ingest import analyze as ingest_analyze, ingest as ingest_commit
@@ -194,22 +194,42 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .reference-answer{{background:#fffbeb;border-left:3px solid #f59e0b;padding:12px 14px;
                    border-radius:8px;margin-bottom:4px;color:#78350f;font-size:13px;line-height:1.7}}
 /* Markdown 回答の整形 */
-.md-body{{line-height:1.7;font-size:14px;color:#1f2937}}
-.md-body .md-h1{{font-size:16px;font-weight:600;color:#111827;margin:14px 0 8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb}}
-.md-body .md-h2{{font-size:15px;font-weight:600;color:#111827;margin:14px 0 6px;padding-left:8px;border-left:3px solid #1a73e8}}
-.md-body .md-h3{{font-size:14px;font-weight:600;color:#1a73e8;margin:12px 0 4px}}
+.md-body{{line-height:1.8;font-size:14px;color:#374151}}
+.md-body .md-h1{{font-size:16.5px;font-weight:700;color:#111827;margin:16px 0 10px;
+                  padding-bottom:6px;border-bottom:2px solid #1a73e8}}
+.md-body .md-h2{{font-size:15.5px;font-weight:600;color:#111827;margin:16px 0 8px;
+                  padding:6px 10px;background:linear-gradient(90deg,#eff6ff 0%,transparent 100%);
+                  border-left:4px solid #1a73e8;border-radius:0 6px 6px 0}}
+.md-body .md-h3{{font-size:14.5px;font-weight:600;color:#1a73e8;margin:14px 0 6px;
+                  padding-left:6px;position:relative}}
+.md-body .md-h3::before{{content:"▸ ";color:#1a73e8;font-weight:700}}
 .md-body .md-h4{{font-size:13px;font-weight:600;color:#4b5563;margin:10px 0 2px}}
-.md-body .md-hr{{border:none;border-top:1px dashed #e5e7eb;margin:12px 0}}
-.md-body .md-ul{{margin:6px 0 6px 0;padding-left:22px}}
-.md-body .md-ul li{{margin:3px 0;line-height:1.7}}
-.md-body .md-br{{height:6px}}
-.md-body .md-line{{margin:2px 0}}
-.md-body strong{{font-weight:600;color:#111827}}
-.md-body .md-code{{background:#f3f4f6;padding:1px 6px;border-radius:3px;font-size:12.5px;
-                    font-family:Menlo,Consolas,monospace;color:#be123c}}
-.md-body .md-pre{{background:#0f172a;color:#e2e8f0;padding:10px 14px;border-radius:6px;
-                   margin:8px 0;overflow-x:auto;font-size:12.5px}}
-.md-body .md-pre code{{background:transparent;color:inherit;padding:0;font-size:inherit}}
+.md-body .md-hr{{border:none;border-top:1px dashed #e5e7eb;margin:14px 0}}
+.md-body .md-ul{{margin:8px 0;padding-left:8px;list-style:none}}
+.md-body .md-ul li{{margin:6px 0;line-height:1.75;padding-left:22px;position:relative}}
+.md-body .md-ul li::before{{content:"●";color:#3b82f6;font-size:8px;
+                             position:absolute;left:8px;top:9px}}
+.md-body .md-br{{height:8px}}
+.md-body .md-line{{margin:4px 0}}
+.md-body strong{{font-weight:600;color:#1d4ed8;background:linear-gradient(transparent 60%,#dbeafe 60%);
+                  padding:0 2px}}
+.md-body .md-code{{background:#f3f4f6;padding:2px 7px;border-radius:4px;font-size:12.5px;
+                    font-family:Menlo,Consolas,monospace;color:#be123c;
+                    border:1px solid #e5e7eb}}
+.md-body .md-pre{{background:#0f172a;color:#e2e8f0;padding:12px 16px;border-radius:8px;
+                   margin:10px 0;overflow-x:auto;font-size:12.5px;line-height:1.6}}
+.md-body .md-pre code{{background:transparent;color:inherit;padding:0;font-size:inherit;border:0}}
+/* 出典行: LLM が「**出典:**」と書く行を緑カードで強調 */
+.md-body .md-citation{{margin-top:14px;padding:9px 14px;
+                        background:linear-gradient(90deg,#ecfdf5 0%,#f0fdf4 100%);
+                        border-left:3px solid #10b981;border-radius:0 8px 8px 0;
+                        font-size:13px;color:#065f46;line-height:1.6}}
+.md-body .md-citation strong{{background:transparent;color:#047857;padding:0}}
+/* 全体的な余白感 */
+.md-body > .md-line:first-child,
+.md-body > .md-h1:first-child,
+.md-body > .md-h2:first-child,
+.md-body > .md-h3:first-child{{margin-top:0}}
 .faq-request{{margin-top:10px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;
               border-radius:10px;max-width:85%}}
 .faq-request-msg{{font-size:12px;color:#1e40af;margin-bottom:8px}}
@@ -267,6 +287,38 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .src-preview{{font-size:11.5px;color:#4b5563;line-height:1.55;background:#fff;
               padding:6px 10px;border-radius:6px;border-left:3px solid #bfdbfe;
               margin-top:4px;word-break:break-word}}
+.src-view-btn{{margin-top:6px;background:transparent;color:#1a73e8;border:1px solid #bfdbfe;
+                padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:500}}
+.src-view-btn:hover{{background:#eff6ff;border-color:#1a73e8}}
+/* 出典詳細モーダル（参照のみ） */
+.chunk-modal-overlay{{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9500;
+                     display:flex;align-items:center;justify-content:center;padding:16px}}
+.chunk-modal{{background:#fff;border-radius:14px;max-width:780px;width:100%;max-height:90vh;
+              display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.25)}}
+.chunk-modal-header{{padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;
+                     justify-content:space-between;align-items:flex-start;gap:10px}}
+.chunk-modal-title{{font-size:14px;font-weight:600;color:#111827;flex:1;
+                    word-break:break-word;line-height:1.5}}
+.chunk-modal-meta{{font-size:11px;color:#6b7280;margin-top:2px}}
+.chunk-modal-close{{background:transparent;border:0;font-size:20px;cursor:pointer;
+                    color:#9ca3af;padding:0 4px;line-height:1}}
+.chunk-modal-close:hover{{color:#1f2937}}
+.chunk-modal-body{{padding:18px 20px;overflow-y:auto;flex:1}}
+.chunk-modal-text{{font-size:13px;line-height:1.75;color:#1f2937;white-space:pre-wrap;
+                   word-break:break-word;background:#f9fafb;padding:14px 16px;
+                   border-radius:8px;border-left:3px solid #1a73e8}}
+.chunk-modal-section{{margin-top:18px}}
+.chunk-modal-section h4{{font-size:12px;color:#6b7280;text-transform:uppercase;
+                          letter-spacing:.05em;margin-bottom:8px;font-weight:600}}
+.chunk-modal-neighbor{{padding:8px 10px;margin:3px 0;background:#fafafa;border-radius:6px;
+                       font-size:12px;color:#4b5563;cursor:pointer;line-height:1.5;
+                       border:1px solid transparent}}
+.chunk-modal-neighbor:hover{{background:#eff6ff;border-color:#bfdbfe}}
+.chunk-modal-neighbor.active{{background:#dbeafe;border-color:#1a73e8;color:#1e3a8a;font-weight:500}}
+.chunk-modal-neighbor .nb-tag{{display:inline-block;background:#e5e7eb;color:#374151;
+                                padding:0 6px;border-radius:4px;font-size:10.5px;margin-right:6px}}
+.chunk-modal-footer{{padding:12px 20px;border-top:1px solid #e5e7eb;font-size:11px;
+                     color:#9ca3af;display:flex;justify-content:space-between;align-items:center}}
 .sources-hint{{font-size:11px;color:#6b7280;margin-top:4px;font-style:italic}}
 .feedback{{display:inline-flex;gap:6px;margin-top:6px}}
 .feedback button{{background:transparent;border:1px solid #e5e7eb;padding:3px 10px;
@@ -288,7 +340,7 @@ button.send:disabled{{background:#9ca3af}}
 
 <aside>
   <div class="brand">
-    <h1>{_esc(settings.product_name)}</h1>
+    <h1>{_esc(settings.product_name)} <span class="version-badge" title="システムバージョン">v{__version__}</span></h1>
     <p>{_esc(settings.org_name)}</p>
   </div>
 
@@ -487,6 +539,11 @@ function renderMarkdown(escapedText){{
       out.push('<div class="md-br"></div>');
       continue;
     }}
+    // 「**出典:**」「**Source:**」「**参考:**」で始まる行は出典カードとして強調表示
+    if(/^\\*\\*(出典|Source|参考)[:：]\\*\\*/.test(line.trim())){{
+      out.push('<div class="md-citation">'+inlineMd(line)+'</div>');
+      continue;
+    }}
     // 通常行
     out.push('<div class="md-line">'+inlineMd(line)+'</div>');
   }}
@@ -548,14 +605,22 @@ form.onsubmit=async e=>{{
         if(s.score >= 0.30){{ scoreCls = 'high'; scoreLabel = '高'; }}
         else if(s.score >= 0.15){{ scoreCls = 'mid'; scoreLabel = '中'; }}
         const preview = (s.preview||'').trim();
-        html += '<div class="src">'
+        const isShared = (s.source||'').startsWith('user-shared-');
+        const sharedBadge = isShared
+          ? '<span class="src-shared-tag" title="社員が共有した非公式回答（管理者承認前・参考として表示）">💬 ユーザー提供</span>'
+          : '';
+        const displayName = isShared
+          ? '💬 ユーザー提供回答'  // ファイル名のままより分かりやすく
+          : escape(s.source);
+        html += '<div class="src '+(isShared?'shared':'')+'" data-chunk-id="'+escape(s.chunk_id||'')+'">'
               + '<div class="src-row">'
-              +   '<span class="src-name">📄 '+escape(s.source)
-              +     (chunkLabel ? '<span class="src-chunk-tag" title="ファイル内で取り込み時に分割された該当箇所（内部連番）">'+escape(chunkLabel)+'</span>' : '')
+              +   '<span class="src-name">📄 '+displayName+sharedBadge
+              +     (chunkLabel && !isShared ? '<span class="src-chunk-tag" title="ファイル内で取り込み時に分割された該当箇所（内部連番）">'+escape(chunkLabel)+'</span>' : '')
               +   '</span>'
               +   '<span class="src-score '+scoreCls+'">関連度 '+scoreLabel+' ('+s.score.toFixed(2)+')</span>'
               + '</div>'
               + (preview ? '<div class="src-preview">'+escape(preview)+'…</div>' : '')
+              + '<button class="src-view-btn" data-cid="'+escape(s.chunk_id||'')+'">🔍 全文を見る</button>'
               + '</div>';
       }}
       html+='</details>';
@@ -574,6 +639,10 @@ form.onsubmit=async e=>{{
     const fbId='fb-'+Date.now();
     html+=`<div class="feedback" id="${{fbId}}"><button data-vote="up">👍 役に立った</button><button data-vote="down">👎 改善が必要</button></div>`;
     wait.querySelector('.bubble').innerHTML=html;
+    // 出典詳細「全文を見る」ボタンの動作
+    wait.querySelectorAll('.src-view-btn').forEach(btn => {{
+      btn.onclick = () => openChunkViewer(btn.dataset.cid);
+    }});
     const fb=document.getElementById(fbId);
     if(fb){{
       fb.querySelectorAll('button').forEach(b=>b.onclick=async()=>{{
@@ -611,8 +680,12 @@ form.onsubmit=async e=>{{
                 headers:{{'Content-Type':'application/json'}},
                 body:JSON.stringify({{question:q, answer, share}})}});
               if(!r.ok) throw new Error((await r.json()).detail||r.statusText);
+              const result = await r.json();
+              const indexedNote = result.indexed
+                ? '<br>🔍 検索インデックスにも追加済み。他の人が同じ質問をするとこの回答も候補に上がります。'
+                : '';
               const msg = share
-                ? '✅ 教えてもらった回答を共有しました。管理者が確認後、公式FAQに追加されます。'
+                ? '✅ 教えてもらった回答を共有しました。管理者が確認後、公式FAQに追加されます。' + indexedNote
                 : '✅ 自分用メモとして記録しました。管理者には共有されません。';
               reqBox.innerHTML='<div class="faq-request-done">'+msg+'</div>';
             }}catch(e){{
@@ -626,6 +699,85 @@ form.onsubmit=async e=>{{
   }}catch(err){{wait.querySelector('.bubble').textContent='エラー: '+err.message}}
   sendBtn.disabled=false;input.focus();
 }};
+
+// 出典チャンク詳細モーダル（参照のみ）
+async function openChunkViewer(chunkId){{
+  const overlay = document.createElement('div');
+  overlay.className = 'chunk-modal-overlay';
+  overlay.innerHTML = `
+    <div class="chunk-modal">
+      <div class="chunk-modal-header">
+        <div>
+          <div class="chunk-modal-title">⏳ 読み込み中…</div>
+          <div class="chunk-modal-meta" id="cv-meta"></div>
+        </div>
+        <button class="chunk-modal-close" id="cv-close">×</button>
+      </div>
+      <div class="chunk-modal-body">
+        <div class="chunk-modal-text" id="cv-text">読み込み中…</div>
+        <div class="chunk-modal-section" id="cv-neighbors-wrap" hidden>
+          <h4>📚 同じファイルの他のチャンク</h4>
+          <div id="cv-neighbors"></div>
+        </div>
+      </div>
+      <div class="chunk-modal-footer">
+        <span>参照のみ・編集不可</span>
+        <span>クリックで他のチャンクへ移動できます</span>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = ()=> overlay.remove();
+  overlay.querySelector('#cv-close').onclick = close;
+  overlay.onclick = e => {{ if(e.target === overlay) close(); }};
+  document.addEventListener('keydown', function esc(e){{
+    if(e.key === 'Escape'){{ close(); document.removeEventListener('keydown', esc); }}
+  }});
+
+  async function load(cid){{
+    overlay.querySelector('#cv-text').textContent = '読み込み中…';
+    try {{
+      const r = await fetch('/api/chunks?chunk_id=' + encodeURIComponent(cid));
+      if(!r.ok) throw new Error((await r.json()).detail || r.statusText);
+      const data = await r.json();
+      const c = data.chunk;
+      const chunkRaw = (c.chunk_id||'').includes('#') ? c.chunk_id.split('#').pop() : '';
+      const chunkLabel = chunkRaw
+        ? (/^\\d+$/.test(chunkRaw) ? `セクション ${{chunkRaw}}` : chunkRaw)
+        : '';
+      overlay.querySelector('.chunk-modal-title').textContent = '📄 ' + c.source;
+      overlay.querySelector('#cv-meta').textContent = chunkLabel || c.chunk_id;
+      overlay.querySelector('#cv-text').textContent = c.text;
+      // 同じファイルの他チャンク
+      const wrap = overlay.querySelector('#cv-neighbors-wrap');
+      const list = overlay.querySelector('#cv-neighbors');
+      if((data.neighbors||[]).length > 1){{
+        wrap.hidden = false;
+        list.innerHTML = data.neighbors.map(n => {{
+          const r2 = (n.chunk_id||'').includes('#') ? n.chunk_id.split('#').pop() : '';
+          const lbl = r2 ? (/^\\d+$/.test(r2) ? 'セクション '+r2 : r2) : '';
+          const active = n.chunk_id === c.chunk_id ? 'active' : '';
+          return `<div class="chunk-modal-neighbor ${{active}}" data-cid="${{escape(n.chunk_id)}}">`
+               + (lbl ? `<span class="nb-tag">${{escape(lbl)}}</span>` : '')
+               + escape(n.preview||'(空)')
+               + `</div>`;
+        }}).join('');
+        list.querySelectorAll('.chunk-modal-neighbor').forEach(el => {{
+          el.onclick = () => {{
+            list.querySelectorAll('.chunk-modal-neighbor').forEach(x => x.classList.remove('active'));
+            el.classList.add('active');
+            load(el.dataset.cid);
+          }};
+        }});
+      }} else {{
+        wrap.hidden = true;
+      }}
+    }} catch(e) {{
+      overlay.querySelector('#cv-text').textContent = '読み込み失敗: ' + e.message;
+    }}
+  }}
+  load(chunkId);
+}}
 
 // 「自分で見つけた答えを共有」モーダルを開く
 function openShareAnswerModal(question, onSubmit){{
@@ -889,7 +1041,7 @@ async def admin_upload_page(request: Request) -> HTMLResponse:
         user = request.session.get("user")
         if not user or not is_email_allowed(user.get("email", "")):
             return HTMLResponse('<a href="/auth/login">Googleでログイン</a>', status_code=200)
-    return HTMLResponse(_upload_page())
+    return HTMLResponse(_upload_page().replace("__VERSION__", __version__))
 
 
 def _upload_page() -> str:
@@ -908,6 +1060,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',san
 .modal-header h2{font-size:18px;color:#111827}
 .modal-header h2 span{color:#1a73e8}
 .modal-body{padding:24px}
+/* バージョンバッジ */
+.version-badge{{display:inline-block;background:#e5e7eb;color:#6b7280;
+                font-size:10px;font-weight:500;padding:1px 7px;border-radius:10px;
+                vertical-align:middle;margin-left:6px;letter-spacing:.02em}}
+/* 共有(ユーザー提供)出典の枠スタイル */
+.src.shared{{background:#fef3c7;border-left:3px solid #f59e0b;padding-left:8px;
+              margin-left:-8px}}
+.src-shared-tag{{display:inline-block;background:#fbbf24;color:#78350f;
+                  padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600;
+                  margin-left:6px}}
+/* 管理画面タブ */
+.admin-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:4px;background:#f3f4f6;
+            border-radius:10px;margin-bottom:24px}
+.admin-tab{flex:1;min-width:120px;padding:9px 14px;background:transparent;border:0;
+           border-radius:8px;font-size:13px;font-weight:500;color:#6b7280;
+           cursor:pointer;transition:all .15s;white-space:nowrap}
+.admin-tab:hover{background:#fff;color:#1f2937}
+.admin-tab.active{background:#fff;color:#1a73e8;box-shadow:0 1px 3px rgba(0,0,0,.08);font-weight:600}
+.admin-pane[hidden]{display:none}
 .step-title{font-size:13px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;
             font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .step-num{background:#1a73e8;color:#fff;width:22px;height:22px;border-radius:50%;
@@ -1076,10 +1247,20 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
 </style></head><body>
 <div class="modal">
   <div class="modal-header">
-    <h2>📚 ナレッジ追加 <span>— Inquira</span></h2>
+    <h2>📚 ナレッジ追加 <span>— Inquira</span> <span class="version-badge" title="システムバージョン">v__VERSION__</span></h2>
     <a href="/" style="color:#6b7280;text-decoration:none;font-size:13px">← チャットに戻る</a>
   </div>
   <div class="modal-body">
+
+    <nav class="admin-tabs" id="adminTabs">
+      <button class="admin-tab active" data-tab="ingest">📁 ファイル取り込み</button>
+      <button class="admin-tab" data-tab="analytics">📊 利用状況</button>
+      <button class="admin-tab" data-tab="history">🔍 履歴・要望</button>
+      <button class="admin-tab" data-tab="settings">⚙ 設定・出力</button>
+    </nav>
+
+    <!-- ===== タブ1: ファイル取り込み ===== -->
+    <div class="admin-pane" data-pane="ingest">
     <div class="step-title"><span class="step-num">1</span>ファイルを投入</div>
     <label class="upload-zone" id="dropzone">
       <div class="icon">📁</div>
@@ -1102,17 +1283,23 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
       <div class="empty-msg">ファイルをドロップすると、ここに解析結果が表示されます</div>
     </div>
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">3</span>利用状況ダッシュボード</div>
-    <div id="dashboard-section" style="font-size:13px;color:#6b7280">
-      <div class="empty-msg">読み込み中…</div>
-    </div>
-
-    <div class="step-title" style="margin-top:32px"><span class="step-num">4</span>取り込み済み文書（メンテナンス）</div>
+    <div class="step-title" style="margin-top:32px"><span class="step-num">3</span>取り込み済み文書（メンテナンス）</div>
     <div id="docs-section" style="font-size:13px;color:#6b7280">
       <div class="empty-msg">読み込み中…</div>
     </div>
+    </div><!-- /pane: ingest -->
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">5</span>質問履歴を検索</div>
+    <!-- ===== タブ2: 利用状況 ===== -->
+    <div class="admin-pane" data-pane="analytics" hidden>
+    <div class="step-title"><span class="step-num">📊</span>利用状況ダッシュボード</div>
+    <div id="dashboard-section" style="font-size:13px;color:#6b7280">
+      <div class="empty-msg">読み込み中…</div>
+    </div>
+    </div><!-- /pane: analytics -->
+
+    <!-- ===== タブ3: 履歴・要望 ===== -->
+    <div class="admin-pane" data-pane="history" hidden>
+    <div class="step-title"><span class="step-num">🔍</span>質問履歴を検索</div>
     <div id="queries-search-section" style="font-size:13px;color:#6b7280">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
         <input type="text" id="querySearchInput" placeholder="🔍 質問本文で検索（部分一致）" style="flex:1;min-width:200px;padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"/>
@@ -1134,17 +1321,20 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
       </div>
     </div>
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">6</span>FAQ追加リクエスト</div>
+    <div class="step-title" style="margin-top:32px"><span class="step-num">📩</span>FAQ追加リクエスト</div>
     <div id="faq-requests-section" style="font-size:13px;color:#6b7280">
       <div class="empty-msg">読み込み中…</div>
     </div>
+    </div><!-- /pane: history -->
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">7</span>組織情報（デモ・カスタマイズ用）</div>
+    <!-- ===== タブ4: 設定・出力 ===== -->
+    <div class="admin-pane" data-pane="settings" hidden>
+    <div class="step-title"><span class="step-num">⚙</span>組織情報（デモ・カスタマイズ用）</div>
     <div id="settings-section" style="font-size:13px;color:#6b7280">
       <div class="empty-msg">読み込み中…</div>
     </div>
 
-    <div class="step-title" style="margin-top:32px"><span class="step-num">8</span>レポート出力（社内提出・分析用）</div>
+    <div class="step-title" style="margin-top:32px"><span class="step-num">📥</span>レポート出力（社内提出・分析用）</div>
     <div id="export-section" style="font-size:13px;color:#6b7280">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <label>期間:
@@ -1164,6 +1354,8 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
         💡 CSV は Excel/Numbers で開けます（UTF-8 BOM 付き）。月次顧客レポートや改善分析にお使いください
       </div>
     </div>
+    </div><!-- /pane: settings -->
+
   </div>
   <div class="modal-footer">
     <div class="summary" id="summary">未取り込み</div>
@@ -1936,6 +2128,27 @@ loadDashboard();
 loadDocuments();
 loadFaqRequests();
 loadSettings();
+
+// === 管理画面タブ切り替え ===
+document.querySelectorAll('.admin-tab').forEach(tab => {
+  tab.onclick = () => {
+    const target = tab.dataset.tab;
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t === tab));
+    document.querySelectorAll('.admin-pane').forEach(p => {
+      p.hidden = p.dataset.pane !== target;
+    });
+    // URL のフラグメントを更新（ブックマーク・履歴用）
+    history.replaceState(null, '', '#' + target);
+  };
+});
+// 初期表示: URL フラグメントがあればそのタブを開く
+(() => {
+  const h = (location.hash || '').replace('#', '');
+  if (h && ['ingest','analytics','history','settings'].includes(h)) {
+    const t = document.querySelector(`.admin-tab[data-tab="${h}"]`);
+    if (t) t.click();
+  }
+})();
 </script>
 </body></html>"""
 
@@ -2030,6 +2243,37 @@ class FaqRequest(BaseModel):
     share: bool = False  # 「他の人にも役立つので管理者に共有する」フラグ
 
 
+def _save_shared_answer_as_doc(question: str, answer: str, user_email: str) -> str | None:
+    """共有許可されたユーザー提供回答を Markdown ファイル化して FAQマスターに保存。
+
+    保存先: {settings.faq_master_dir}/user_shared/{timestamp}-{question-prefix}.md
+    保存後に reload_index() で検索インデックスへ反映される。
+
+    Returns:
+        保存したファイルのパス文字列、または失敗時 None。
+    """
+    from datetime import datetime
+    import re as _re
+
+    safe_q_prefix = _re.sub(r"[^\w一-鿿ぁ-んァ-ヶー]+", "_", question[:40]).strip("_") or "shared"
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    settings.faq_master_dir.mkdir(parents=True, exist_ok=True)
+    # ファイル名プレフィックスで識別（UI 側で「user-shared-」始まりかを判定）
+    out_path = settings.faq_master_dir / f"user-shared-{ts}-{safe_q_prefix}.md"
+    body = (
+        f"# {question}\n\n"
+        f"> 💬 **ユーザー提供回答**（社員 {user_email} が {ts} に共有）\n"
+        f"> 管理者の正式承認前ですが、参考までに検索結果に含まれます\n\n"
+        f"## 質問\n\n{question}\n\n"
+        f"## 回答（ユーザー提供）\n\n{answer}\n"
+    )
+    try:
+        out_path.write_text(body, encoding="utf-8")
+        return str(out_path)
+    except OSError:
+        return None
+
+
 @app.post("/api/faq-requests")
 async def api_faq_request(payload: FaqRequest, user: dict = Depends(require_user)):
     """FAQ追加リクエストを受け付ける。
@@ -2037,6 +2281,7 @@ async def api_faq_request(payload: FaqRequest, user: dict = Depends(require_user
     用途:
       1. 質問しても回答が得られなかった → 管理者に FAQ 追加を依頼
       2. ユーザーが別途人から答えを教えてもらった → その回答を共有して FAQ 化を依頼
+         share=true なら検索インデックスにも追加（他の人の検索にも引っかかるように）
     """
     q = (payload.question or "").strip()
     a = (payload.answer or "").strip()
@@ -2048,6 +2293,12 @@ async def api_faq_request(payload: FaqRequest, user: dict = Depends(require_user
         raise HTTPException(status_code=400, detail="回答が長すぎます（5000文字以内）")
     # ユーザー提供回答がある場合は kind="answer_shared" としてサブカテゴリ化
     kind = "answer_shared" if a else "question_only"
+    indexed_path: str | None = None
+    # 共有許可付きユーザー回答は検索インデックスへも追加（他の人の検索にヒットする）
+    if a and payload.share:
+        indexed_path = _save_shared_answer_as_doc(q, a, user["email"])
+        if indexed_path:
+            reload_index()
     audit.record(
         "faq_request",
         user=user["email"],
@@ -2056,8 +2307,9 @@ async def api_faq_request(payload: FaqRequest, user: dict = Depends(require_user
         answer=a[:5000],
         share=bool(payload.share),
         kind=kind,
+        indexed_path=indexed_path,
     )
-    return {"ok": True, "kind": kind}
+    return {"ok": True, "kind": kind, "indexed": bool(indexed_path)}
 
 
 @app.get("/api/admin/faq-requests")
@@ -2644,6 +2896,36 @@ async def admin_ingest(
         "excluded_chunks": len(excluded),
         "filename": result.filename,
         "recommendation": result.recommendation,
+    }
+
+
+@app.get("/api/chunks")
+async def api_get_chunk(chunk_id: str, user: dict = Depends(require_user)):
+    """指定チャンクの全文と、同じファイル内の他チャンク（プレビュー）を返す。
+
+    回答の「出典」をクリックして中身を直接確認できるようにする（参照のみ・編集不可）。
+    """
+    idx = get_index()
+    target = None
+    same_file: list[dict] = []
+    target_source = chunk_id.split("#")[0] if "#" in chunk_id else chunk_id
+    for c in idx.chunks:
+        if c.chunk_id == chunk_id:
+            target = c
+        if c.source == target_source:
+            same_file.append({
+                "chunk_id": c.chunk_id,
+                "preview": c.text.strip().replace("\n", " ")[:160],
+            })
+    if target is None:
+        raise HTTPException(status_code=404, detail=f"チャンクが見つかりません: {chunk_id}")
+    return {
+        "chunk": {
+            "chunk_id": target.chunk_id,
+            "source": target.source,
+            "text": target.text,
+        },
+        "neighbors": same_file[:50],  # 同じファイル内の他チャンク一覧（上限50）
     }
 
 
