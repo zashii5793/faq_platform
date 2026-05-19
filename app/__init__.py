@@ -4,4 +4,4 @@
 詳細は docs/versioning.md / CHANGELOG.md を参照。
 """
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"

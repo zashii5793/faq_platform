@@ -274,4 +274,8 @@ def get_index() -> FaqIndex:
 def reload_index() -> FaqIndex:
     global _index
     _index = FaqIndex(load_chunks(settings.faq_master_dir))
+    # FAQ が変わったら質問キャッシュを破棄（古い回答を返さないため）
+    from . import llm  # 遅延 import で循環参照を回避
+
+    llm.clear_answer_cache()
     return _index
