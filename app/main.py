@@ -240,6 +240,8 @@ header .org{{font-size:15px;font-weight:600;color:#1f2937}}
 .user{{font-size:13.5px;color:#6b7280}}
 .user a{{color:#1a73e8;text-decoration:none;margin-left:10px;font-weight:500}}
 .user a:hover{{text-decoration:underline}}
+.user a.manual-link{{color:#9ca3af;font-weight:400}}
+.user a.manual-link:hover{{color:#1a73e8}}
 .chat{{flex:1;overflow-y:auto;padding:28px 36px;max-width:960px;width:100%;margin:0 auto}}
 .empty{{text-align:center;color:#9ca3af;margin-top:60px}}
 .empty h2{{color:#1f2937;margin-bottom:10px;font-size:26px;font-weight:600;letter-spacing:-.02em}}
@@ -520,7 +522,7 @@ button.send:disabled{{background:#9ca3af;box-shadow:none;transform:none;cursor:n
   <header>
     <button class="menu-btn" id="menuBtn" aria-label="メニューを開く">☰</button>
     <div class="org">{_esc(settings.org_name)}の{_esc(settings.assistant_role)}</div>
-    <div class="user">{user_email}<a href="/auth/logout">ログアウト</a></div>
+    <div class="user">{user_email}<a class="manual-link" href="https://github.com/zashii5793/faq_platform#readme" target="_blank" rel="noopener" title="使い方マニュアル（GitHub）">📖 マニュアル</a><a href="/auth/logout">ログアウト</a></div>
   </header>
   {_demo_banner_html()}
   <div class="scrim" id="scrim"></div>
