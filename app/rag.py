@@ -63,7 +63,7 @@ def load_chunks(faq_dir: Path) -> list[Chunk]:
     return chunks
 
 
-FEEDBACK_PATH = Path("./data/feedback_scores.json")
+FEEDBACK_PATH = settings.feedback_path
 
 
 def _load_feedback() -> dict[str, dict[str, int]]:

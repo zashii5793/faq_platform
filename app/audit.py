@@ -1,4 +1,8 @@
-"""監査ログ。JSONL に追記。"""
+"""監査ログ。JSONL に追記。
+
+保存先は `settings.audit_log_dir`（環境変数 `AUDIT_LOG_DIR` で上書き可能）。
+互換性のため、本モジュールの `LOG_DIR` を直接 monkeypatch する既存テストも引き続き動作する。
+"""
 from __future__ import annotations
 
 import json
@@ -6,7 +10,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-LOG_DIR = Path("./data/audit")
+from .config import settings
+
+LOG_DIR = settings.audit_log_dir
 
 
 def _log_path() -> Path:

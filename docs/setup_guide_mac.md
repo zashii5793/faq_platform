@@ -389,3 +389,14 @@ rm -rf .venv data/audit data/index.json data/feedback_scores.json
 ```
 
 3 で直らない場合は **エラーメッセージ全文** をコピーして相談してください。
+
+---
+
+## 関連ドキュメント
+
+- [`docs/setup_for_admin.md`](./setup_for_admin.md) — 管理者向け全体ガイド（本番運用）
+- [`docs/setup_guide_windows.md`](./setup_guide_windows.md) — Windows版
+- [`docs/data_storage_guide.md`](./data_storage_guide.md) — **データ保存先・バックアップ運用**
+- [`docs/https_deployment.md`](./https_deployment.md) — HTTPS本番デプロイ
+- [`docs/google_oauth_setup.md`](./google_oauth_setup.md) — Google OAuth設定
+- [`docs/api_key_setup.md`](./api_key_setup.md) — Anthropic API キー取得
