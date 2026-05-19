@@ -164,15 +164,42 @@ aside{{width:300px;background:#fff;border-right:1px solid #e5e7eb;display:flex;f
 .fb-pill.down{{color:#dc2626}}
 .fb-pill .num{{font-size:22px;font-weight:700;display:block;letter-spacing:-.02em}}
 .fb-issues{{font-size:13px;color:#374151;margin-top:8px}}
-.fb-issues li{{padding:8px 10px;margin:3px -10px;list-style:none;line-height:1.5;
+.fb-issues li{{padding:10px 12px;margin:3px -12px;list-style:none;line-height:1.5;
                 border-radius:8px;cursor:pointer;font-weight:500;
                 transition:background .12s;border-bottom:1px solid #f3f4f6}}
 .fb-issues li:last-child{{border-bottom:0}}
-.fb-issues li:hover{{background:#fef2f2;color:#b91c1c}}
-.fb-issues li:before{{content:"⚠ ";color:#f59e0b}}
+.fb-issues li:hover{{background:#fef2f2}}
 .fb-issues li.empty-list{{cursor:default;font-weight:400}}
 .fb-issues li.empty-list:hover{{background:transparent;color:#9ca3af}}
-.fb-issues li.empty-list:before{{content:""}}
+.fb-q-line{{color:#1f2937}}
+.fb-q-meta{{font-size:11.5px;color:#9ca3af;margin-top:3px;font-weight:400;display:flex;
+            align-items:center;gap:8px}}
+.fb-ans-badge{{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}}
+.fb-ans-badge.ok{{background:#d1fae5;color:#065f46}}
+.fb-ans-badge.ng{{background:#fee2e2;color:#991b1b}}
+/* フィードバック数字をクリッカブルに */
+.fb-pill:hover{{transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.06);
+                transition:all .12s}}
+.fb-pill .num{{transition:color .12s}}
+/* フィードバック詳細モーダル内のスタイル */
+.fb-section-title{{font-size:12px;color:#6b7280;text-transform:uppercase;
+                    letter-spacing:.04em;margin:18px 0 8px;font-weight:600}}
+.fb-section-title:first-child{{margin-top:0}}
+.fb-q-box{{background:#f9fafb;padding:14px 16px;border-radius:10px;
+            border-left:3px solid #1a73e8;font-size:14.5px;line-height:1.7;
+            color:#1f2937;word-break:break-word}}
+.fb-src{{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:6px 0;
+         background:#fafafa;border-radius:8px;font-size:13.5px;color:#374151}}
+.fb-src .src-view-btn{{margin-left:auto}}
+.fb-actions{{margin-top:20px;display:flex;justify-content:flex-end}}
+.fb-actions .btn-primary{{background:#1a73e8;color:#fff;border:0;padding:10px 22px;
+                          border-radius:10px;font-size:14px;cursor:pointer;
+                          font-weight:600;transition:all .15s}}
+.fb-actions .btn-primary:hover{{box-shadow:0 4px 12px rgba(26,115,232,.3);
+                                  transform:translateY(-1px)}}
+.fb-list-item{{padding:14px 16px;margin:6px 0;background:#fafafa;border-radius:10px;
+                cursor:pointer;transition:background .15s;border-left:3px solid transparent}}
+.fb-list-item:hover{{background:#eff6ff;border-left-color:#1a73e8}}
 .empty-list{{font-size:12.5px;color:#9ca3af;font-style:italic;padding:4px 0}}
 
 main{{flex:1;display:flex;flex-direction:column;min-width:0}}
@@ -529,10 +556,38 @@ async function loadStats(){{
     document.getElementById('fb-up').textContent=s.feedback.up;
     document.getElementById('fb-down').textContent=s.feedback.down;
     const issues=document.getElementById('fb-issues');
-    issues.innerHTML=s.feedback.down_questions.length
-      ? s.feedback.down_questions.map(q=>`<li data-q="${{escape(q)}}" title="クリックでもう一度質問する">${{escape(q.slice(0,60))}}${{q.length>60?'…':''}}</li>`).join('')
+    const downEntries = s.feedback.down_entries || [];
+    issues.innerHTML = downEntries.length
+      ? downEntries.map((e,i)=>{{
+          const ansBadge = e.has_answer
+            ? '<span class="fb-ans-badge ok">✓回答済</span>'
+            : '<span class="fb-ans-badge ng">⚠未回答</span>';
+          return `<li data-idx="${{i}}" title="クリックで詳細を表示">
+            <div class="fb-q-line">${{escape(e.question.slice(0,60))}}${{e.question.length>60?'…':''}}</div>
+            <div class="fb-q-meta">${{ansBadge}} 確信度 ${{e.confidence}}%</div>
+          </li>`;
+        }}).join('')
       : '<li class="empty-list" style="list-style:none;padding-left:0">なし</li>';
-    issues.querySelectorAll('li[data-q]').forEach(el=>el.onclick=()=>{{input.value=el.dataset.q;form.requestSubmit();}});
+    issues.querySelectorAll('li[data-idx]').forEach(el=>el.onclick=()=>{{
+      openFeedbackDetail(downEntries[+el.dataset.idx], '👎 改善要望のあった質問');
+    }});
+    // フィードバック「役立った/要改善」の数字クリックで一覧モーダル
+    const fbUpEl = document.getElementById('fb-up');
+    const fbDownEl = document.getElementById('fb-down');
+    if(fbUpEl){{
+      fbUpEl.style.cursor = (s.feedback.up_entries||[]).length ? 'pointer' : 'default';
+      fbUpEl.title = (s.feedback.up_entries||[]).length ? 'クリックで詳細一覧' : '';
+      fbUpEl.onclick = ()=> {{
+        if((s.feedback.up_entries||[]).length) openFeedbackList(s.feedback.up_entries, '👍 役に立ったと評価された質問');
+      }};
+    }}
+    if(fbDownEl){{
+      fbDownEl.style.cursor = downEntries.length ? 'pointer' : 'default';
+      fbDownEl.title = downEntries.length ? 'クリックで詳細一覧' : '';
+      fbDownEl.onclick = ()=> {{
+        if(downEntries.length) openFeedbackList(downEntries, '👎 改善が必要と評価された質問');
+      }};
+    }}
     // サイドバー「よく聞かれる質問」（最新の人気質問・クリックで再質問）
     const popList = document.getElementById('popular-queries');
     const popCount = document.getElementById('popular-count');
@@ -790,6 +845,96 @@ form.onsubmit=async e=>{{
   }}catch(err){{wait.querySelector('.bubble').textContent='エラー: '+err.message}}
   sendBtn.disabled=false;input.focus();
 }};
+
+// フィードバック1件の詳細モーダル
+async function openFeedbackDetail(entry, title){{
+  const overlay = document.createElement('div');
+  overlay.className = 'chunk-modal-overlay';
+  const ansBadge = entry.has_answer
+    ? '<span class="fb-ans-badge ok">✓回答済</span>'
+    : '<span class="fb-ans-badge ng">⚠未回答</span>';
+  const confCls = entry.confidence >= 80 ? 'high'
+                : entry.confidence >= 50 ? 'mid'
+                : entry.confidence >= 20 ? 'low' : 'none';
+  const sourceLines = (entry.sources||[]).length
+    ? entry.sources.map(sid => {{
+        const fname = sid.includes('#') ? sid.split('#')[0] : sid;
+        const cid = sid.includes('#') ? sid.split('#').pop() : '';
+        const cidLabel = cid ? (/^\\d+$/.test(cid) ? 'セクション '+cid : cid) : '';
+        return `<div class="fb-src" data-cid="${{escape(sid)}}">📄 ${{escape(fname)}}${{cidLabel ? ' <span class="src-chunk-tag">'+escape(cidLabel)+'</span>' : ''}}<button class="src-view-btn">🔍 全文を見る</button></div>`;
+      }}).join('')
+    : '<div class="empty-list">参照ソースなし（回答できなかった質問）</div>';
+  overlay.innerHTML = `
+    <div class="chunk-modal">
+      <div class="chunk-modal-header">
+        <div>
+          <div class="chunk-modal-title">${{title}}</div>
+          <div class="chunk-modal-meta">${{ansBadge}} 確信度 ${{entry.confidence}}% · ${{new Date(entry.ts).toLocaleString('ja-JP')}}</div>
+        </div>
+        <button class="chunk-modal-close" id="fbm-close">×</button>
+      </div>
+      <div class="chunk-modal-body">
+        <div class="fb-section-title">📝 質問内容</div>
+        <div class="fb-q-box">${{escape(entry.question)}}</div>
+        <div class="fb-section-title">📎 回答時に参照したドキュメント</div>
+        ${{sourceLines}}
+        <div class="fb-actions">
+          <button class="btn-primary" id="fbm-reask">💬 もう一度質問する</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = ()=> overlay.remove();
+  overlay.querySelector('#fbm-close').onclick = close;
+  overlay.onclick = e => {{ if(e.target === overlay) close(); }};
+  overlay.querySelectorAll('.fb-src').forEach(el => {{
+    el.querySelector('.src-view-btn').onclick = (ev) => {{
+      ev.stopPropagation();
+      openChunkViewer(el.dataset.cid);
+    }};
+  }});
+  overlay.querySelector('#fbm-reask').onclick = ()=>{{
+    close();
+    const inputEl = document.getElementById('q');
+    if(inputEl){{ inputEl.value = entry.question; document.getElementById('qa').requestSubmit(); }}
+  }};
+}}
+
+// フィードバック一覧モーダル（👍 / 👎 数字クリック）
+function openFeedbackList(entries, title){{
+  const overlay = document.createElement('div');
+  overlay.className = 'chunk-modal-overlay';
+  const items = entries.map((e,i) => {{
+    const ansBadge = e.has_answer
+      ? '<span class="fb-ans-badge ok">✓回答済</span>'
+      : '<span class="fb-ans-badge ng">⚠未回答</span>';
+    return `<div class="fb-list-item" data-idx="${{i}}">
+      <div class="fb-q-line">${{escape(e.question)}}</div>
+      <div class="fb-q-meta">${{ansBadge}} 確信度 ${{e.confidence}}% · 参照 ${{(e.sources||[]).length}}件 · ${{new Date(e.ts).toLocaleString('ja-JP')}}</div>
+    </div>`;
+  }}).join('');
+  overlay.innerHTML = `
+    <div class="chunk-modal">
+      <div class="chunk-modal-header">
+        <div><div class="chunk-modal-title">${{title}}</div>
+        <div class="chunk-modal-meta">${{entries.length}}件 — クリックで詳細を表示</div></div>
+        <button class="chunk-modal-close" id="fbl-close">×</button>
+      </div>
+      <div class="chunk-modal-body">${{items}}</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = ()=> overlay.remove();
+  overlay.querySelector('#fbl-close').onclick = close;
+  overlay.onclick = e => {{ if(e.target === overlay) close(); }};
+  overlay.querySelectorAll('.fb-list-item').forEach(el => {{
+    el.onclick = ()=> {{
+      close();
+      openFeedbackDetail(entries[+el.dataset.idx], title);
+    }};
+  }});
+}}
 
 // 出典チャンク詳細モーダル（参照のみ）
 async function openChunkViewer(chunkId){{
@@ -2288,7 +2433,33 @@ async def admin_stats(user: dict = Depends(require_user)):
 
     fb_up = sum(1 for f in feedback if f.get("vote") == "up")
     fb_down = sum(1 for f in feedback if f.get("vote") == "down")
-    down_questions = [f.get("question", "") for f in feedback if f.get("vote") == "down"][:3]
+
+    # 各フィードバックに対応する query イベントを引き合わせて、
+    # 確信度・参照ソース・回答済みかどうかを付与する（UI 詳細表示用）
+    def _enrich_feedback(fb_entries: list[dict]) -> list[dict]:
+        out = []
+        for fb in fb_entries:
+            q = fb.get("question", "")
+            # 同じ質問テキストの query イベントを直近で探す
+            matching = next(
+                (qe for qe in queries
+                 if (qe.get("question") or "") == q),
+                None,
+            )
+            out.append({
+                "question": q,
+                "ts": fb.get("ts", ""),
+                "sources": (matching or {}).get("sources", fb.get("sources", [])),
+                "confidence": (matching or {}).get("confidence", 0),
+                "has_answer": (matching or {}).get("answered", False),
+                "is_reference": (matching or {}).get("is_reference", False),
+            })
+        return out
+
+    up_entries = _enrich_feedback([f for f in feedback if f.get("vote") == "up"])[:20]
+    down_entries = _enrich_feedback([f for f in feedback if f.get("vote") == "down"])[:20]
+    # 後方互換: down_questions は古い形式（文字列リスト）も残す
+    down_questions = [e["question"] for e in down_entries[:5]]
 
     sources = sorted({c.source for c in idx.chunks})
 
@@ -2305,7 +2476,13 @@ async def admin_stats(user: dict = Depends(require_user)):
             "answer_rate": answer_rate,
         },
         "history": history,
-        "feedback": {"up": fb_up, "down": fb_down, "down_questions": down_questions},
+        "feedback": {
+            "up": fb_up,
+            "down": fb_down,
+            "down_questions": down_questions,  # 後方互換（旧 UI 用）
+            "up_entries": up_entries,
+            "down_entries": down_entries,
+        },
         "popular_queries": popular_queries,
     }
 
