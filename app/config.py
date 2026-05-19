@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     feedback_path: Path = Path("./data/feedback_scores.json")
     org_settings_path: Path = Path("./data/org_settings.json")
     raw_upload_dir: Path = Path("./data/raw")
+    # 共有Q&A のメタ情報（投票数・解決マーカー）
+    shared_qa_meta_path: Path = Path("./data/shared_qa_meta.json")
 
     masking_industry: str = "general"
 
