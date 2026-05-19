@@ -20,3 +20,4 @@ data/faq_master/*
 
 .coverage
 data/org_settings.json
+data/client_eval/
