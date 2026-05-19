@@ -239,6 +239,7 @@ Anthropic Console:
 ---
 
 ## 10. 関連
+- [docs/deployment_guide.md](./deployment_guide.md) — A社導入ガイド（手順と料金の説明）
 - [docs/api_key_setup.md](./api_key_setup.md) — APIキー取得手順
 - [docs/customer_proposal.md](./customer_proposal.md) — 顧客提案資料
 - [docs/business_analysis.md](./business_analysis.md) — ビジネスモデル分析
