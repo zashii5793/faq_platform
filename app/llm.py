@@ -1,5 +1,8 @@
-"""Anthropic Claude 呼び出しのラッパー（プロンプトキャッシュ対応）。"""
+"""Anthropic Claude 呼び出しのラッパー（プロンプトキャッシュ・質問キャッシュ対応）。"""
 from __future__ import annotations
+
+import threading
+import time
 
 from anthropic import Anthropic
 
@@ -70,6 +73,51 @@ def _client() -> Anthropic:
     return Anthropic(api_key=settings.anthropic_api_key)
 
 
+# --- 質問キャッシュ -----------------------------------------------------------
+# 同じ質問が短時間に繰り返されたとき、API を呼ばず前回の回答を返してコスト削減。
+# FAQ 再インデックス時 (rag.reload_index) に clear_answer_cache() で全消去される。
+_ANSWER_CACHE_MAX = 500
+_answer_cache: dict[str, tuple[str, float]] = {}
+_answer_cache_lock = threading.Lock()
+
+
+def _answer_cache_key(question: str, reference_mode: bool) -> str:
+    return f"{int(reference_mode)}:{question.strip().lower()}"
+
+
+def _answer_cache_get(key: str) -> str | None:
+    ttl = settings.answer_cache_ttl
+    if ttl <= 0:
+        return None
+    now = time.time()
+    with _answer_cache_lock:
+        hit = _answer_cache.get(key)
+        if hit is None:
+            return None
+        text, ts = hit
+        if now - ts > ttl:
+            del _answer_cache[key]
+            return None
+        return text
+
+
+def _answer_cache_put(key: str, text: str) -> None:
+    if settings.answer_cache_ttl <= 0:
+        return
+    with _answer_cache_lock:
+        # 上限到達時は最も古いエントリを捨てる（簡易 LRU）
+        if len(_answer_cache) >= _ANSWER_CACHE_MAX and key not in _answer_cache:
+            oldest = min(_answer_cache, key=lambda k: _answer_cache[k][1])
+            del _answer_cache[oldest]
+        _answer_cache[key] = (text, time.time())
+
+
+def clear_answer_cache() -> None:
+    """FAQ 更新後に古い回答を返さないよう、質問キャッシュを全消去する。"""
+    with _answer_cache_lock:
+        _answer_cache.clear()
+
+
 def build_user_prompt(question: str, chunks: list[tuple[Chunk, float]]) -> str:
     if not chunks:
         return f"質問: {question}\n\n[参考情報]\n（参考情報なし）"
@@ -87,6 +135,16 @@ def answer(question: str, chunks: list[tuple[Chunk, float]], reference_mode: boo
             f"質問: {question}\n"
             f"参考: {[c.chunk_id for c, _ in chunks]}"
         )
+
+    # 質問キャッシュ: 同じ質問が TTL 内に再度来たら API を呼ばず前回回答を返す
+    cache_key = _answer_cache_key(question, reference_mode)
+    cached = _answer_cache_get(cache_key)
+    if cached is not None:
+        try:
+            audit.record("llm_cache_hit", model=settings.claude_model, reference_mode=reference_mode)
+        except Exception:
+            pass
+        return cached
 
     # プロンプトキャッシュ: system を構造化（テキストブロック）して cache_control を付与
     # Anthropic のキャッシュは最小トークン数（Haiku 4.5 は 2048 tok）に満たない場合は
@@ -123,4 +181,6 @@ def answer(question: str, chunks: list[tuple[Chunk, float]], reference_mode: boo
         # 監査記録が失敗しても主処理は止めない（フォールバック）
         pass
 
-    return "".join(block.text for block in msg.content if block.type == "text")
+    result = "".join(block.text for block in msg.content if block.type == "text")
+    _answer_cache_put(cache_key, result)
+    return result

@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     # TF-IDF char_wb の経験値: 関連質問は 0.15+, ノイズマッチは 0.05-0.07 程度
     min_score_threshold: float = 0.08
 
+    # 質問キャッシュ: 同じ質問がこの秒数以内に再度来たら API を呼ばず前回回答を返す（0で無効）
+    answer_cache_ttl: int = 300
+
     host: str = "0.0.0.0"
     port: int = 8000
 
