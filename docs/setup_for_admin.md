@@ -375,6 +375,7 @@ crontab -e
 
 ## 関連ドキュメント
 
+- [`docs/data_storage_guide.md`](./data_storage_guide.md) — **データ保存先・バックアップ・容量見積もり**
 - [`docs/google_oauth_setup.md`](./google_oauth_setup.md) — Google OAuth 詳細手順
 - [`docs/https_deployment.md`](./https_deployment.md) — HTTPS デプロイ手順
 - [`docs/api_key_setup.md`](./api_key_setup.md) — Anthropic API キー設定詳細

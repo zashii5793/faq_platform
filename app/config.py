@@ -22,8 +22,13 @@ class Settings(BaseSettings):
 
     session_secret: str = "dev-secret-change-me"
 
+    # --- データ保存先（環境変数で全て上書き可能） ---
     faq_master_dir: Path = Path("./data/faq_master")
     index_path: Path = Path("./data/index.json")
+    audit_log_dir: Path = Path("./data/audit")
+    feedback_path: Path = Path("./data/feedback_scores.json")
+    org_settings_path: Path = Path("./data/org_settings.json")
+    raw_upload_dir: Path = Path("./data/raw")
 
     masking_industry: str = "general"
 

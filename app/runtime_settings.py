@@ -14,7 +14,7 @@ from typing import Any
 
 from .config import settings
 
-OVERRIDES_PATH = Path("./data/org_settings.json")
+OVERRIDES_PATH = settings.org_settings_path
 
 # ランタイム編集を許可する設定キー（ホワイトリスト）
 EDITABLE_KEYS = {
