@@ -163,9 +163,16 @@ aside{{width:300px;background:#fff;border-right:1px solid #e5e7eb;display:flex;f
 .fb-pill.up{{color:#10b981}}
 .fb-pill.down{{color:#dc2626}}
 .fb-pill .num{{font-size:22px;font-weight:700;display:block;letter-spacing:-.02em}}
-.fb-issues{{font-size:12.5px;color:#6b7280;margin-top:8px}}
-.fb-issues li{{padding:5px 0;list-style:none;line-height:1.5}}
+.fb-issues{{font-size:13px;color:#374151;margin-top:8px}}
+.fb-issues li{{padding:8px 10px;margin:3px -10px;list-style:none;line-height:1.5;
+                border-radius:8px;cursor:pointer;font-weight:500;
+                transition:background .12s;border-bottom:1px solid #f3f4f6}}
+.fb-issues li:last-child{{border-bottom:0}}
+.fb-issues li:hover{{background:#fef2f2;color:#b91c1c}}
 .fb-issues li:before{{content:"⚠ ";color:#f59e0b}}
+.fb-issues li.empty-list{{cursor:default;font-weight:400}}
+.fb-issues li.empty-list:hover{{background:transparent;color:#9ca3af}}
+.fb-issues li.empty-list:before{{content:""}}
 .empty-list{{font-size:12.5px;color:#9ca3af;font-style:italic;padding:4px 0}}
 
 main{{flex:1;display:flex;flex-direction:column;min-width:0}}
@@ -514,7 +521,7 @@ async function loadStats(){{
     const histCount=document.getElementById('history-count');
     if(histCount) histCount.textContent = s.history.length ? `(${{s.history.length}}件)` : '';
     hist.innerHTML=s.history.length
-      ? s.history.map(h=>`<div class="history-item" data-q="${{escape(h.question)}}"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${{escape(h.question.slice(0,60))}}${{h.question.length>60?'…':''}}</div><div style="color:#9ca3af;font-size:11px;font-weight:400;margin-top:2px">${{relTime(h.ts)}}</div></div>`).join('')
+      ? s.history.map(h=>`<div class="history-item" data-q="${{escape(h.question)}}" title="クリックでもう一度質問する"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${{escape(h.question.slice(0,60))}}${{h.question.length>60?'…':''}}</div><div style="color:#9ca3af;font-size:11px;font-weight:400;margin-top:2px">${{relTime(h.ts)}}</div></div>`).join('')
       : '<div class="empty-list">まだ履歴がありません</div>';
     hist.querySelectorAll('.history-item').forEach(el=>el.onclick=()=>{{input.value=el.dataset.q;form.requestSubmit();}});
     const tags=document.getElementById('cov-tags');
@@ -523,8 +530,9 @@ async function loadStats(){{
     document.getElementById('fb-down').textContent=s.feedback.down;
     const issues=document.getElementById('fb-issues');
     issues.innerHTML=s.feedback.down_questions.length
-      ? s.feedback.down_questions.map(q=>`<li>${{escape(q.slice(0,40))}}${{q.length>40?'…':''}}</li>`).join('')
+      ? s.feedback.down_questions.map(q=>`<li data-q="${{escape(q)}}" title="クリックでもう一度質問する">${{escape(q.slice(0,60))}}${{q.length>60?'…':''}}</li>`).join('')
       : '<li class="empty-list" style="list-style:none;padding-left:0">なし</li>';
+    issues.querySelectorAll('li[data-q]').forEach(el=>el.onclick=()=>{{input.value=el.dataset.q;form.requestSubmit();}});
     // サイドバー「よく聞かれる質問」（最新の人気質問・クリックで再質問）
     const popList = document.getElementById('popular-queries');
     const popCount = document.getElementById('popular-count');
@@ -532,7 +540,7 @@ async function loadStats(){{
     if(popList){{
       if(popCount) popCount.textContent = popData.length ? `(${{popData.length}}件)` : '';
       popList.innerHTML = popData.length
-        ? popData.slice(0,30).map(p=>`<div class="pop-item" data-q="${{escape(p.question)}}"><span class="pop-q">${{escape(p.question.slice(0,60))}}${{p.question.length>60?'…':''}}</span><span class="pop-count">${{p.count}}回</span></div>`).join('')
+        ? popData.slice(0,30).map(p=>`<div class="pop-item" data-q="${{escape(p.question)}}" title="クリックでもう一度質問する"><span class="pop-q">${{escape(p.question.slice(0,60))}}${{p.question.length>60?'…':''}}</span><span class="pop-count">${{p.count}}回</span></div>`).join('')
         : '<div class="empty-list">まだ集計データがありません</div>';
       popList.querySelectorAll('.pop-item').forEach(el=>el.onclick=()=>{{input.value=el.dataset.q;form.requestSubmit();}});
     }}
