@@ -187,6 +187,23 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .no-answer{{color:#991b1b;font-style:italic}}
 .reference-answer{{background:#fffbeb;border-left:3px solid #f59e0b;padding:10px 14px;
                    border-radius:8px;margin-bottom:4px;color:#78350f;font-size:13px;line-height:1.6}}
+/* Markdown 回答の整形 */
+.md-body{{line-height:1.7;font-size:14px;color:#1f2937}}
+.md-body .md-h1{{font-size:16px;font-weight:600;color:#111827;margin:14px 0 8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb}}
+.md-body .md-h2{{font-size:15px;font-weight:600;color:#111827;margin:14px 0 6px;padding-left:8px;border-left:3px solid #1a73e8}}
+.md-body .md-h3{{font-size:14px;font-weight:600;color:#1a73e8;margin:12px 0 4px}}
+.md-body .md-h4{{font-size:13px;font-weight:600;color:#4b5563;margin:10px 0 2px}}
+.md-body .md-hr{{border:none;border-top:1px dashed #e5e7eb;margin:12px 0}}
+.md-body .md-ul{{margin:6px 0 6px 0;padding-left:22px}}
+.md-body .md-ul li{{margin:3px 0;line-height:1.7}}
+.md-body .md-br{{height:6px}}
+.md-body .md-line{{margin:2px 0}}
+.md-body strong{{font-weight:600;color:#111827}}
+.md-body .md-code{{background:#f3f4f6;padding:1px 6px;border-radius:3px;font-size:12.5px;
+                    font-family:Menlo,Consolas,monospace;color:#be123c}}
+.md-body .md-pre{{background:#0f172a;color:#e2e8f0;padding:10px 14px;border-radius:6px;
+                   margin:8px 0;overflow-x:auto;font-size:12.5px}}
+.md-body .md-pre code{{background:transparent;color:inherit;padding:0;font-size:inherit}}
 .faq-request{{margin-top:10px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;
               border-radius:10px;max-width:75%}}
 .faq-request-msg{{font-size:12px;color:#1e40af;margin-bottom:6px}}
@@ -368,6 +385,72 @@ function addMsg(role,html){{
   chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return d;
 }}
 
+// 簡易 Markdown → HTML レンダラー（escape() 通過後に呼ぶ。安全）
+function renderMarkdown(escapedText){{
+  let lines = escapedText.split('\\n');
+  let out = [];
+  let inList = false;
+  let inCode = false;
+  for(let i=0;i<lines.length;i++){{
+    let line = lines[i];
+    // コードブロック ```
+    if(/^```/.test(line.trim())){{
+      if(inCode){{ out.push('</code></pre>'); inCode = false; }}
+      else {{ out.push('<pre class="md-pre"><code>'); inCode = true; }}
+      continue;
+    }}
+    if(inCode){{ out.push(line); continue; }}
+    // 区切り線 ---
+    if(/^---+\\s*$/.test(line.trim())){{
+      if(inList){{ out.push('</ul>'); inList = false; }}
+      out.push('<hr class="md-hr">');
+      continue;
+    }}
+    // 見出し (### / ## / # を順に判定)
+    let m;
+    if((m = line.match(/^####\\s+(.+)$/))){{
+      if(inList){{ out.push('</ul>'); inList = false; }}
+      out.push('<div class="md-h4">'+inlineMd(m[1])+'</div>'); continue;
+    }}
+    if((m = line.match(/^###\\s+(.+)$/))){{
+      if(inList){{ out.push('</ul>'); inList = false; }}
+      out.push('<div class="md-h3">'+inlineMd(m[1])+'</div>'); continue;
+    }}
+    if((m = line.match(/^##\\s+(.+)$/))){{
+      if(inList){{ out.push('</ul>'); inList = false; }}
+      out.push('<div class="md-h2">'+inlineMd(m[1])+'</div>'); continue;
+    }}
+    if((m = line.match(/^#\\s+(.+)$/))){{
+      if(inList){{ out.push('</ul>'); inList = false; }}
+      out.push('<div class="md-h1">'+inlineMd(m[1])+'</div>'); continue;
+    }}
+    // リスト項目 - or *
+    if((m = line.match(/^\\s*[-*]\\s+(.+)$/))){{
+      if(!inList){{ out.push('<ul class="md-ul">'); inList = true; }}
+      out.push('<li>'+inlineMd(m[1])+'</li>');
+      continue;
+    }}
+    if(inList){{ out.push('</ul>'); inList = false; }}
+    // 空行
+    if(line.trim() === ''){{
+      out.push('<div class="md-br"></div>');
+      continue;
+    }}
+    // 通常行
+    out.push('<div class="md-line">'+inlineMd(line)+'</div>');
+  }}
+  if(inList) out.push('</ul>');
+  if(inCode) out.push('</code></pre>');
+  return out.join('');
+}}
+function inlineMd(s){{
+  // **bold** → <strong>
+  s = s.replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>$1</strong>');
+  // `code` → <code>
+  s = s.replace(/`([^`]+)`/g, '<code class="md-code">$1</code>');
+  return s;
+}}
+
 form.onsubmit=async e=>{{
   e.preventDefault();const q=input.value.trim();if(!q)return;
   input.value='';sendBtn.disabled=true;
@@ -386,9 +469,9 @@ form.onsubmit=async e=>{{
     if(!data.has_answer) {{
       html+='<div class="no-answer">'+escape(data.answer)+'</div>';
     }} else if(data.is_reference) {{
-      html+='<div class="reference-answer">'+escape(data.answer).replace(/\\n/g,'<br>')+'</div>';
+      html+='<div class="reference-answer">'+renderMarkdown(escape(data.answer))+'</div>';
     }} else {{
-      html+=escape(data.answer);
+      html+='<div class="md-body">'+renderMarkdown(escape(data.answer))+'</div>';
     }}
     html+='<div><span class="confidence '+confCls+'">'
           +'確信度 '+conf+'% · '+confLabel
