@@ -229,9 +229,11 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .src-chunk-tag{{display:inline-block;background:#dbeafe;color:#1e40af;padding:1px 6px;
                 border-radius:4px;font-size:10.5px;font-weight:500;margin-left:6px}}
 .src-score{{color:#6b7280;font-size:10.5px;flex-shrink:0;background:#fff;
-            padding:2px 7px;border-radius:10px;border:1px solid #e5e7eb}}
+            padding:2px 8px;border-radius:10px;border:1px solid #e5e7eb;
+            font-weight:500;white-space:nowrap}}
 .src-score.high{{background:#d1fae5;color:#065f46;border-color:#a7f3d0}}
 .src-score.mid{{background:#fef3c7;color:#92400e;border-color:#fde68a}}
+.src-score.low{{background:#f3f4f6;color:#6b7280;border-color:#e5e7eb}}
 .src-preview{{font-size:11.5px;color:#4b5563;line-height:1.55;background:#fff;
               padding:6px 10px;border-radius:6px;border-left:3px solid #bfdbfe;
               margin-top:4px;word-break:break-word}}
@@ -507,17 +509,17 @@ form.onsubmit=async e=>{{
       for(const s of data.sources){{
         // チャンクID から "#番号" 部分を抽出（"foo.md#3" → "#3"）
         const chunkPart = (s.chunk_id||'').includes('#') ? '#' + s.chunk_id.split('#').pop() : '';
-        // 関連度の色分け
-        let scoreCls = '';
-        if(s.score >= 0.30) scoreCls = 'high';
-        else if(s.score >= 0.15) scoreCls = 'mid';
+        // 関連度の色分け + ラベル（ユーザー視認性のため「高/中/低」を併記）
+        let scoreCls = 'low', scoreLabel = '低';
+        if(s.score >= 0.30){{ scoreCls = 'high'; scoreLabel = '高'; }}
+        else if(s.score >= 0.15){{ scoreCls = 'mid'; scoreLabel = '中'; }}
         const preview = (s.preview||'').trim();
         html += '<div class="src">'
               + '<div class="src-row">'
               +   '<span class="src-name">📄 '+escape(s.source)
               +     (chunkPart ? '<span class="src-chunk-tag">'+escape(chunkPart)+'</span>' : '')
               +   '</span>'
-              +   '<span class="src-score '+scoreCls+'">関連度 '+s.score.toFixed(2)+'</span>'
+              +   '<span class="src-score '+scoreCls+'">関連度 '+scoreLabel+' ('+s.score.toFixed(2)+')</span>'
               + '</div>'
               + (preview ? '<div class="src-preview">'+escape(preview)+'…</div>' : '')
               + '</div>';
