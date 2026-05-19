@@ -92,6 +92,48 @@ def test_no_answer_for_irrelevant_question(client: TestClient):
     assert "見つかりませんでした" in data["answer"]
 
 
+def test_chunk_viewer_returns_text_and_neighbors(client: TestClient):
+    """出典「全文を見る」用のエンドポイント。
+    指定 chunk_id の全文と、同じファイル内の他チャンクのプレビューを返す。
+    """
+    # 5つのセクションを持つドキュメントを取り込む
+    md = (
+        "# セクションA\n\n本文Aの内容です。\n\n"
+        "# セクションB\n\n本文Bの内容です。\n\n"
+        "# セクションC\n\n本文Cの内容です。\n\n"
+        "# セクションD\n\n本文Dの内容です。\n\n"
+        "# セクションE\n\n本文Eの内容です。"
+    ).encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("multi.md", md, "text/markdown")})
+
+    # 質問→出典取得
+    r = client.post("/api/ask", json={"question": "セクションB"})
+    sources = r.json()["sources"]
+    assert sources, "出典が空"
+    target_id = sources[0]["chunk_id"]
+
+    # チャンクビューア API（chunk_id の '#' は URL フラグメント扱いされるのでエンコード）
+    r2 = client.get("/api/chunks", params={"chunk_id": target_id})
+    assert r2.status_code == 200
+    data = r2.json()
+    # 該当チャンクの全文が返る
+    assert data["chunk"]["chunk_id"] == target_id
+    assert data["chunk"]["source"] == "multi.md"
+    assert len(data["chunk"]["text"]) > 0
+    # 同じファイルの他チャンク一覧が返る（少なくとも1件以上）
+    assert isinstance(data["neighbors"], list)
+    assert len(data["neighbors"]) >= 1
+    # 各 neighbor にはチャンクIDとプレビューが入っている
+    for nb in data["neighbors"]:
+        assert "chunk_id" in nb
+        assert "preview" in nb
+
+
+def test_chunk_viewer_404_on_unknown(client: TestClient):
+    r = client.get("/api/chunks?chunk_id=does-not-exist.md%231")
+    assert r.status_code == 404
+
+
 def test_llm_no_answer_response_resets_signals(client: TestClient, monkeypatch):
     """LLM が「該当情報が見つかりませんでした」と返したら、
     confidence=0 / sources=[] / has_answer=False に揃える（UI 整合性）。
