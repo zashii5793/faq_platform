@@ -537,8 +537,12 @@ form.onsubmit=async e=>{{
       html+='<details class="sources" open><summary>'+sourceLabel+'</summary>';
       html+=hint;
       for(const s of data.sources){{
-        // チャンクID から "#番号" 部分を抽出（"foo.md#3" → "#3"）
-        const chunkPart = (s.chunk_id||'').includes('#') ? '#' + s.chunk_id.split('#').pop() : '';
+        // チャンクID から番号部分を抽出。"foo.md#3" → "3"
+        const chunkRaw = (s.chunk_id||'').includes('#') ? s.chunk_id.split('#').pop() : '';
+        // 数値だけのチャンクは「セクション N」、それ以外（例: xlsx の "Sheet0!r3"）はそのまま
+        const chunkLabel = chunkRaw
+          ? (/^\d+$/.test(chunkRaw) ? `セクション ${{chunkRaw}}` : chunkRaw)
+          : '';
         // 関連度の色分け + ラベル（ユーザー視認性のため「高/中/低」を併記）
         let scoreCls = 'low', scoreLabel = '低';
         if(s.score >= 0.30){{ scoreCls = 'high'; scoreLabel = '高'; }}
@@ -547,7 +551,7 @@ form.onsubmit=async e=>{{
         html += '<div class="src">'
               + '<div class="src-row">'
               +   '<span class="src-name">📄 '+escape(s.source)
-              +     (chunkPart ? '<span class="src-chunk-tag">'+escape(chunkPart)+'</span>' : '')
+              +     (chunkLabel ? '<span class="src-chunk-tag" title="ファイル内で取り込み時に分割された該当箇所（内部連番）">'+escape(chunkLabel)+'</span>' : '')
               +   '</span>'
               +   '<span class="src-score '+scoreCls+'">関連度 '+scoreLabel+' ('+s.score.toFixed(2)+')</span>'
               + '</div>'
