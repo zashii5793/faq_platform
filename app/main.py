@@ -625,6 +625,18 @@ NO_ANSWER_TEXT = (
 REFERENCE_PREFIX = "⚠ 公式FAQ未登録の参考情報です（正確性は保証されません）\n\n"
 
 
+# LLM が「答えられない」と判断したフレーズ。検出時は sources / confidence を 0 に揃える
+_NO_ANSWER_MARKERS = (
+    "該当情報が見つかりませんでした",
+    "関連する情報も見つかりませんでした",
+)
+
+
+def _llm_said_no_answer(response_text: str) -> bool:
+    """LLM が「該当情報なし」と返したかを判定する。"""
+    return any(m in response_text for m in _NO_ANSWER_MARKERS)
+
+
 @app.post("/api/ask", response_model=AskResponse)
 async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskResponse:
     masked_q = mask(payload.question)
@@ -678,6 +690,26 @@ async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskRes
             error=type(e).__name__, detail=detail[:200],
         )
         raise HTTPException(status_code=502, detail=detail) from e
+
+    # LLM が「該当情報なし」と判断したケースは、信号（confidence / sources / has_answer）を揃える
+    # → UI の確信度・参照ドキュメント・FAQ追加リクエストボタンの整合性を保つ
+    if _llm_said_no_answer(response_text):
+        audit.record(
+            "query",
+            user=user["email"],
+            question=masked_q,
+            sources=[],
+            confidence=0,
+            answered=False,
+            llm_no_answer=True,
+        )
+        return AskResponse(
+            answer=response_text,
+            sources=[],
+            confidence=0,
+            has_answer=False,
+            is_reference=False,
+        )
 
     audit.record(
         "query",
