@@ -65,22 +65,39 @@ def load_chunks(faq_dir: Path) -> list[Chunk]:
 
 FEEDBACK_PATH = settings.feedback_path
 
+# フィードバックのファイル I/O は検索ホットパスで呼ばれるため、mtime ベースキャッシュで I/O を削減
+_feedback_cache: tuple[float, dict[str, dict[str, int]]] | None = None
+
 
 def _load_feedback() -> dict[str, dict[str, int]]:
-    """source ごとの {"up": n, "down": n} を返す。"""
+    """source ごとの {"up": n, "down": n} を返す（mtime ベースキャッシュ付き）。"""
+    global _feedback_cache
     if not FEEDBACK_PATH.exists():
         return {}
     try:
-        return json.loads(FEEDBACK_PATH.read_text(encoding="utf-8"))
+        mtime = FEEDBACK_PATH.stat().st_mtime
+    except OSError:
+        return {}
+    if _feedback_cache is not None and _feedback_cache[0] == mtime:
+        return _feedback_cache[1]
+    try:
+        data = json.loads(FEEDBACK_PATH.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return {}
+    _feedback_cache = (mtime, data)
+    return data
 
 
 def _save_feedback(data: dict[str, dict[str, int]]) -> None:
+    global _feedback_cache
     FEEDBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
     FEEDBACK_PATH.write_text(
         json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    try:
+        _feedback_cache = (FEEDBACK_PATH.stat().st_mtime, data)
+    except OSError:
+        _feedback_cache = None
 
 
 def record_feedback(sources: list[str], vote: str) -> None:
@@ -223,12 +240,16 @@ class FaqIndex:
         raw_scores = self.backend.raw_search(query)
         if len(raw_scores) == 0:
             return []
-        # フィードバック学習: source ごとのブースト適用
+        # フィードバック学習: フィードバックがあるときだけ boost 計算（多くの本番環境では空）
         fb = _load_feedback()
-        boosted = np.array([
-            raw_scores[i] * _boost_factor(self.chunks[i].source, fb)
-            for i in range(len(self.chunks))
-        ])
+        if fb:
+            boosted = np.fromiter(
+                (raw_scores[i] * _boost_factor(self.chunks[i].source, fb)
+                 for i in range(len(self.chunks))),
+                dtype=np.float64, count=len(self.chunks),
+            )
+        else:
+            boosted = raw_scores
         idx = np.argsort(-boosted)[:top_k]
         return [(self.chunks[i], float(boosted[i])) for i in idx if boosted[i] > 0]
 
