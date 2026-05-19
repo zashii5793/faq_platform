@@ -99,9 +99,36 @@ aside{{width:280px;background:#fff;border-right:1px solid #e5e7eb;display:flex;f
 .brand{{padding:18px;border-bottom:1px solid #e5e7eb}}
 .brand h1{{color:#1a73e8;font-size:22px;font-weight:700}}
 .brand p{{color:#6b7280;font-size:12px;margin-top:2px}}
-.section{{padding:14px 18px;border-bottom:1px solid #f3f4f6}}
+/* サイドバーセクション（details/summary 折り畳み式） */
+.section{{padding:0;border-bottom:1px solid #f3f4f6}}
+.section > summary{{padding:12px 18px;font-size:11px;color:#6b7280;font-weight:600;
+                    letter-spacing:.05em;text-transform:uppercase;cursor:pointer;
+                    list-style:none;display:flex;align-items:center;gap:6px;
+                    user-select:none;transition:background .15s}}
+.section > summary::-webkit-details-marker{{display:none}}
+.section > summary::before{{content:"▸ ";color:#9ca3af;font-size:9px;
+                            transition:transform .15s;flex-shrink:0;width:8px}}
+.section[open] > summary::before{{transform:rotate(90deg)}}
+.section > summary:hover{{background:#f9fafb;color:#374151}}
+.section > summary > span{{margin-left:auto;font-weight:400;color:#9ca3af;
+                            font-size:10.5px;text-transform:none;letter-spacing:0}}
+.section > *:not(summary){{padding-left:18px;padding-right:18px}}
+.section > *:not(summary):last-child{{padding-bottom:14px}}
+.section.section-admin > summary{{background:#fafafa;color:#9ca3af}}
+.section.section-admin[open] > summary{{background:#f3f4f6;color:#6b7280}}
+.section-divider{{padding:14px 18px 8px;font-size:10px;color:#9ca3af;text-align:center;
+                  font-weight:500;letter-spacing:.08em;text-transform:uppercase;
+                  background:#fafbfc;border-bottom:1px solid #f3f4f6}}
 .section h3{{font-size:11px;color:#9ca3af;font-weight:600;letter-spacing:.05em;
             text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}}
+/* よく聞かれる質問リスト */
+.pop-item{{padding:6px 8px;margin:3px -8px;border-radius:6px;cursor:pointer;
+           font-size:12px;color:#374151;line-height:1.4;display:flex;
+           justify-content:space-between;align-items:center;gap:8px}}
+.pop-item:hover{{background:#fff7ed}}
+.pop-item .pop-count{{background:#fef3c7;color:#92400e;padding:1px 7px;
+                      border-radius:10px;font-size:10.5px;font-weight:600;flex-shrink:0}}
+#popular-queries{{max-height:240px;overflow-y:auto;padding-right:4px}}
 .stat{{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}}
 .stat .label{{color:#6b7280}}
 .stat .value{{color:#1f2937;font-weight:600}}
@@ -344,40 +371,54 @@ button.send:disabled{{background:#9ca3af}}
     <p>{_esc(settings.org_name)}</p>
   </div>
 
-  <div class="section">
-    <h3>📊 分析（直近）</h3>
+  <!-- ===== ユーザー向け（よく使う情報） ===== -->
+  <details class="section" open>
+    <summary>🕐 問い合わせ履歴 <span id="history-count"></span></summary>
+    <div id="history"><div class="empty-list">読み込み中…</div></div>
+  </details>
+
+  <details class="section" open>
+    <summary>🔥 よく聞かれる質問 <span id="popular-count"></span></summary>
+    <div id="popular-queries"><div class="empty-list">読み込み中…</div></div>
+  </details>
+
+  <!-- ===== 管理者向け（折りたたみ可・デフォルト閉じる） ===== -->
+  <div class="section-divider">— 管理者ビュー —</div>
+
+  <details class="section section-admin">
+    <summary>📊 分析（直近）</summary>
     <div class="stat"><span class="label">質問数</span><span class="value big" id="stat-queries">-</span></div>
     <div class="stat"><span class="label">回答率</span><span class="value" id="stat-answerrate">-</span></div>
     <div class="stat"><span class="label">平均確信度</span><span class="value" id="stat-confidence">-</span></div>
     <div class="stat" style="margin-top:6px"><span class="label">トップトピック</span></div>
     <div id="top-topics"><div class="empty-list">読み込み中…</div></div>
-  </div>
+  </details>
 
-  <div class="section">
-    <h3>🕐 問い合わせ履歴 <span id="history-count" style="font-weight:400;color:#9ca3af;font-size:11px"></span></h3>
-    <div id="history"><div class="empty-list">読み込み中…</div></div>
-  </div>
-
-  <div class="section">
-    <h3>📚 ナレッジ取り込み状況</h3>
+  <details class="section section-admin">
+    <summary>📚 取り込み状況</summary>
     <div class="stat"><span class="label">取り込み済み文書</span><span class="value" id="stat-docs">-</span></div>
     <div class="stat"><span class="label">総チャンク数</span><span class="value" id="stat-chunks">-</span></div>
-    <div style="margin-top:6px;font-size:11px;color:#6b7280">カバー領域</div>
-    <div class="cov-tags" id="cov-tags"></div>
     <a class="upload-link" href="/admin/upload">📁 ファイルを追加</a>
-  </div>
+  </details>
 
-  <div class="section">
-    <h3>💬 フィードバック</h3>
+  <details class="section section-admin">
+    <summary>📁 カバー領域</summary>
+    <div style="font-size:11px;color:#6b7280;margin-bottom:4px">取り込み済み文書のタグ</div>
+    <div class="cov-tags" id="cov-tags"></div>
+  </details>
+
+  <details class="section section-admin">
+    <summary>💬 フィードバック</summary>
     <div class="fb-row">
       <div class="fb-pill up"><span class="num" id="fb-up">0</span>👍 役立った</div>
       <div class="fb-pill down"><span class="num" id="fb-down">0</span>👎 要改善</div>
     </div>
-    <div class="fb-issues">
-      <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">改善要望のあった質問</div>
-      <ul id="fb-issues"><li class="empty-list" style="list-style:none;padding-left:0">なし</li></ul>
-    </div>
-  </div>
+  </details>
+
+  <details class="section section-admin">
+    <summary>⚠ 改善要望のあった質問 <span id="fb-issues-count"></span></summary>
+    <ul id="fb-issues"><li class="empty-list" style="list-style:none;padding-left:0">なし</li></ul>
+  </details>
 </aside>
 
 <main>
@@ -456,6 +497,20 @@ async function loadStats(){{
     issues.innerHTML=s.feedback.down_questions.length
       ? s.feedback.down_questions.map(q=>`<li>${{escape(q.slice(0,40))}}${{q.length>40?'…':''}}</li>`).join('')
       : '<li class="empty-list" style="list-style:none;padding-left:0">なし</li>';
+    // サイドバー「よく聞かれる質問」（最新の人気質問・クリックで再質問）
+    const popList = document.getElementById('popular-queries');
+    const popCount = document.getElementById('popular-count');
+    const popData = s.popular_queries || [];
+    if(popList){{
+      if(popCount) popCount.textContent = popData.length ? `(${{popData.length}}件)` : '';
+      popList.innerHTML = popData.length
+        ? popData.slice(0,30).map(p=>`<div class="pop-item" data-q="${{escape(p.question)}}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${{escape(p.question.slice(0,50))}}${{p.question.length>50?'…':''}}</span><span class="pop-count">${{p.count}}回</span></div>`).join('')
+        : '<div class="empty-list">まだ集計データがありません</div>';
+      popList.querySelectorAll('.pop-item').forEach(el=>el.onclick=()=>{{input.value=el.dataset.q;form.requestSubmit();}});
+    }}
+    // 改善要望のあった質問のカウント表示
+    const fbCnt = document.getElementById('fb-issues-count');
+    if(fbCnt) fbCnt.textContent = s.feedback.down_questions.length ? `(${{s.feedback.down_questions.length}}件)` : '';
     // サジェスト：人気質問（過去30日に2回以上聞かれたもの）を優先、
     // 不足分は文書から動的生成で補完
     if(suggestionsEl){{
