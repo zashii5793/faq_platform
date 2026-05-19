@@ -111,6 +111,10 @@ aside{{width:280px;background:#fff;border-right:1px solid #e5e7eb;display:flex;f
 .history-item{{padding:6px 8px;margin:3px -8px;border-radius:6px;cursor:pointer;
               font-size:12px;color:#374151;line-height:1.4}}
 .history-item:hover{{background:#f3f4f6}}
+#history{{max-height:360px;overflow-y:auto;padding-right:4px}}
+#history::-webkit-scrollbar{{width:6px}}
+#history::-webkit-scrollbar-thumb{{background:#d1d5db;border-radius:3px}}
+#history::-webkit-scrollbar-thumb:hover{{background:#9ca3af}}
 .cov-tags{{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}}
 .tag{{background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:999px;font-size:11px}}
 .upload-link{{margin-top:8px;display:block;border:2px dashed #cbd5e1;border-radius:8px;
@@ -253,7 +257,7 @@ button.send:disabled{{background:#9ca3af}}
   </div>
 
   <div class="section">
-    <h3>🕐 問い合わせ履歴</h3>
+    <h3>🕐 問い合わせ履歴 <span id="history-count" style="font-weight:400;color:#9ca3af;font-size:11px"></span></h3>
     <div id="history"><div class="empty-list">読み込み中…</div></div>
   </div>
 
@@ -341,6 +345,8 @@ async function loadStats(){{
       ? s.analytics.top_topics.map(([n,c])=>`<div class="topic-item"><span>${{escape(n.replace('.md',''))}}</span><span class="count">${{c}}件</span></div>`).join('')
       : '<div class="empty-list">まだ質問がありません</div>';
     const hist=document.getElementById('history');
+    const histCount=document.getElementById('history-count');
+    if(histCount) histCount.textContent = s.history.length ? `(${{s.history.length}}件)` : '';
     hist.innerHTML=s.history.length
       ? s.history.map(h=>`<div class="history-item" data-q="${{escape(h.question)}}"><div>${{escape(h.question.slice(0,40))}}${{h.question.length>40?'…':''}}</div><div style="color:#9ca3af;font-size:10px">${{relTime(h.ts)}}</div></div>`).join('')
       : '<div class="empty-list">まだ履歴がありません</div>';
@@ -1739,14 +1745,14 @@ async def admin_stats(user: dict = Depends(require_user)):
     from collections import Counter
 
     idx = get_index()
-    recent = audit.read_recent(200)
+    recent = audit.read_recent(1000)
     queries = [e for e in recent if e.get("event") == "query"]
     feedback = [e for e in recent if e.get("event") == "feedback"]
 
     history = [
         {"question": q.get("question", ""), "ts": q.get("ts", ""),
          "sources": q.get("sources", []), "confidence": q.get("confidence", 0)}
-        for q in queries[:8]
+        for q in queries[:100]
     ]
     top_topics: Counter = Counter()
     for q in queries:
