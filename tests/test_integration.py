@@ -92,6 +92,47 @@ def test_no_answer_for_irrelevant_question(client: TestClient):
     assert "見つかりませんでした" in data["answer"]
 
 
+def test_llm_no_answer_response_resets_signals(client: TestClient, monkeypatch):
+    """LLM が「該当情報が見つかりませんでした」と返したら、
+    confidence=0 / sources=[] / has_answer=False に揃える（UI 整合性）。
+    """
+    from app import llm
+    from app.config import settings
+    from app.rag import Chunk
+
+    # 文書を取り込んで TF-IDF が hit するようにする
+    md = "# 経費精算\n\n月次締めは毎月25日です。".encode("utf-8")
+    client.post("/api/admin/ingest", files={"file": ("expense.md", md, "text/markdown")})
+
+    # LLM スタブ：常に「該当情報なし」を返す
+    class FakeMessages:
+        def create(self, **kwargs):
+            class FakeMsg:
+                content = [type("B", (), {"type": "text", "text":
+                    "該当情報が見つかりませんでした。社内ヘルプデスクにお問い合わせください。"})()]
+                usage = type("U", (), {
+                    "input_tokens": 50, "output_tokens": 10,
+                    "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0,
+                })()
+            return FakeMsg()
+
+    class FakeClient:
+        messages = FakeMessages()
+
+    monkeypatch.setattr(llm, "_client", lambda: FakeClient())
+    monkeypatch.setattr(settings, "anthropic_api_key", "test-key")
+
+    r = client.post("/api/ask", json={"question": "年度更新の手順"})
+    assert r.status_code == 200
+    data = r.json()
+    # LLM が「該当情報なし」と返したので信号が揃っている
+    assert data["has_answer"] is False, "LLM の該当情報なし応答で has_answer が False になっていない"
+    assert data["confidence"] == 0, f"confidence が 0 にリセットされていない: {data['confidence']}"
+    assert data["sources"] == [], f"sources が空になっていない: {data['sources']}"
+    assert data["is_reference"] is False
+    assert "該当情報が見つかりませんでした" in data["answer"]
+
+
 # ============================================================
 # シナリオ3: PIIマスキングと監査ログ
 # ============================================================
