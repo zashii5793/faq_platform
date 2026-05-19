@@ -188,9 +188,11 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .confidence.none{{background:#fee2e2;color:#991b1b}}
 .confidence-bar{{display:inline-block;width:60px;height:4px;background:rgba(0,0,0,.1);border-radius:2px;overflow:hidden}}
 .confidence-bar > div{{height:100%;background:currentColor}}
-.no-answer{{color:#991b1b;font-style:italic}}
-.reference-answer{{background:#fffbeb;border-left:3px solid #f59e0b;padding:10px 14px;
-                   border-radius:8px;margin-bottom:4px;color:#78350f;font-size:13px;line-height:1.6}}
+.no-answer{{padding:12px 14px;background:#fef2f2;border-left:3px solid #fca5a5;
+            border-radius:8px;color:#7f1d1d;font-size:13px;line-height:1.7;margin-bottom:4px}}
+.no-answer::before{{content:"💭 ";font-size:14px}}
+.reference-answer{{background:#fffbeb;border-left:3px solid #f59e0b;padding:12px 14px;
+                   border-radius:8px;margin-bottom:4px;color:#78350f;font-size:13px;line-height:1.7}}
 /* Markdown 回答の整形 */
 .md-body{{line-height:1.7;font-size:14px;color:#1f2937}}
 .md-body .md-h1{{font-size:16px;font-weight:600;color:#111827;margin:14px 0 8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb}}
@@ -217,12 +219,23 @@ header .org{{font-size:14px;font-weight:600;color:#1f2937}}
 .faq-request-btn:disabled{{opacity:.6;cursor:not-allowed}}
 .faq-request-done{{font-size:12px;color:#065f46;background:#d1fae5;padding:8px 12px;border-radius:6px}}
 .sources{{margin-top:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;
-         padding:10px 14px;font-size:12px;max-width:75%}}
-.sources summary{{cursor:pointer;color:#4b5563;font-weight:500}}
-.src{{padding:6px 0;border-bottom:1px solid #f3f4f6}}
-.src:last-child{{border-bottom:0}}
-.src-name{{font-weight:600;color:#1f2937}}
-.src-score{{color:#9ca3af;font-size:10px;margin-left:6px}}
+         padding:10px 14px;font-size:12px;max-width:85%}}
+.sources summary{{cursor:pointer;color:#4b5563;font-weight:500;padding:2px 0}}
+.src{{padding:10px 0;border-bottom:1px solid #e5e7eb}}
+.src:last-child{{border-bottom:0;padding-bottom:2px}}
+.src-row{{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}}
+.src-name{{font-weight:600;color:#1f2937;font-size:12.5px;flex:1;min-width:0;
+           overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.src-chunk-tag{{display:inline-block;background:#dbeafe;color:#1e40af;padding:1px 6px;
+                border-radius:4px;font-size:10.5px;font-weight:500;margin-left:6px}}
+.src-score{{color:#6b7280;font-size:10.5px;flex-shrink:0;background:#fff;
+            padding:2px 7px;border-radius:10px;border:1px solid #e5e7eb}}
+.src-score.high{{background:#d1fae5;color:#065f46;border-color:#a7f3d0}}
+.src-score.mid{{background:#fef3c7;color:#92400e;border-color:#fde68a}}
+.src-preview{{font-size:11.5px;color:#4b5563;line-height:1.55;background:#fff;
+              padding:6px 10px;border-radius:6px;border-left:3px solid #bfdbfe;
+              margin-top:4px;word-break:break-word}}
+.sources-hint{{font-size:11px;color:#6b7280;margin-top:4px;font-style:italic}}
 .feedback{{display:inline-flex;gap:6px;margin-top:6px}}
 .feedback button{{background:transparent;border:1px solid #e5e7eb;padding:3px 10px;
                   border-radius:6px;font-size:11px;color:#4b5563;cursor:pointer}}
@@ -473,7 +486,7 @@ form.onsubmit=async e=>{{
     else if(conf >= 20) {{ confCls='low'; confLabel='低い（要確認）'; }}
     let html='';
     if(!data.has_answer) {{
-      html+='<div class="no-answer">'+escape(data.answer)+'</div>';
+      html+='<div class="no-answer">'+renderMarkdown(escape(data.answer))+'</div>';
     }} else if(data.is_reference) {{
       html+='<div class="reference-answer">'+renderMarkdown(escape(data.answer))+'</div>';
     }} else {{
@@ -483,10 +496,31 @@ form.onsubmit=async e=>{{
           +'確信度 '+conf+'% · '+confLabel
           +'<span class="confidence-bar"><div style="width:'+conf+'%"></div></span></span></div>';
     if(data.sources && data.sources.length){{
-      html+='<details class="sources" open><summary>📎 参照ドキュメント '+data.sources.length+'件</summary>';
+      // has_answer=false でもキーワード検索で引っかかったチャンクは「関連候補」として提示
+      const sourceLabel = data.has_answer
+        ? `📎 参照ドキュメント ${{data.sources.length}}件`
+        : `🔍 キーワード検索で見つかった関連候補 ${{data.sources.length}}件`;
+      const hint = data.has_answer ? '' :
+        '<div class="sources-hint">公式FAQには登録されていませんが、以下のチャンクがキーワードに一致しました。参考までにご確認ください。</div>';
+      html+='<details class="sources" open><summary>'+sourceLabel+'</summary>';
+      html+=hint;
       for(const s of data.sources){{
-        html+='<div class="src"><span class="src-name">'+escape(s.source)+'</span>'
-              +'<span class="src-score">関連度 '+s.score.toFixed(2)+'</span></div>';
+        // チャンクID から "#番号" 部分を抽出（"foo.md#3" → "#3"）
+        const chunkPart = (s.chunk_id||'').includes('#') ? '#' + s.chunk_id.split('#').pop() : '';
+        // 関連度の色分け
+        let scoreCls = '';
+        if(s.score >= 0.30) scoreCls = 'high';
+        else if(s.score >= 0.15) scoreCls = 'mid';
+        const preview = (s.preview||'').trim();
+        html += '<div class="src">'
+              + '<div class="src-row">'
+              +   '<span class="src-name">📄 '+escape(s.source)
+              +     (chunkPart ? '<span class="src-chunk-tag">'+escape(chunkPart)+'</span>' : '')
+              +   '</span>'
+              +   '<span class="src-score '+scoreCls+'">関連度 '+s.score.toFixed(2)+'</span>'
+              + '</div>'
+              + (preview ? '<div class="src-preview">'+escape(preview)+'…</div>' : '')
+              + '</div>';
       }}
       html+='</details>';
     }}
@@ -580,6 +614,7 @@ class Source(BaseModel):
     chunk_id: str
     source: str
     score: float
+    preview: str = ""  # チャンクの先頭プレビュー（UI 上で「何が引っかかったか」を見せる）
 
 
 class AskResponse(BaseModel):
@@ -691,21 +726,32 @@ async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskRes
         )
         raise HTTPException(status_code=502, detail=detail) from e
 
-    # LLM が「該当情報なし」と判断したケースは、信号（confidence / sources / has_answer）を揃える
-    # → UI の確信度・参照ドキュメント・FAQ追加リクエストボタンの整合性を保つ
+    # 出典の preview テキスト（チャンク先頭から)。UI が「何が引っかかったか」を表示する。
+    source_list = [
+        Source(
+            chunk_id=c.chunk_id,
+            source=c.source,
+            score=s,
+            preview=c.text.strip().replace("\n", " ")[:140],
+        )
+        for c, s in chunks
+    ]
+
+    # LLM が「該当情報なし」と判断したケースは、信号（confidence / has_answer）を揃える
+    # ただし sources は残す（キーワード検索でヒットした関連候補として UI 表示）
     if _llm_said_no_answer(response_text):
         audit.record(
             "query",
             user=user["email"],
             question=masked_q,
-            sources=[],
+            sources=[c.chunk_id for c, _ in chunks],
             confidence=0,
             answered=False,
             llm_no_answer=True,
         )
         return AskResponse(
             answer=response_text,
-            sources=[],
+            sources=source_list,
             confidence=0,
             has_answer=False,
             is_reference=False,
@@ -722,9 +768,7 @@ async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskRes
     )
     return AskResponse(
         answer=response_text,
-        sources=[
-            Source(chunk_id=c.chunk_id, source=c.source, score=s) for c, s in chunks
-        ],
+        sources=source_list,
         confidence=confidence,
         has_answer=True,
         is_reference=is_reference,
