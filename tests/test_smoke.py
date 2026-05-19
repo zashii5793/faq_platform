@@ -1,22 +1,63 @@
 """最低限の動作確認。Anthropic API キー無しでも通るよう設計している。"""
+import re
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from app.main import app
+import app
+from app.main import app as fastapi_app
 from app.masking import build_rules, mask
 from app.rag import FaqIndex, load_chunks
 
 
 def test_healthz():
-    client = TestClient(app)
+    client = TestClient(fastapi_app)
     r = client.get("/healthz")
     assert r.status_code == 200
     assert r.json() == {"ok": True}
 
 
+def test_version_format_is_semver():
+    """app.__version__ が SemVer (MAJOR.MINOR.PATCH) 形式。"""
+    assert re.match(r"^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$", app.__version__), (
+        f"バージョン形式が SemVer 違反: {app.__version__}"
+    )
+
+
+def test_version_matches_pyproject():
+    """app/__init__.py の __version__ と pyproject.toml の version が一致する。"""
+    pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    text = pyproject.read_text(encoding="utf-8")
+    m = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
+    assert m, "pyproject.toml に version 行が見つからない"
+    pyproject_ver = m.group(1)
+    assert pyproject_ver == app.__version__, (
+        f"バージョン不一致: pyproject.toml={pyproject_ver} / app.__version__={app.__version__}"
+    )
+
+
+def test_version_appears_in_chat_page(monkeypatch):
+    """チャット画面の HTML にバージョンバッジが含まれる（DEMO_MODE で確認）。"""
+    from app.config import settings
+    monkeypatch.setattr(settings, "demo_mode", True)
+    client = TestClient(fastapi_app)
+    r = client.get("/")
+    assert r.status_code == 200
+    assert f"v{app.__version__}" in r.text, "チャット画面にバージョン表示なし"
+
+
+def test_version_api_returns_changelog():
+    """/api/version は CHANGELOG を含む HTML を返す（認証不要）。"""
+    client = TestClient(fastapi_app)
+    r = client.get("/api/version")
+    assert r.status_code == 200
+    assert f"v{app.__version__}" in r.text
+    # CHANGELOG の見出しが含まれる
+    assert "Changelog" in r.text or "0.6.0" in r.text
+
+
 def test_ask_requires_auth():
-    client = TestClient(app)
+    client = TestClient(fastapi_app)
     r = client.post("/api/ask", json={"question": "テスト"})
     assert r.status_code == 401
 

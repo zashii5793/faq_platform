@@ -402,7 +402,7 @@ button.send:disabled{{background:#9ca3af;box-shadow:none;transform:none;cursor:n
 
 <aside>
   <div class="brand">
-    <h1>{_esc(settings.product_name)} <span class="version-badge" title="システムバージョン">v{__version__}</span></h1>
+    <h1>{_esc(settings.product_name)} <a class="version-badge" href="/api/version" target="_blank" title="クリックでバージョン情報・変更履歴を表示">v{__version__}</a></h1>
     <p>{_esc(settings.org_name)}</p>
   </div>
 
@@ -1339,7 +1339,7 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
 </style></head><body>
 <div class="modal">
   <div class="modal-header">
-    <h2>📚 ナレッジ追加 <span>— Inquira</span> <span class="version-badge" title="システムバージョン">v__VERSION__</span></h2>
+    <h2>📚 ナレッジ追加 <span>— Inquira</span> <a class="version-badge" href="/api/version" target="_blank" title="クリックでバージョン情報・変更履歴を表示">v__VERSION__</a></h2>
     <a href="/" style="color:#6b7280;text-decoration:none;font-size:13px">← チャットに戻る</a>
   </div>
   <div class="modal-body">
@@ -3019,6 +3019,42 @@ async def api_get_chunk(chunk_id: str, user: dict = Depends(require_user)):
         },
         "neighbors": same_file[:50],  # 同じファイル内の他チャンク一覧（上限50）
     }
+
+
+@app.get("/api/version", response_class=HTMLResponse)
+async def api_version():
+    """現在のバージョン情報と直近の変更履歴を返す（要認証なし）。"""
+    from pathlib import Path as _Path
+    changelog_path = _Path(__file__).resolve().parent.parent / "CHANGELOG.md"
+    changelog_md = ""
+    if changelog_path.exists():
+        try:
+            changelog_md = changelog_path.read_text(encoding="utf-8")
+        except OSError:
+            changelog_md = ""
+    safe_md = _esc(changelog_md)
+    return HTMLResponse(f"""<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>バージョン情報 — Inquira v{__version__}</title>
+<style>
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',sans-serif;
+     background:#f7f8fa;color:#1f2937;padding:32px;line-height:1.7;font-size:15px}}
+.card{{background:#fff;max-width:820px;margin:0 auto;border-radius:14px;
+       padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.08)}}
+h1{{font-size:24px;color:#1a73e8;margin-bottom:6px}}
+.meta{{color:#6b7280;font-size:13px;margin-bottom:24px;padding-bottom:14px;
+       border-bottom:1px solid #e5e7eb}}
+pre{{white-space:pre-wrap;font-family:inherit;font-size:14px;color:#374151;
+     background:transparent;line-height:1.75}}
+a.back{{display:inline-block;margin-bottom:18px;color:#1a73e8;text-decoration:none}}
+a.back:hover{{text-decoration:underline}}
+</style></head><body>
+<div class="card">
+  <a class="back" href="/">← チャットに戻る</a>
+  <h1>Inquira v{__version__}</h1>
+  <div class="meta">Semantic Versioning (MAJOR.MINOR.PATCH) に従ったリリース管理</div>
+  <pre>{safe_md}</pre>
+</div></body></html>""")
 
 
 @app.get("/healthz")

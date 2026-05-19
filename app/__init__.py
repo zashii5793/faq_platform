@@ -1,3 +1,7 @@
-"""Inquira: 社内ヘルプデスク用 RAG プラットフォーム。"""
+"""Inquira: 社内ヘルプデスク用 RAG プラットフォーム。
 
-__version__ = "0.5.0"
+バージョン番号は Semantic Versioning (MAJOR.MINOR.PATCH) に従う。
+詳細は docs/versioning.md / CHANGELOG.md を参照。
+"""
+
+__version__ = "0.6.0"
