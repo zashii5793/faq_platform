@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     # 共有Q&A のメタ情報（投票数・解決マーカー）
     shared_qa_meta_path: Path = Path("./data/shared_qa_meta.json")
 
+    # アップロード可能な最大ファイルサイズ（MB）。大きな社内マニュアルの取り込み用。
+    # 注意: ファイルは一旦メモリに読み込まれるため、サーバーのメモリに余裕を持たせること。
+    max_upload_mb: int = 1024
+
     masking_industry: str = "general"
 
     # 検索バックエンド: tfidf (デフォルト・軽量) / e5-small / e5-large / e5-base

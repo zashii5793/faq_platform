@@ -291,11 +291,24 @@ def test_feedback_validates_vote(client: TestClient):
 # ============================================================
 # シナリオ7: 容量上限
 # ============================================================
-def test_oversized_file_rejected(client: TestClient):
-    # 51MB のダミー
-    big = b"x" * (51 * 1024 * 1024)
+def test_oversized_file_rejected(client: TestClient, monkeypatch):
+    # 上限を 1MB に下げ、それを超えるファイルが 413 で弾かれることを確認
+    # （実際の既定上限 1GB のダミー生成はメモリを圧迫するため小さい値で検証）
+    from app.config import settings
+    monkeypatch.setattr(settings, "max_upload_mb", 1)
+    big = b"x" * (2 * 1024 * 1024)  # 2MB
     r = client.post("/api/admin/analyze", files={"file": ("big.txt", big, "text/plain")})
     assert r.status_code == 413
+
+
+def test_large_file_within_limit_accepted(client: TestClient):
+    # 既定上限 1GB の範囲内なら、従来弾かれていた 60MB 級でも受理される
+    text = ("社内マニュアル。" * 4000 + "\n") * 200  # 数MB のテキスト
+    r = client.post(
+        "/api/admin/analyze",
+        files={"file": ("big_manual.txt", text.encode("utf-8"), "text/plain")},
+    )
+    assert r.status_code == 200
 
 
 # ============================================================

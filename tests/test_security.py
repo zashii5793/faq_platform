@@ -139,15 +139,18 @@ class TestResourceExhaustion:
         assert r.status_code in (200, 400, 413, 422)
 
     def test_ingest_has_size_limit_constant(self):
-        """実装に上限定数が定義されている。実機での巨大ファイル送信は
-        TestClient のメモリ問題で重いため、ここでは定数の存在のみ verify する。
+        """アップロード上限が設定値ベースで実装されている。実機での巨大
+        ファイル送信は TestClient のメモリ問題で重いため、ここでは
+        チェックの存在のみ verify する。
         """
         from app import main as m
+        from app.config import settings
         src = open(m.__file__, encoding="utf-8").read()
-        # /api/admin/analyze と /api/admin/ingest にサイズチェックがある
-        assert "50 * 1024 * 1024" in src or "MAX_UPLOAD" in src, (
+        # /api/admin/analyze に max_upload_mb ベースのサイズチェックがある
+        assert "settings.max_upload_mb" in src, (
             "アップロード上限のチェックが実装されていない"
         )
+        assert hasattr(settings, "max_upload_mb"), "max_upload_mb 設定が無い"
 
     def test_ingest_handles_zero_byte_file(self, client: TestClient):
         """ゼロバイトファイルでサーバが落ちない。"""

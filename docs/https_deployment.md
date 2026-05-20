@@ -168,7 +168,7 @@ server {
     add_header X-Frame-Options DENY always;
     add_header Referrer-Policy strict-origin-when-cross-origin always;
 
-    client_max_body_size 60M;  # 50MB ファイルアップロード対応
+    client_max_body_size 1100M;  # アプリの MAX_UPLOAD_MB（既定1024）以上に設定する
 
     location / {
         proxy_pass http://127.0.0.1:8000;

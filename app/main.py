@@ -3149,8 +3149,11 @@ async def admin_analyze(file: UploadFile = File(...), user: dict = Depends(requi
     UI 側はチャンク単位で「取り込む / スキップ」を選べる。
     """
     content = await file.read()
-    if len(content) > 50 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="50MB を超えるファイルは未対応")
+    if len(content) > settings.max_upload_mb * 1024 * 1024:
+        raise HTTPException(
+            status_code=413,
+            detail=f"{settings.max_upload_mb}MB を超えるファイルは取り込めません",
+        )
     try:
         result = ingest_analyze(file.filename or "uploaded", content, settings.masking_industry)
     except ValueError as e:
