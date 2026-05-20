@@ -295,7 +295,7 @@ server {
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Content-Type-Options nosniff always;
     add_header X-Frame-Options DENY always;
-    client_max_body_size 60M;
+    client_max_body_size 1100M;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
