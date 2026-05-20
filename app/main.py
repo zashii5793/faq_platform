@@ -180,6 +180,8 @@ aside{{width:300px;background:#fff;border-right:1px solid #e5e7eb;display:flex;f
 #history::-webkit-scrollbar-thumb:hover{{background:#9ca3af}}
 .cov-tags{{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}}
 .tag{{background:#eef2ff;color:#4338ca;padding:3px 10px;border-radius:999px;font-size:12px}}
+.cov-tag{{cursor:pointer;transition:background .12s}}
+.cov-tag:hover{{background:#c7d2fe}}
 .upload-link{{margin-top:10px;display:block;border:2px dashed #cbd5e1;border-radius:10px;
         padding:12px;text-align:center;font-size:13px;color:#6b7280;text-decoration:none;
         font-weight:500;transition:all .15s}}
@@ -587,7 +589,8 @@ async function loadStats(){{
       : '<div class="empty-list">まだ履歴がありません</div>';
     hist.querySelectorAll('.history-item').forEach(el=>el.onclick=()=>{{input.value=el.dataset.q;form.requestSubmit();}});
     const tags=document.getElementById('cov-tags');
-    tags.innerHTML=s.knowledge.documents.slice(0,8).map(d=>`<span class="tag">${{escape(d.replace('.md',''))}}</span>`).join('') || '<span class="empty-list">なし</span>';
+    tags.innerHTML=s.knowledge.documents.slice(0,8).map(d=>`<span class="tag cov-tag" data-doc="${{escape(d)}}" title="クリックで内容を表示">${{escape(d.replace('.md',''))}}</span>`).join('') || '<span class="empty-list">なし</span>';
+    tags.querySelectorAll('.cov-tag').forEach(el=>{{ el.onclick=()=>openChunkViewer(el.dataset.doc); }});
     document.getElementById('fb-up').textContent=s.feedback.up;
     document.getElementById('fb-down').textContent=s.feedback.down;
     const issues=document.getElementById('fb-issues');
@@ -3293,16 +3296,22 @@ async def api_get_chunk(chunk_id: str, user: dict = Depends(require_user)):
     """
     idx = get_index()
     target = None
+    first_of_source = None
     same_file: list[dict] = []
     target_source = chunk_id.split("#")[0] if "#" in chunk_id else chunk_id
     for c in idx.chunks:
         if c.chunk_id == chunk_id:
             target = c
         if c.source == target_source:
+            if first_of_source is None:
+                first_of_source = c
             same_file.append({
                 "chunk_id": c.chunk_id,
                 "preview": c.text.strip().replace("\n", " ")[:160],
             })
+    # ファイル名だけが渡された場合（カバー領域タグなど）は先頭チャンクを表示する
+    if target is None:
+        target = first_of_source
     if target is None:
         raise HTTPException(status_code=404, detail=f"チャンクが見つかりません: {chunk_id}")
     return {
