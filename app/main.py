@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from html import escape as _html_escape
 
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
@@ -868,7 +868,7 @@ form.onsubmit=async e=>{{
               if(!r.ok) throw new Error((await r.json()).detail||r.statusText);
               const result = await r.json();
               const indexedNote = result.indexed
-                ? '<br>🔍 検索インデックスにも追加済み。他の人が同じ質問をするとこの回答も候補に上がります。'
+                ? '<br>🔍 検索インデックスへの反映処理を開始しました。数分以内に他の人の検索結果にも表示されるようになります。'
                 : '';
               const msg = share
                 ? '✅ 教えてもらった回答を共有しました。管理者が確認後、公式FAQに追加されます。' + indexedNote
@@ -1711,7 +1711,7 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
     </div><!-- /pane: settings -->
 
   </div>
-  <div class="modal-footer">
+  <div class="modal-footer" id="ingestFooter">
     <div class="summary" id="summary">未取り込み</div>
     <button class="confirm" id="confirmBtn" disabled>選択を確定して取り込む (0件)</button>
   </div>
@@ -2491,6 +2491,10 @@ document.querySelectorAll('.admin-tab').forEach(tab => {
     document.querySelectorAll('.admin-pane').forEach(p => {
       p.hidden = p.dataset.pane !== target;
     });
+    // 取り込みフッター（未取り込み件数・取り込み確定ボタン）は ingest タブでのみ意味があるので
+    // 他タブでは隠す
+    const ingestFooter = document.getElementById('ingestFooter');
+    if (ingestFooter) ingestFooter.hidden = target !== 'ingest';
     // URL のフラグメントを更新（ブックマーク・履歴用）
     history.replaceState(null, '', '#' + target);
   };
@@ -2661,13 +2665,20 @@ def _save_shared_answer_as_doc(question: str, answer: str, user_email: str) -> s
 
 
 @app.post("/api/faq-requests")
-async def api_faq_request(payload: FaqRequest, user: dict = Depends(require_user)):
+async def api_faq_request(
+    payload: FaqRequest,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(require_user),
+):
     """FAQ追加リクエストを受け付ける。
 
     用途:
       1. 質問しても回答が得られなかった → 管理者に FAQ 追加を依頼
       2. ユーザーが別途人から答えを教えてもらった → その回答を共有して FAQ 化を依頼
          share=true なら検索インデックスにも追加（他の人の検索にも引っかかるように）
+
+    インデックス再構築は大規模データだと数分かかるため BackgroundTasks に逃がし、
+    レスポンスは即時返す（保存自体はリクエスト内で完了している）。
     """
     q = (payload.question or "").strip()
     a = (payload.answer or "").strip()
@@ -2684,7 +2695,7 @@ async def api_faq_request(payload: FaqRequest, user: dict = Depends(require_user
     if a and payload.share:
         indexed_path = _save_shared_answer_as_doc(q, a, user["email"])
         if indexed_path:
-            reload_index()
+            background_tasks.add_task(reload_index)
     audit.record(
         "faq_request",
         user=user["email"],
