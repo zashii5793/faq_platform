@@ -1,6 +1,7 @@
 """FastAPI エントリポイント。Google SSO + 簡易 RAG + Claude 呼び出し。"""
 from __future__ import annotations
 
+from functools import lru_cache
 from html import escape as _html_escape
 from pathlib import Path
 
@@ -396,11 +397,15 @@ header .org{{font-size:15px;font-weight:600;color:#1f2937}}
 .src-preview{{font-size:12.5px;color:#4b5563;line-height:1.6;background:#fff;
               padding:8px 12px;border-radius:8px;border-left:3px solid #bfdbfe;
               margin-top:6px;word-break:break-word}}
-.src-view-btn{{margin-top:8px;background:transparent;color:#1a73e8;border:1px solid #bfdbfe;
+.src-actions{{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}}
+.src-view-btn{{background:transparent;color:#1a73e8;border:1px solid #bfdbfe;
                 padding:5px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600;
                 transition:all .15s}}
-.src-view-btn:hover{{background:#1a73e8;color:#fff;border-color:#1a73e8}}
 .src-view-btn:hover{{background:#eff6ff;border-color:#1a73e8}}
+.src-orig-btn{{background:#eff6ff;color:#1a73e8;border:1px solid #bfdbfe;
+                padding:5px 14px;border-radius:8px;font-size:12.5px;font-weight:600;
+                text-decoration:none;display:inline-block;transition:all .15s}}
+.src-orig-btn:hover{{background:#1a73e8;color:#fff;border-color:#1a73e8}}
 /* 出典詳細モーダル（参照のみ） */
 .chunk-modal-overlay{{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9500;
                      display:flex;align-items:center;justify-content:center;padding:16px}}
@@ -804,6 +809,12 @@ form.onsubmit=async e=>{{
         const displayName = isShared
           ? '💬 ユーザー提供回答'  // ファイル名のままより分かりやすく
           : escape(s.source);
+        // 原本ファイルが保存されていれば、新タブで開くリンクも併置（画像・図表確認用）
+        const origBtn = s.original_filename
+          ? '<a class="src-orig-btn" href="/api/originals/'
+            + encodeURIComponent(s.original_filename)
+            + '" target="_blank" rel="noopener" title="原本ファイル（PDF など）を新タブで開く">📎 原本を開く</a>'
+          : '';
         html += '<div class="src '+(isShared?'shared':'')+'" data-chunk-id="'+escape(s.chunk_id||'')+'">'
               + '<div class="src-row">'
               +   '<span class="src-name">📄 '+displayName+sharedBadge
@@ -812,7 +823,10 @@ form.onsubmit=async e=>{{
               +   '<span class="src-score '+scoreCls+'">関連度 '+scoreLabel+' ('+s.score.toFixed(2)+')</span>'
               + '</div>'
               + (preview ? '<div class="src-preview">'+escape(preview)+'…</div>' : '')
-              + '<button class="src-view-btn" data-cid="'+escape(s.chunk_id||'')+'">🔍 全文を見る</button>'
+              + '<div class="src-actions">'
+              +   '<button class="src-view-btn" data-cid="'+escape(s.chunk_id||'')+'">🔍 全文を見る</button>'
+              +   origBtn
+              + '</div>'
               + '</div>';
       }}
       html+='</details>';
@@ -1245,6 +1259,32 @@ class Source(BaseModel):
     source: str
     score: float
     preview: str = ""  # チャンクの先頭プレビュー（UI 上で「何が引っかかったか」を見せる）
+    original_filename: str | None = None  # 原本（PDF 等）が保存されていればファイル名
+
+
+@lru_cache(maxsize=512)
+def _resolve_original_filename(md_source: str) -> str | None:
+    """.md ファイルの 1行目 ``# <元ファイル名>`` から原本ファイル名を解決。
+
+    raw_upload_dir に実体がある場合のみ返す（旧データや欠落分は None）。
+    検索ホットパスで N 件の出典それぞれに呼ばれるため lru_cache で I/O 削減。
+    サーバー再起動でキャッシュは破棄されるので、再取り込み後は restart で反映。
+    """
+    try:
+        md_path = settings.faq_master_dir / md_source
+        if not md_path.is_file():
+            return None
+        first_line = md_path.read_text(encoding="utf-8").split("\n", 1)[0].strip()
+        if not first_line.startswith("# "):
+            return None
+        candidate = Path(first_line[2:].strip()).name
+        if not candidate:
+            return None
+        if (settings.raw_upload_dir / candidate).is_file():
+            return candidate
+        return None
+    except OSError:
+        return None
 
 
 class AskResponse(BaseModel):
@@ -1357,12 +1397,14 @@ async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskRes
         raise HTTPException(status_code=502, detail=detail) from e
 
     # 出典の preview テキスト（チャンク先頭から)。UI が「何が引っかかったか」を表示する。
+    # original_filename を載せておくと、出典直下に「原本を開く」リンクを出せる
     source_list = [
         Source(
             chunk_id=c.chunk_id,
             source=c.source,
             score=s,
             preview=c.text.strip().replace("\n", " ")[:140],
+            original_filename=_resolve_original_filename(c.source),
         )
         for c, s in chunks
     ]
@@ -3354,20 +3396,8 @@ async def api_get_chunk(chunk_id: str, user: dict = Depends(require_user)):
         target = first_of_source
     if target is None:
         raise HTTPException(status_code=404, detail=f"チャンクが見つかりません: {chunk_id}")
-    # 原本ファイル名を取得（.md 1行目の "# <元ファイル名>" 形式から）。
-    # pypdf 等で抽出できない画像/図表を確認するため、原本へのリンクを UI に渡す。
-    original_filename: str | None = None
-    try:
-        md_path = settings.faq_master_dir / target.source
-        if md_path.is_file():
-            first_line = md_path.read_text(encoding="utf-8").split("\n", 1)[0].strip()
-            if first_line.startswith("# "):
-                candidate = first_line[2:].strip()
-                # raw_upload_dir に実体があるときだけリンク扱いにする（旧データ救済）
-                if candidate and (settings.raw_upload_dir / Path(candidate).name).is_file():
-                    original_filename = Path(candidate).name
-    except OSError:
-        pass
+    # 原本（PDF/Excel 等）が raw_upload_dir に保存されていればファイル名を返す
+    original_filename = _resolve_original_filename(target.source)
     return {
         "chunk": {
             "chunk_id": target.chunk_id,
