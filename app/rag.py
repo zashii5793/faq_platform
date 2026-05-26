@@ -174,34 +174,76 @@ class _E5Backend:
         self.embeddings = self._load_or_encode(chunks)
 
     def _load_or_encode(self, chunks: list[Chunk]) -> np.ndarray:
-        cache = settings.embedding_cache_path
-        cache_key = self._cache_key(chunks)
-        if cache.exists():
+        """チャンク単位の差分キャッシュ。
+
+        旧実装は全チャンクで1つのハッシュキーを作っていたため、1ファイル追加
+        するだけで全件再エンコードが発生していた（200K chunks で 30分〜2h）。
+        本実装は (chunk_id, text_hash) → vector をキャッシュし、追加/変更され
+        たチャンクだけを再計算する。定期更新運用での初回以降のコストが激減。
+        """
+        cache_path = settings.embedding_cache_path
+        cached: dict[str, tuple[str, np.ndarray]] = {}
+        if cache_path.exists():
             try:
-                data = np.load(cache, allow_pickle=False)
-                if data.get("key", np.array([""]))[0] == cache_key:
-                    return data["embeddings"]
+                data = np.load(cache_path, allow_pickle=False)
+                # 新形式: chunk_ids / text_hashes / embeddings の3配列
+                if "chunk_ids" in data.files and "text_hashes" in data.files:
+                    ids = data["chunk_ids"]
+                    hashes = data["text_hashes"]
+                    vecs = data["embeddings"]
+                    for i in range(len(ids)):
+                        cached[str(ids[i])] = (str(hashes[i]), vecs[i])
+                # 旧形式 (key + embeddings) は無視して再構築。後方互換のため
+                # 例外は出さずに通す
             except Exception:  # noqa: BLE001
                 pass
-        passages = [f"passage: {c.text}" for c in chunks]
-        embeddings = self.model.encode(
-            passages, normalize_embeddings=True, show_progress_bar=False
-        ).astype(np.float32)
-        # キャッシュ保存
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        np.savez(cache, key=np.array([cache_key]), embeddings=embeddings)
+
+        text_hashes = [self._text_hash(c.text) for c in chunks]
+        out_vecs: list[np.ndarray | None] = [None] * len(chunks)
+        to_encode_idx: list[int] = []
+        for i, c in enumerate(chunks):
+            entry = cached.get(c.chunk_id)
+            if entry is not None and entry[0] == text_hashes[i]:
+                out_vecs[i] = entry[1]
+            else:
+                to_encode_idx.append(i)
+
+        n_hit = len(chunks) - len(to_encode_idx)
+        n_new = len(to_encode_idx)
+        print(
+            f"[embedding] cache hit: {n_hit} chunks, recompute: {n_new} chunks",
+            flush=True,
+        )
+
+        if to_encode_idx:
+            passages = [f"passage: {chunks[i].text}" for i in to_encode_idx]
+            # 大量エンコード時は進捗表示（サーバー起動が止まって見えるのを防ぐ）
+            show_progress = n_new > 200
+            new_vecs = self.model.encode(
+                passages,
+                normalize_embeddings=True,
+                show_progress_bar=show_progress,
+                batch_size=32,
+            ).astype(np.float32)
+            for k, i in enumerate(to_encode_idx):
+                out_vecs[i] = new_vecs[k]
+
+        embeddings = np.stack(out_vecs, axis=0)
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            cache_path,
+            chunk_ids=np.array([c.chunk_id for c in chunks]),
+            text_hashes=np.array(text_hashes),
+            embeddings=embeddings,
+        )
         return embeddings
 
     @staticmethod
-    def _cache_key(chunks: list[Chunk]) -> str:
-        """チャンク内容のハッシュ（再構築検出用）。"""
+    def _text_hash(text: str) -> str:
+        """チャンク本文のハッシュ（差分検出用・短縮版）。"""
         import hashlib
 
-        h = hashlib.sha256()
-        for c in chunks:
-            h.update(c.chunk_id.encode("utf-8"))
-            h.update(c.text.encode("utf-8"))
-        return h.hexdigest()
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
     def raw_search(self, query: str) -> np.ndarray:
         if self.model is None or self.embeddings is None:
