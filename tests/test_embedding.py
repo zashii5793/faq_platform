@@ -85,17 +85,76 @@ def test_index_search_works_after_fallback():
         settings.embedding_backend = settings_orig
 
 
-def test_e5_cache_key_depends_on_content():
-    """キャッシュキーは内容のハッシュ → 内容変更で再計算される。"""
+def test_e5_text_hash_depends_on_content():
+    """チャンク本文のハッシュ → 同じ内容なら同じ、変わると別。
+
+    差分キャッシュは (chunk_id, text_hash) で命中判定するため、text_hash が
+    内容と一対一に対応していることが基盤要件。
+    """
     from app.rag import _E5Backend
 
-    chunks_a = [Chunk(chunk_id="a#0", source="a.md", text="content A")]
-    chunks_b = [Chunk(chunk_id="a#0", source="a.md", text="content B")]
-    chunks_a2 = [Chunk(chunk_id="a#0", source="a.md", text="content A")]
+    assert _E5Backend._text_hash("content A") == _E5Backend._text_hash("content A")
+    assert _E5Backend._text_hash("content A") != _E5Backend._text_hash("content B")
 
-    key_a = _E5Backend._cache_key(chunks_a)
-    key_b = _E5Backend._cache_key(chunks_b)
-    key_a2 = _E5Backend._cache_key(chunks_a2)
 
-    assert key_a == key_a2  # 同じ内容ならキー同じ
-    assert key_a != key_b   # 内容違えば別キー
+def test_e5_differential_cache_reuses_unchanged_chunks(tmp_path, monkeypatch):
+    """差分キャッシュ: 既存チャンクは再エンコードせず、新規/変更分だけ計算する。
+
+    実モデルは使わず、SentenceTransformer をスタブで差し替えてエンコード
+    回数を観測する。
+    """
+    import numpy as np
+
+    from app import rag as rag_mod
+    from app.rag import _E5Backend
+
+    cache_file = tmp_path / "emb.npz"
+    monkeypatch.setattr(rag_mod.settings, "embedding_cache_path", cache_file)
+
+    encode_calls: list[list[str]] = []
+
+    class _StubModel:
+        def encode(self, texts, **kw):
+            encode_calls.append(list(texts))
+            # 各 passage に対して固定次元（4）のダミーベクトルを返す
+            return np.ones((len(texts), 4), dtype=np.float32)
+
+    # __init__ の SentenceTransformer ロードを回避してインスタンスを直接構築
+    backend = _E5Backend.__new__(_E5Backend)
+    backend.model = _StubModel()
+
+    chunks_initial = [
+        Chunk(chunk_id="a#0", source="a.md", text="alpha"),
+        Chunk(chunk_id="a#1", source="a.md", text="beta"),
+    ]
+    backend.chunks = chunks_initial
+    backend.embeddings = backend._load_or_encode(chunks_initial)
+    assert backend.embeddings.shape == (2, 4)
+    assert len(encode_calls) == 1
+    assert len(encode_calls[0]) == 2  # 初回は全件エンコード
+
+    # 1チャンク追加 + 既存は変更なし → 新規分1件だけエンコードされるはず
+    encode_calls.clear()
+    chunks_added = chunks_initial + [Chunk(chunk_id="a#2", source="a.md", text="gamma")]
+    backend.embeddings = backend._load_or_encode(chunks_added)
+    assert backend.embeddings.shape == (3, 4)
+    assert len(encode_calls) == 1
+    assert len(encode_calls[0]) == 1  # 新規1件のみ
+    assert "passage: gamma" in encode_calls[0][0]
+
+    # 既存チャンクの本文を変更 → 変更分1件だけエンコード
+    encode_calls.clear()
+    chunks_changed = [
+        Chunk(chunk_id="a#0", source="a.md", text="alpha-modified"),  # 変更
+        Chunk(chunk_id="a#1", source="a.md", text="beta"),            # 同じ
+        Chunk(chunk_id="a#2", source="a.md", text="gamma"),           # 同じ
+    ]
+    backend.embeddings = backend._load_or_encode(chunks_changed)
+    assert len(encode_calls) == 1
+    assert len(encode_calls[0]) == 1
+    assert "alpha-modified" in encode_calls[0][0]
+
+    # 全件同じ → エンコード呼び出しゼロ
+    encode_calls.clear()
+    backend.embeddings = backend._load_or_encode(chunks_changed)
+    assert encode_calls == []
