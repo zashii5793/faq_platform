@@ -1523,6 +1523,9 @@ input[type=file]{display:none}
 .bulk-ops button:hover{background:#f3f4f6}
 .modal-footer{padding:14px 24px;border-top:1px solid #e5e7eb;background:#fafbfc;
               display:flex;justify-content:space-between;align-items:center;gap:14px}
+/* hidden 属性が CSS の display:flex に負けないよう明示的に上書き
+   （ingest 以外のタブでは取り込みフッターを隠す用途） */
+.modal-footer[hidden]{display:none}
 .summary{font-size:13px;color:#6b7280}
 .summary b{color:#111827}
 button.confirm{background:#1a73e8;color:#fff;border:0;border-radius:8px;padding:10px 22px;
@@ -1540,10 +1543,6 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
   .modal-footer{flex-direction:column;align-items:stretch;gap:10px}
   .modal-footer button.confirm{width:100%}
 }
-.modal-footer{padding:16px 24px;border-top:1px solid #e5e7eb;background:#fafbfc;
-              display:flex;justify-content:space-between;align-items:center}
-.summary{font-size:13px;color:#6b7280}
-.summary b{color:#111827}
 .empty-msg{text-align:center;color:#9ca3af;padding:24px;font-size:13px}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid #e5e7eb;
          border-top-color:#1a73e8;border-radius:50%;animation:spin 1s linear infinite;
