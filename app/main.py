@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from html import escape as _html_escape
+from pathlib import Path
 
 from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -413,6 +414,11 @@ header .org{{font-size:15px;font-weight:600;color:#1f2937}}
 .chunk-modal-close{{background:transparent;border:0;font-size:20px;cursor:pointer;
                     color:#9ca3af;padding:0 4px;line-height:1}}
 .chunk-modal-close:hover{{color:#1f2937}}
+.chunk-modal-actions{{display:flex;align-items:center;gap:10px}}
+.chunk-modal-orig{{font-size:12px;color:#1a73e8;text-decoration:none;
+                   padding:6px 10px;border:1px solid #bfdbfe;border-radius:6px;
+                   background:#eff6ff;white-space:nowrap}}
+.chunk-modal-orig:hover{{background:#dbeafe}}
 .chunk-modal-body{{padding:18px 20px;overflow-y:auto;flex:1}}
 .chunk-modal-text{{font-size:13px;line-height:1.75;color:#1f2937;white-space:pre-wrap;
                    word-break:break-word;background:#f9fafb;padding:14px 16px;
@@ -987,7 +993,11 @@ async function openChunkViewer(chunkId){{
           <div class="chunk-modal-title">⏳ 読み込み中…</div>
           <div class="chunk-modal-meta" id="cv-meta"></div>
         </div>
-        <button class="chunk-modal-close" id="cv-close">×</button>
+        <div class="chunk-modal-actions">
+          <a class="chunk-modal-orig" id="cv-orig" hidden target="_blank" rel="noopener"
+             title="ブラウザで原本ファイル（PDF など）を開く">📎 原本を開く</a>
+          <button class="chunk-modal-close" id="cv-close">×</button>
+        </div>
       </div>
       <div class="chunk-modal-body">
         <div class="chunk-modal-text" id="cv-text">読み込み中…</div>
@@ -1024,6 +1034,14 @@ async function openChunkViewer(chunkId){{
       overlay.querySelector('.chunk-modal-title').textContent = '📄 ' + c.source;
       overlay.querySelector('#cv-meta').textContent = chunkLabel || c.chunk_id;
       overlay.querySelector('#cv-text').textContent = c.text;
+      // 原本（PDF/Excel 等）が保存されていればリンクを有効化
+      const origLink = overlay.querySelector('#cv-orig');
+      if(data.original_filename){{
+        origLink.href = '/api/originals/' + encodeURIComponent(data.original_filename);
+        origLink.hidden = false;
+      }} else {{
+        origLink.hidden = true;
+      }}
       // 同じファイルの他チャンク
       const wrap = overlay.querySelector('#cv-neighbors-wrap');
       const list = overlay.querySelector('#cv-neighbors');
@@ -3281,6 +3299,18 @@ async def admin_ingest(
         industry=settings.masking_industry,
         excluded_chunk_ids=excluded,
     )
+    # 取り込みに成功した場合、原本ファイルも保存しておく（画面キャプチャ等の閲覧用）。
+    # 失敗時は保存しない（中途半端な状態を残さない）。
+    if n > 0:
+        try:
+            settings.raw_upload_dir.mkdir(parents=True, exist_ok=True)
+            # result.filename は _safe_filename を通っているのでパストラバーサルの心配は無いが
+            # 念のため basename のみ採用
+            safe_name = Path(result.filename).name
+            (settings.raw_upload_dir / safe_name).write_bytes(content)
+        except OSError:
+            # 原本保存に失敗してもインデックス取り込み自体は成功しているので致命ではない
+            pass
     reload_index()
     audit.record(
         "ingest",
@@ -3325,6 +3355,20 @@ async def api_get_chunk(chunk_id: str, user: dict = Depends(require_user)):
         target = first_of_source
     if target is None:
         raise HTTPException(status_code=404, detail=f"チャンクが見つかりません: {chunk_id}")
+    # 原本ファイル名を取得（.md 1行目の "# <元ファイル名>" 形式から）。
+    # pypdf 等で抽出できない画像/図表を確認するため、原本へのリンクを UI に渡す。
+    original_filename: str | None = None
+    try:
+        md_path = settings.faq_master_dir / target.source
+        if md_path.is_file():
+            first_line = md_path.read_text(encoding="utf-8").split("\n", 1)[0].strip()
+            if first_line.startswith("# "):
+                candidate = first_line[2:].strip()
+                # raw_upload_dir に実体があるときだけリンク扱いにする（旧データ救済）
+                if candidate and (settings.raw_upload_dir / Path(candidate).name).is_file():
+                    original_filename = Path(candidate).name
+    except OSError:
+        pass
     return {
         "chunk": {
             "chunk_id": target.chunk_id,
@@ -3332,7 +3376,33 @@ async def api_get_chunk(chunk_id: str, user: dict = Depends(require_user)):
             "text": target.text,
         },
         "neighbors": same_file[:50],  # 同じファイル内の他チャンク一覧（上限50）
+        "original_filename": original_filename,
     }
+
+
+@app.get("/api/originals/{filename:path}")
+async def api_get_original(filename: str, user: dict = Depends(require_user)):
+    """取り込み済みファイルの原本（PDF/Excel 等）を配信する。
+
+    pypdf 等のテキスト抽出では画面キャプチャや図表が落ちるため、
+    必要に応じてユーザーが元ファイルをそのまま閲覧できるようにする。
+
+    パストラバーサル対策として ``Path(filename).name`` で basename のみ採用し、
+    raw_upload_dir 配下のファイルだけを返す。
+    """
+    safe_name = Path(filename).name
+    if not safe_name or safe_name in {".", ".."}:
+        raise HTTPException(status_code=400, detail="不正なファイル名")
+    target = (settings.raw_upload_dir / safe_name).resolve()
+    base = settings.raw_upload_dir.resolve()
+    try:
+        target.relative_to(base)  # 配下に居ない（=シンボリックリンク等）なら拒否
+    except ValueError:
+        raise HTTPException(status_code=400, detail="不正なファイルパス")
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="原本ファイルが見つかりません")
+    # ブラウザで PDF を直接開けるよう inline 表示
+    return FileResponse(target, filename=safe_name, content_disposition_type="inline")
 
 
 @app.get("/api/knowledge-base")
@@ -3609,8 +3679,7 @@ loadKB();
 @app.get("/api/version", response_class=HTMLResponse)
 async def api_version():
     """現在のバージョン情報と直近の変更履歴を返す（要認証なし）。"""
-    from pathlib import Path as _Path
-    changelog_path = _Path(__file__).resolve().parent.parent / "CHANGELOG.md"
+    changelog_path = Path(__file__).resolve().parent.parent / "CHANGELOG.md"
     changelog_md = ""
     if changelog_path.exists():
         try:
