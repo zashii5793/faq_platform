@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>.env 設定ガイド（視覚版） | Inquira</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    line-height: 1.7;
+    color: #1f2937;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    background: #f9fafb;
+  }
+  h1 {
+    font-size: 28px;
+    border-bottom: 3px solid #3b82f6;
+    padding-bottom: 12px;
+    margin-top: 0;
+  }
+  h2 {
+    font-size: 22px;
+    margin-top: 40px;
+    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 6px;
+  }
+  h3 {
+    font-size: 18px;
+    margin-top: 28px;
+    color: #1e40af;
+    border-left: 4px solid #3b82f6;
+    padding-left: 12px;
+  }
+  .tldr {
+    background: #fef3c7;
+    border: 2px solid #f59e0b;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 20px 0 32px 0;
+    font-size: 16px;
+  }
+  .tldr strong { color: #b45309; font-size: 18px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  th {
+    background: #1f2937;
+    color: white;
+    padding: 12px;
+    text-align: left;
+    font-size: 14px;
+  }
+  td {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 14px;
+  }
+  tr:last-child td { border-bottom: none; }
+  .safe {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    display: inline-block;
+  }
+  .danger {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    display: inline-block;
+  }
+  .warning {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    display: inline-block;
+  }
+  code {
+    background: #1f2937;
+    color: #e5e7eb;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: "SF Mono", Monaco, monospace;
+    font-size: 13px;
+  }
+  pre {
+    background: #1f2937;
+    color: #e5e7eb;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    font-family: "SF Mono", Monaco, monospace;
+    line-height: 1.5;
+  }
+  pre.terminal {
+    background: #0f172a;
+    border-left: 4px solid #10b981;
+  }
+  pre.terminal::before {
+    content: "$ ";
+    color: #10b981;
+    font-weight: bold;
+  }
+  .step {
+    background: white;
+    border-radius: 10px;
+    padding: 24px;
+    margin: 20px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-left: 6px solid #3b82f6;
+  }
+  .step-number {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: bold;
+    margin-right: 12px;
+  }
+  .step-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1e40af;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .diagram {
+    background: white;
+    border-radius: 10px;
+    padding: 24px;
+    margin: 20px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  .box {
+    display: inline-block;
+    padding: 16px 24px;
+    border-radius: 10px;
+    margin: 8px;
+    font-weight: bold;
+    text-align: center;
+    min-width: 200px;
+    vertical-align: top;
+  }
+  .box-safe {
+    background: #d1fae5;
+    border: 3px solid #10b981;
+    color: #065f46;
+  }
+  .box-danger {
+    background: #fee2e2;
+    border: 3px solid #ef4444;
+    color: #991b1b;
+  }
+  .box-neutral {
+    background: #dbeafe;
+    border: 3px solid #3b82f6;
+    color: #1e40af;
+  }
+  .arrow {
+    font-size: 32px;
+    color: #6b7280;
+    margin: 0 8px;
+    vertical-align: middle;
+  }
+  .field-card {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 12px 0;
+    border: 1px solid #e5e7eb;
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 16px;
+    align-items: center;
+  }
+  .field-name {
+    font-family: "SF Mono", Monaco, monospace;
+    font-weight: bold;
+    color: #1f2937;
+    font-size: 14px;
+  }
+  .field-value {
+    font-size: 14px;
+    color: #4b5563;
+  }
+  .checklist {
+    background: white;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .checklist li {
+    margin: 8px 0;
+    list-style: none;
+    padding-left: 28px;
+    position: relative;
+  }
+  .checklist li::before {
+    content: "☐";
+    position: absolute;
+    left: 0;
+    font-size: 20px;
+    color: #3b82f6;
+  }
+  .alert-danger {
+    background: #fee2e2;
+    border: 2px solid #ef4444;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    color: #991b1b;
+  }
+  .alert-success {
+    background: #d1fae5;
+    border: 2px solid #10b981;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    color: #065f46;
+  }
+  .alert-info {
+    background: #dbeafe;
+    border: 2px solid #3b82f6;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    color: #1e40af;
+  }
+  .icon-large { font-size: 24px; vertical-align: middle; margin-right: 8px; }
+  .secret-hidden {
+    background: #1f2937;
+    color: #6b7280;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    letter-spacing: 3px;
+  }
+  .copy-btn {
+    background: #3b82f6;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: inline-block;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>📁 .env 設定ガイド（視覚版）</h1>
+
+<div class="tldr">
+  <strong>🎯 これだけ覚えればOK</strong><br><br>
+  <span class="danger">.env</span> = <strong>本物の秘密鍵</strong>（パスワードのようなもの）→ <strong>絶対にGitアップしない</strong><br>
+  <span class="safe">.env.example</span> = <strong>空のテンプレート</strong>（書き方の見本）→ <strong>Gitアップして共有OK</strong><br><br>
+  Gitアップしようとしても <code>.gitignore</code> で自動的にブロックされる仕組みなので、誤操作で漏れる心配はありません。
+</div>
+
+<h2>🧭 全体像：何がどこにある？</h2>
+
+<div class="diagram">
+  <div class="box box-neutral">
+    <div style="font-size: 36px;">📋</div>
+    .env.example<br>
+    <small style="font-weight: normal;">（テンプレート）</small>
+  </div>
+  <span class="arrow">→</span>
+  <div class="box box-neutral">
+    <div style="font-size: 36px;">📋➡️📝</div>
+    cp コマンドで複製<br>
+    <small style="font-weight: normal;">（1回だけ）</small>
+  </div>
+  <span class="arrow">→</span>
+  <div class="box box-neutral">
+    <div style="font-size: 36px;">🔐</div>
+    .env<br>
+    <small style="font-weight: normal;">（本物の値を記入）</small>
+  </div>
+
+  <div style="margin-top: 32px; border-top: 2px dashed #d1d5db; padding-top: 24px;">
+    <div class="box box-safe" style="min-width: 280px;">
+      <div style="font-size: 36px;">✅</div>
+      <span class="safe">.env.example</span> は Git にアップ<br>
+      <small style="font-weight: normal;">（チームで共有可）</small>
+    </div>
+    <div class="box box-danger" style="min-width: 280px;">
+      <div style="font-size: 36px;">🚫</div>
+      <span class="danger">.env</span> は Git にアップしない<br>
+      <small style="font-weight: normal;">（自分のPCにだけ存在）</small>
+    </div>
+  </div>
+</div>
+
+<h2>🤔 そもそも .env って何？</h2>
+
+<div class="step">
+  <p>アプリを動かすために必要な「設定値」をまとめたファイルです。例えば:</p>
+  <ul>
+    <li>🔑 Google OAuth の Client ID / Secret</li>
+    <li>🤖 Anthropic の API キー（Claude AI を使うため）</li>
+    <li>🌐 アクセスURL</li>
+    <li>🔒 セッション暗号化のための秘密鍵</li>
+  </ul>
+  <p>これらは <strong>パスワードと同じレベルの秘密情報</strong> なので、ファイル1つにまとめて、コードとは分けて管理します。</p>
+</div>
+
+<h2>🔒 Gitアップは安全？仕組みの解説</h2>
+
+<div class="alert-success">
+  <strong>✅ 結論：仕組みで守られているので安全です。</strong>
+</div>
+
+<h3>仕組み①：.gitignore で自動除外</h3>
+
+<p>このプロジェクトの <code>.gitignore</code> ファイルには、すでに <code>.env</code> が登録されています。</p>
+
+<pre>__pycache__/
+*.py[cod]
+.venv/
+<strong style="color: #fbbf24;">.env       ← この行で除外されている</strong>
+.env.local
+*.log
+...</pre>
+
+<p>これにより、<code>git add .</code> しても <code>.env</code> はステージに乗りません。間違えても安全です。</p>
+
+<h3>仕組み②：ファイル名で役割を分ける</h3>
+
+<table>
+  <tr>
+    <th>ファイル名</th>
+    <th>中身</th>
+    <th>Git</th>
+    <th>用途</th>
+  </tr>
+  <tr>
+    <td><code>.env.example</code></td>
+    <td>空のプレースホルダー<br><code>GOOGLE_CLIENT_SECRET=xxxxx</code></td>
+    <td><span class="safe">✅ アップする</span></td>
+    <td>他の人が同じ設定を作る時の見本</td>
+  </tr>
+  <tr>
+    <td><code>.env</code></td>
+    <td>本物の値<br><code>GOOGLE_CLIENT_SECRET=GOCSPX-AbC...</code></td>
+    <td><span class="danger">❌ アップしない</span></td>
+    <td>あなたのPCでアプリを動かすため</td>
+  </tr>
+</table>
+
+<h2>📝 作業手順</h2>
+
+<div class="step">
+  <span class="step-number">1</span>
+  <span class="step-title">テンプレートから .env を作る</span>
+
+  <p style="margin-top: 16px;">ターミナル（Mac は「ターミナル」アプリ、Windowsは「PowerShell」）を開いて以下を実行:</p>
+
+  <pre class="terminal">cd /home/user/faq_platform
+cp .env.example .env</pre>
+
+  <div class="alert-info">
+    <strong>📌 これだけで、テンプレートの内容がコピーされた <code>.env</code> ファイルが作られます。</strong><br>
+    まだ中身はプレースホルダーのままなので、次のステップで書き換えます。
+  </div>
+</div>
+
+<div class="step">
+  <span class="step-number">2</span>
+  <span class="step-title">.env をエディタで開く</span>
+
+  <p style="margin-top: 16px;">以下のどちらかで開けます:</p>
+  <ul>
+    <li><strong>VS Code を使っている場合</strong>: <code>code /home/user/faq_platform/.env</code></li>
+    <li><strong>テキストエディタ全般</strong>: <code>/home/user/faq_platform/.env</code> を「メモ帳」「TextEdit」等で開く</li>
+  </ul>
+</div>
+
+<div class="step">
+  <span class="step-number">3</span>
+  <span class="step-title">Google OAuth の3行を書き換える</span>
+
+  <p style="margin-top: 16px;"><strong>編集前</strong>（テンプレートのまま）:</p>
+  <pre>GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=xxxxx
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/callback</pre>
+
+  <p><strong>編集後</strong>（あなたが入力する例）:</p>
+  <pre>GOOGLE_CLIENT_ID=<span style="color: #fbbf24;">123456789-abcdefg.apps.googleusercontent.com</span>
+GOOGLE_CLIENT_SECRET=<span style="color: #fbbf24;">GOCSPX-AbCdEfGhIjKlMnOp</span>
+GOOGLE_REDIRECT_URI=<span style="color: #fbbf24;">https://faq.inquira-ai.com/auth/callback</span></pre>
+
+  <h3>💡 値の取り方</h3>
+
+  <div class="field-card">
+    <div class="field-name">GOOGLE_CLIENT_ID</div>
+    <div class="field-value">
+      Google Cloud Console → Clients → クライアント名クリック<br>
+      画面右の「Client ID」の <span class="copy-btn">📋 コピー</span> アイコンをクリック
+    </div>
+  </div>
+
+  <div class="field-card">
+    <div class="field-name">GOOGLE_CLIENT_SECRET</div>
+    <div class="field-value">
+      同じ画面の「Client secret」<br>
+      <span class="secret-hidden">••••••••</span> の右の <span class="copy-btn">👁 表示</span> で見える化 → <span class="copy-btn">📋 コピー</span><br>
+      <strong style="color: #991b1b;">⚠️ チャットや画面共有で絶対に他人に見せない</strong>
+    </div>
+  </div>
+
+  <div class="field-card">
+    <div class="field-name">GOOGLE_REDIRECT_URI</div>
+    <div class="field-value">
+      固定値: <code>https://faq.inquira-ai.com/auth/callback</code>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <span class="step-number">4</span>
+  <span class="step-title">他の項目も埋める</span>
+
+  <p style="margin-top: 16px;">同じファイル内の以下も編集します:</p>
+
+  <div class="field-card">
+    <div class="field-name">ORG_NAME</div>
+    <div class="field-value">
+      初期値: <code>○○株式会社</code><br>
+      → A社の正式名称に変更（例: <code>株式会社AAA</code>）
+    </div>
+  </div>
+
+  <div class="field-card">
+    <div class="field-name">ANTHROPIC_API_KEY</div>
+    <div class="field-value">
+      初期値: <code>sk-ant-...</code><br>
+      → 本物のClaude APIキーに置き換え（<code>sk-ant-api03-...</code> という形式）<br>
+      取得先: <a href="https://console.anthropic.com/">https://console.anthropic.com/</a>
+    </div>
+  </div>
+
+  <div class="field-card">
+    <div class="field-name">ALLOWED_EMAILS</div>
+    <div class="field-value">
+      アクセスを許可するメールアドレス（カンマ区切り）<br>
+      例: <code>hideki.ishizashi@gmail.com,担当者のメール@aaa-corp.co.jp</code>
+    </div>
+  </div>
+
+  <div class="field-card">
+    <div class="field-name">SESSION_SECRET</div>
+    <div class="field-value">
+      初期値: <code>change-me-to-a-long-random-string</code><br>
+      → 次のコマンドで生成した長いランダム文字列に置き換え:
+      <pre class="terminal" style="margin-top: 8px;">python3 -c "import secrets; print(secrets.token_urlsafe(48))"</pre>
+    </div>
+  </div>
+
+  <div class="field-card">
+    <div class="field-name">DEMO_MODE</div>
+    <div class="field-value">
+      初期値: <code>false</code> のままでOK（本番モード）
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <span class="step-number">5</span>
+  <span class="step-title">保存して確認</span>
+
+  <p style="margin-top: 16px;">エディタで保存（Cmd+S / Ctrl+S）したら、ターミナルで確認:</p>
+
+  <pre class="terminal">grep -E "^(GOOGLE_CLIENT_ID|GOOGLE_REDIRECT_URI|ORG_NAME)=" .env</pre>
+
+  <p><strong>期待される出力</strong>:</p>
+  <pre>GOOGLE_CLIENT_ID=123456789-abc...apps.googleusercontent.com
+GOOGLE_REDIRECT_URI=https://faq.inquira-ai.com/auth/callback
+ORG_NAME=株式会社AAA</pre>
+
+  <div class="alert-info">
+    <strong>📌 Secret 系（CLIENT_SECRET, API_KEY等）はあえて表示していません。</strong><br>
+    画面共有時に漏れないようにする配慮です。
+  </div>
+</div>
+
+<h2>⛔ 絶対やってはいけないこと</h2>
+
+<div class="alert-danger">
+  <strong>🚨 これをやるとAPI料金請求や情報漏洩に直結します</strong>
+  <ul style="margin-top: 12px;">
+    <li><strong>❌ <code>.env</code> ファイルをGitにコミット</strong>（→ GitHubに公開されると秘密鍵が世界中に漏れる）</li>
+    <li><strong>❌ Client Secret や API Key をチャット・メール・Slackに貼る</strong></li>
+    <li><strong>❌ .env.example に本物の値を書く</strong>（テンプレートなのでGitアップされる）</li>
+    <li><strong>❌ スクリーンショットで .env の中身を撮影して送る</strong></li>
+  </ul>
+</div>
+
+<h2>✅ やってOKなこと</h2>
+
+<div class="alert-success">
+  <ul style="margin-top: 0;">
+    <li><strong>✅ .env をローカルPCに保存</strong></li>
+    <li><strong>✅ .env を 1Password / Bitwarden 等のパスワード管理ツールにバックアップ</strong></li>
+    <li><strong>✅ .env.example を Git にコミット</strong>（テンプレートとして共有）</li>
+    <li><strong>✅ Client ID（Secret ではない方）は公開しても基本OK</strong>（GoogleのOAuth仕様上、必ずブラウザに露出する）</li>
+  </ul>
+</div>
+
+<h2>🛡️ もし秘密鍵を漏らしてしまったら？</h2>
+
+<div class="step">
+  <p>慌てず、以下を実行:</p>
+
+  <h3>Google OAuth Secret を漏らした場合</h3>
+  <ol>
+    <li><a href="https://console.cloud.google.com/auth/clients">Google Cloud Console → Clients</a> を開く</li>
+    <li>該当クライアントの「⋮」メニュー → <strong>Reset secret</strong></li>
+    <li>新しい Secret が発行される（古いものは無効化）</li>
+    <li>新しい値を <code>.env</code> に書き直す</li>
+  </ol>
+
+  <h3>Anthropic API Key を漏らした場合</h3>
+  <ol>
+    <li><a href="https://console.anthropic.com/settings/keys">Anthropic Console → API Keys</a> を開く</li>
+    <li>該当のキーを <strong>Revoke</strong>（無効化）</li>
+    <li>新しいキーを <strong>Create</strong> → <code>.env</code> に書き直す</li>
+    <li>請求ダッシュボードで不正使用がないか確認</li>
+  </ol>
+
+  <h3>誤って .env を Git にコミットしてしまった場合</h3>
+  <ol>
+    <li>すぐに上記の手順で Secret / API Key を Reset / Revoke</li>
+    <li>Git履歴からの削除は <code>git filter-repo</code> 等が必要（私に依頼してください）</li>
+    <li>GitHubにすでにpush済みの場合は、リポジトリを一旦Privateにしてサポートに連絡</li>
+  </ol>
+</div>
+
+<h2>📋 最終チェックリスト</h2>
+
+<div class="checklist">
+  <ul>
+    <li><code>cp .env.example .env</code> を実行した</li>
+    <li><code>.env</code> をエディタで開いた</li>
+    <li>Google Cloud Console から Client ID をコピーして貼り付けた</li>
+    <li>Google Cloud Console から Client Secret をコピーして貼り付けた</li>
+    <li>GOOGLE_REDIRECT_URI を <code>https://faq.inquira-ai.com/auth/callback</code> に変更した</li>
+    <li>ORG_NAME を A社の正式名称に変更した</li>
+    <li>ANTHROPIC_API_KEY を本物の値に置き換えた</li>
+    <li>ALLOWED_EMAILS に許可するメールを入れた</li>
+    <li>SESSION_SECRET を新しいランダム文字列に変更した</li>
+    <li>ファイルを保存した</li>
+    <li><code>grep</code> コマンドで設定が反映されていることを確認した</li>
+    <li>万が一に備えて、 .env の内容をパスワード管理ツールにバックアップした</li>
+  </ul>
+</div>
+
+<h2>❓ よくある質問</h2>
+
+<div class="step">
+  <h3>Q. .env をチームで共有したいときは？</h3>
+  <p>A. <strong>1Password / Bitwarden の「Secure Note」機能</strong>で共有するのがベストプラクティスです。Slack/メール添付は絶対NG。Gitに上げるのも論外。</p>
+
+  <h3>Q. 開発用とは本番用で別の .env が必要？</h3>
+  <p>A. はい。慣例として:</p>
+  <ul>
+    <li><code>.env</code> = 本番用</li>
+    <li><code>.env.local</code> = 開発用（localhost向け）</li>
+  </ul>
+  <p>どちらも <code>.gitignore</code> で除外済みなので安全です。</p>
+
+  <h3>Q. Client ID は本当に公開してOK？</h3>
+  <p>A. はい。Google OAuth の仕様上、Client ID はブラウザのHTMLに必ず露出します。秘密にする意味がないので、コードに直接書いてもセキュリティ上問題ありません。ただし慣習として <code>.env</code> に置きます。<strong>絶対に秘密にすべきなのは Client Secret の方</strong>です。</p>
+
+  <h3>Q. うっかり .env を git add してしまった！</h3>
+  <p>A. まだ <code>git commit</code> していなければ:</p>
+  <pre class="terminal">git reset HEAD .env</pre>
+  <p>これで取り消せます。すでに commit してしまった場合は、すぐに Secret/API Key を Reset/Revoke してください。</p>
+</div>
+
+<div style="margin-top: 60px; padding: 24px; background: #1e40af; color: white; border-radius: 10px; text-align: center;">
+  <h2 style="background: transparent; padding: 0; margin: 0 0 16px 0;">🎯 次のアクション</h2>
+  <p style="font-size: 16px;">このガイドに沿って <code style="background: rgba(255,255,255,0.2); color: white;">.env</code> の設定が完了したら、次は <strong>Cloudflare Tunnel でドメインを公開する手順</strong>に進みます。</p>
+  <p style="margin-top: 16px; font-size: 14px;">迷ったら画面表示やエラーメッセージをチャットで知らせてください。一緒に解決します 👍</p>
+</div>
+
+<div style="margin-top: 32px; text-align: center; color: #6b7280; font-size: 12px;">
+  Inquira — .env 設定ガイド（視覚版） / 作成日: 2026-05-28
+</div>
+
+</body>
+</html>
