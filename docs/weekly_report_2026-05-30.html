@@ -6,7 +6,7 @@
 <style>
   * { box-sizing: border-box; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    font-family: "IPAGothic", "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
     line-height: 1.7;
     color: #1f2937;
     max-width: 960px;
@@ -124,7 +124,7 @@
 <body>
 
 <h1>📊 週次レポート — Inquira 試験運用セットアップ完了</h1>
-<div class="subtitle">期間: 2026-05-27（火）〜 2026-05-30（金）/ 作成: hideki.ishizashi@gmail.com</div>
+<div class="subtitle">期間: 2026-05-27（火）〜 2026-05-30（金）/ 担当: 本人</div>
 
 <div class="alert-success">
   <strong>🎉 今週の最大の成果: <code>https://faq.inquira-ai.com</code> が外部公開できました！</strong><br>
@@ -178,6 +178,54 @@
   </tr>
 </table>
 
+<h2>🛠️ 今週のソース改修・ドキュメント追加</h2>
+
+<table>
+  <tr><th style="width:18%">コミット</th><th style="width:42%">内容</th><th>影響範囲</th></tr>
+  <tr>
+    <td><code>d005bfa</code><br><small>05-27</small></td>
+    <td><strong>本番運用用起動スクリプト <code>scripts/serve.sh</code> を新規作成</strong><br>
+    Google OAuth 設定の事前検証、ALLOWED_EMAILS/ALLOWED_DOMAIN チェック、Python 3.11+ バージョン検証、依存パッケージの自動インストールを実装</td>
+    <td>新規ファイル<br>運用フロー</td>
+  </tr>
+  <tr>
+    <td><code>d005bfa</code><br><small>05-27</small></td>
+    <td><strong>A社情シス向けセキュリティ説明書 <code>docs/a_company_security_brief.md</code> を新規作成</strong><br>
+    通信暗号化・認証認可・データ保管場所・PII保護・運用制約を整理</td>
+    <td>新規ドキュメント</td>
+  </tr>
+  <tr>
+    <td><code>33ff5cf</code><br><small>05-27</small></td>
+    <td>A社向け説明書から連絡先セクションを削除（個人情報配慮）</td>
+    <td>セキュリティ説明書</td>
+  </tr>
+  <tr>
+    <td><code>f5966be</code><br><small>05-27</small></td>
+    <td>サマリ表の提供者欄からメールアドレスを削除（個人情報配慮）</td>
+    <td>セキュリティ説明書</td>
+  </tr>
+  <tr>
+    <td><code>6adf14d</code><br><small>05-28</small></td>
+    <td><code>.env</code> 設定手順の視覚ガイド HTML を新規作成<br>非エンジニア向けに Git 安全性・OAuth 値取り扱い・SESSION_SECRET 生成手順を図解</td>
+    <td>新規ドキュメント</td>
+  </tr>
+  <tr>
+    <td><code>78a92f4</code><br><small>05-30</small></td>
+    <td>開発サマリーレポート HTML を新規作成<br>プロダクト完成度マップ・タイムライン・残課題優先順位を可視化</td>
+    <td>新規ドキュメント</td>
+  </tr>
+  <tr>
+    <td><code>4461fed</code><br><small>05-30</small></td>
+    <td>本週次レポート HTML を新規作成</td>
+    <td>新規ドキュメント</td>
+  </tr>
+</table>
+
+<div class="alert-info">
+  <strong>📝 補足: アプリ本体（<code>app/*.py</code>）の機能改修はありません</strong><br>
+  今週はインフラ構築（OAuth・Tunnel・公開）と運用準備（起動スクリプト・ドキュメント）に集中。アプリ本体は v0.7.2 のまま安定稼働中。
+</div>
+
 <h2>🏗️ 構築したシステムの構成</h2>
 
 <div class="arch-box">
@@ -187,7 +235,7 @@
   &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">↓ Cloudflare CDN + SSL（自動）</span><br>
   <span style="color:#818cf8;">Cloudflare Tunnel（inquira-trial）</span><br>
   &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">↓ 暗号化トンネル経由</span><br>
-  <span class="highlight">Mac（石澤さん）http://localhost:8000</span><br>
+  <span class="highlight">Mac（本人）http://localhost:8000</span><br>
   &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">↓</span><br>
   <span style="color:#f9a8d4;">Inquira アプリ（Python/FastAPI）</span><br>
   &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">↓ Google OAuth 認証</span><br>
@@ -230,7 +278,7 @@
 <div class="alert-warn">
   <strong>以下の点をA社に事前に伝えてください:</strong>
   <ul style="margin: 8px 0 0 0;">
-    <li>利用可能時間 = 石澤さんの Mac が起動・Tunnel が稼働している時間のみ</li>
+    <li>利用可能時間 = 本人の Mac が起動・Tunnel が稼働している時間のみ</li>
     <li>目安: 平日 9:00〜18:00（夜間・土日祝は基本停止）</li>
     <li>Mac シャットダウン・スリープ時はアクセス不可</li>
     <li>本番化（24時間対応）はA社の正式導入時にサーバー移行を検討</li>
@@ -244,37 +292,37 @@
   <tr>
     <td><span class="tag-blue">🔵 今すぐ</span></td>
     <td>A社担当者にユーザリスト（Googleアカウントのメール）を依頼</td>
-    <td>石澤さん</td>
+    <td>本人</td>
     <td>5分（メール送信）</td>
   </tr>
   <tr>
     <td><span class="tag-blue">🔵 今すぐ</span></td>
     <td>Mac のスリープ防止設定</td>
-    <td>石澤さん</td>
+    <td>本人</td>
     <td>2分</td>
   </tr>
   <tr>
     <td><span class="tag-green">🟢 リスト入手後</span></td>
     <td>A社ユーザを Google Test users + <code>.env</code> に追加（本手順書参照）</td>
-    <td>石澤さん</td>
+    <td>本人</td>
     <td>5分</td>
   </tr>
   <tr>
     <td><span class="tag-green">🟢 リスト入手後</span></td>
     <td>A社メンバーにアクセスURL案内メールを送信</td>
-    <td>石澤さん</td>
+    <td>本人</td>
     <td>5分</td>
   </tr>
   <tr>
     <td><span class="tag-yellow">🟡 試験中</span></td>
     <td>社内文書（マニュアル等）を管理画面からアップロード</td>
-    <td>石澤さん</td>
+    <td>本人</td>
     <td>30分〜</td>
   </tr>
   <tr>
     <td><span class="tag-yellow">🟡 2〜4週後</span></td>
     <td>A社からフィードバック収集 → 本番化判断</td>
-    <td>石澤さん + A社</td>
+    <td>本人 + A社</td>
     <td>—</td>
   </tr>
 </table>
