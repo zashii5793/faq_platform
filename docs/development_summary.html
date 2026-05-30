@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Inquira 開発サマリーレポート | 2026-05-30</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    line-height: 1.7;
+    color: #1f2937;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    background: #f9fafb;
+  }
+  h1 {
+    font-size: 32px;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    padding: 24px;
+    border-radius: 12px;
+    margin: 0 0 8px 0;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 32px;
+    text-align: right;
+  }
+  h2 {
+    font-size: 22px;
+    margin-top: 40px;
+    border-left: 6px solid #3b82f6;
+    padding-left: 14px;
+    color: #1e40af;
+  }
+  h3 {
+    font-size: 17px;
+    margin-top: 24px;
+    color: #1f2937;
+  }
+  .hero {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .stat {
+    text-align: center;
+    padding: 16px;
+    background: #f3f4f6;
+    border-radius: 8px;
+  }
+  .stat-num {
+    font-size: 32px;
+    font-weight: bold;
+    color: #1e40af;
+  }
+  .stat-label {
+    font-size: 13px;
+    color: #6b7280;
+  }
+  .timeline {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .timeline-item {
+    border-left: 3px solid #3b82f6;
+    padding: 12px 0 12px 20px;
+    margin-left: 12px;
+    position: relative;
+  }
+  .timeline-item::before {
+    content: "";
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #3b82f6;
+    position: absolute;
+    left: -8px;
+    top: 16px;
+    border: 3px solid white;
+  }
+  .timeline-version {
+    font-weight: bold;
+    color: #1e40af;
+    font-size: 16px;
+  }
+  .timeline-date {
+    font-size: 12px;
+    color: #6b7280;
+    margin-left: 8px;
+  }
+  .timeline-content {
+    margin-top: 6px;
+    font-size: 14px;
+  }
+  .timeline-content ul {
+    margin: 4px 0;
+    padding-left: 20px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  th {
+    background: #1f2937;
+    color: white;
+    padding: 12px;
+    text-align: left;
+    font-size: 13px;
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 14px;
+  }
+  tr:last-child td { border-bottom: none; }
+  .done { background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .progress { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .pending { background: #e5e7eb; color: #374151; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .critical { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .phase-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 12px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-top: 5px solid;
+  }
+  .phase-1 { border-top-color: #ef4444; }
+  .phase-2 { border-top-color: #f59e0b; }
+  .phase-3 { border-top-color: #10b981; }
+  .progress-bar {
+    background: #e5e7eb;
+    height: 24px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 12px 0;
+    position: relative;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    line-height: 24px;
+    font-size: 13px;
+  }
+  .alert {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    border-left: 5px solid;
+  }
+  .alert-info { background: #dbeafe; border-color: #3b82f6; color: #1e40af; }
+  .alert-warn { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+  .alert-success { background: #d1fae5; border-color: #10b981; color: #065f46; }
+  .next-actions {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+  }
+  .next-actions h2 {
+    border: none;
+    color: white;
+    padding-left: 0;
+    margin-top: 0;
+  }
+  .next-actions ol li {
+    margin: 10px 0;
+  }
+  code {
+    background: #1f2937;
+    color: #e5e7eb;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 13px;
+  }
+  .badge-version {
+    display: inline-block;
+    background: #1e40af;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>📊 Inquira 開発サマリーレポート <span class="badge-version">v0.7.2</span></h1>
+<div class="subtitle">レポート作成日: 2026-05-30 / ブランチ: claude/add-roadmap-docs-RmQNp</div>
+
+<h2>🎯 一目でわかる現状</h2>
+
+<div class="hero">
+  <div class="stat">
+    <div class="stat-num">v0.7.2</div>
+    <div class="stat-label">現在バージョン</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">293</div>
+    <div class="stat-label">テスト件数（カバレッジ 88%）</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">11</div>
+    <div class="stat-label">アプリモジュール</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">7</div>
+    <div class="stat-label">バージョン履歴（0.1〜0.7）</div>
+  </div>
+</div>
+
+<div class="alert alert-success">
+  <strong>✅ プロダクトとしては「実運用に投入できる段階」に到達済み</strong><br>
+  PoC を超え、Phase 0（MVP）と Phase 1 の大半が完了。残るは <strong>本番運用での実績作り</strong>と <strong>Phase 2の SaaS化準備</strong>。
+</div>
+
+<h2>📈 機能完成度マップ</h2>
+
+<table>
+  <tr>
+    <th style="width: 30%;">機能カテゴリ</th>
+    <th style="width: 50%;">主な実装内容</th>
+    <th style="width: 20%;">完成度</th>
+  </tr>
+  <tr>
+    <td><strong>📥 ドキュメント取込</strong></td>
+    <td>PDF / Word / Excel / PowerPoint / CSV / JSON / Markdown / TXT 対応<br>最大1GBまで対応</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>💬 質問応答 UI</strong></td>
+    <td>チャット型 UI、Markdown レンダリング、関連度バッジ、出典リンク</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>🔍 検索エンジン</strong></td>
+    <td>TF-IDF / e5-small / e5-base / e5-large 切替可能、5,000チャンクで5.2ms</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>🤖 AI回答生成</strong></td>
+    <td>Claude API、プロンプトキャッシュ、質問キャッシュ（30〜50%コスト削減）</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>🔐 認証</strong></td>
+    <td>Google OAuth SSO、ドメイン/メール許可リスト、DEMOモード切替</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>🛡️ PII マスキング</strong></td>
+    <td>メール/電話/カード/マイナンバー/IP/URL、業界プリセット4種</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>📚 ナレッジ蓄積</strong></td>
+    <td>共有Q&A一覧、リアルタイムサジェスト、投票、解決マーカー</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>👥 管理画面</strong></td>
+    <td>4タブ（取込/利用状況/履歴・要望/設定・出力）、利用ダッシュボード、文書一覧・削除</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>📊 監査ログ</strong></td>
+    <td>JSONL、日次ローテーション、CSV/JSONエクスポート</td>
+    <td><span class="progress">🟡 基本実装済</span></td>
+  </tr>
+  <tr>
+    <td><strong>💾 バックアップ</strong></td>
+    <td>scripts/backup.sh, restore.sh、ドキュメント整備済</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>📱 モバイル対応</strong></td>
+    <td>レスポンシブ UI、LAN 公開、スマホブラウザ動作確認済</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>⚙️ CI/CD</strong></td>
+    <td>GitHub Actions（test + lint）</td>
+    <td><span class="done">✅ 完成</span></td>
+  </tr>
+  <tr>
+    <td><strong>🏢 マルチテナント</strong></td>
+    <td>テナント分離、管理者UI</td>
+    <td><span class="pending">⬜ 未着手（Phase 3）</span></td>
+  </tr>
+  <tr>
+    <td><strong>💳 課金システム</strong></td>
+    <td>Stripe連携、月額プラン</td>
+    <td><span class="pending">⬜ 未着手（Phase 3）</span></td>
+  </tr>
+  <tr>
+    <td><strong>🔒 SAML/OIDC SSO</strong></td>
+    <td>エンタープライズSSO</td>
+    <td><span class="pending">⬜ 未着手（Phase 3）</span></td>
+  </tr>
+</table>
+
+<h2>🗓️ 開発タイムライン</h2>
+
+<div class="timeline">
+
+  <div class="timeline-item">
+    <span class="timeline-version">v0.1.0</span>
+    <span class="timeline-date">2026-04 初旬</span>
+    <div class="timeline-content">
+      🎉 <strong>初期 PoC リリース</strong><br>
+      <ul>
+        <li>チャット型 UI、汎用 B2B FAQ プラットフォームとして再ポジショニング</li>
+        <li>ナレッジ取り込み・クレンジング API</li>
+        <li>Google OAuth 認証、Anthropic Claude API 統合</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="timeline-item">
+    <span class="timeline-version">v0.2.0</span>
+    <span class="timeline-date">2026-04 中旬</span>
+    <div class="timeline-content">
+      📄 <strong>マルチフォーマット対応 + UI 拡張</strong>
+      <ul>
+        <li>PDF / Excel / PowerPoint / CSV / JSON パーサー</li>
+        <li>サイドバー付きチャット画面、管理画面、モバイル対応</li>
+        <li>ワンコマンドデモ起動（<code>./scripts/demo.sh</code>）</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="timeline-item">
+    <span class="timeline-version">v0.3.0</span>
+    <span class="timeline-date">2026-04 末</span>
+    <div class="timeline-content">
+      🔒 <strong>PII マスキング + 検索精度向上</strong>
+      <ul>
+        <li>メール/電話/カード/マイナンバー/IP/URL マスキング + 業界プリセット</li>
+        <li>確信度スコア、GitHub Actions CI、Embedding バックエンド切替</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="timeline-item">
+    <span class="timeline-version">v0.4.0</span>
+    <span class="timeline-date">2026-05 初旬</span>
+    <div class="timeline-content">
+      📊 <strong>運用機能の充実</strong>
+      <ul>
+        <li>利用状況ダッシュボード、プロンプトキャッシュ、質問履歴検索</li>
+        <li>組織情報のランタイム編集、人気質問サジェスト</li>
+        <li>バックアップ/復元、FAQ 追加リクエスト、参考情報モード</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="timeline-item">
+    <span class="timeline-version">v0.5.0</span>
+    <span class="timeline-date">2026-05-18</span>
+    <div class="timeline-content">
+      🛡️ <strong>セキュリティ強化 + ドキュメント整備</strong>
+      <ul>
+        <li><strong>🔴 CRITICAL: XSS 脆弱性修正</strong>（組織名のエスケープ）</li>
+        <li>Windows/Mac 向け導入ガイド、API キー取得手順</li>
+        <li>テスト 120 → 293 件、カバレッジ 84% → 88%</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="timeline-item">
+    <span class="timeline-version">v0.6.0</span>
+    <span class="timeline-date">2026-05-19</span>
+    <div class="timeline-content">
+      🎨 <strong>UI 全面リニューアル + 機能拡張</strong>
+      <ul>
+        <li>回答協力機能（ユーザーが教えてもらった答えを共有）</li>
+        <li>出典詳細ビュー、管理画面の4タブ化、サイドバー階層化</li>
+        <li>UI フォントサイズ・行間・余白を全面調整</li>
+        <li>クレジットカード誤検知の改善（Luhn チェック導入）</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="timeline-item">
+    <span class="timeline-version">v0.7.0</span>
+    <span class="timeline-date">2026-05-19</span>
+    <div class="timeline-content">
+      📚 <strong>ナレッジ蓄積機能 Phase A</strong>
+      <ul>
+        <li>共有Q&A一覧ページ <code>/knowledge-base</code></li>
+        <li>リアルタイムサジェスト（重複質問削減）</li>
+        <li>投票機能（役立った/解決した/違うかも）</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="timeline-item">
+    <span class="timeline-version">v0.7.1</span>
+    <span class="timeline-date">2026-05-19</span>
+    <div class="timeline-content">
+      ⚡ <strong>APIコスト削減</strong>
+      <ul>
+        <li>質問キャッシュ（30〜50%コスト削減見込み）</li>
+        <li>FAQ再インデックス時の自動キャッシュ破棄</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="timeline-item">
+    <span class="timeline-version">v0.7.2</span>
+    <span class="timeline-date">2026-05-20</span>
+    <div class="timeline-content">
+      📦 <strong>アップロード上限拡大</strong>
+      <ul>
+        <li>50MB → 1GB（既定）、<code>MAX_UPLOAD_MB</code> で変更可</li>
+        <li>nginx 設定推奨値の更新</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="timeline-item">
+    <span class="timeline-version">直近の変更</span>
+    <span class="timeline-date">2026-05-21〜27</span>
+    <div class="timeline-content">
+      🚀 <strong>A社試験運用準備フェーズ</strong>
+      <ul>
+        <li>営業提案資料のPDF化・図解リデザイン</li>
+        <li>原本ファイル閲覧機能、Embedding キャッシュの差分方式化</li>
+        <li>A社向け serve.sh と情シス向け説明書追加</li>
+        <li>サマリ表から個人情報削除</li>
+        <li>.env 設定ガイド（視覚版HTML）追加 ← 最新</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<h2>📋 ロードマップ進捗</h2>
+
+<div class="phase-card phase-1">
+  <h3>🔴 Phase 1: 信頼性の基礎（〜2週間）</h3>
+  <div class="progress-bar">
+    <div class="progress-bar-fill" style="width: 75%;">75% 完了</div>
+  </div>
+  <table>
+    <tr><th style="width: 40%;">タスク</th><th>状況</th></tr>
+    <tr><td>1.1 本番用 Embedding 切替</td><td><span class="done">✅ 完了</span> （tfidf/e5シリーズ切替可能）</td></tr>
+    <tr><td>1.2 出典表示の強化</td><td><span class="done">✅ 完了</span> （ファイル名+セクション、原本リンク）</td></tr>
+    <tr><td>1.3 監査ログ実装</td><td><span class="progress">🟡 基本実装済</span> （CSV/JSON エクスポート対応）</td></tr>
+    <tr><td>1.4 CI/CD構築</td><td><span class="done">✅ 完了</span> （GitHub Actions）</td></tr>
+  </table>
+</div>
+
+<div class="phase-card phase-2">
+  <h3>🟡 Phase 2: 実運用ブラッシュアップ（〜1ヶ月）</h3>
+  <div class="progress-bar">
+    <div class="progress-bar-fill" style="width: 40%;">40% 完了</div>
+  </div>
+  <table>
+    <tr><th style="width: 40%;">タスク</th><th>状況</th></tr>
+    <tr><td>2.1 アクセス権限制御（部署別）</td><td><span class="pending">⬜ 未着手</span></td></tr>
+    <tr><td>2.2 ドキュメントのバージョン管理</td><td><span class="pending">⬜ 未着手</span></td></tr>
+    <tr><td>2.3 フィードバックの学習反映</td><td><span class="done">✅ 完了</span> （👍ブースト・👎再評価）</td></tr>
+    <tr><td>2.4 大容量アップロードUX改善</td><td><span class="progress">🟡 部分実装</span> （上限1GB拡大済、進捗バーは未）</td></tr>
+    <tr><td>2.5 モバイル対応</td><td><span class="done">✅ 完了</span> （レスポンシブUI、LAN公開対応）</td></tr>
+  </table>
+</div>
+
+<div class="phase-card phase-3">
+  <h3>🟢 Phase 3: SaaS化・課金（〜2ヶ月）</h3>
+  <div class="progress-bar">
+    <div class="progress-bar-fill" style="width: 0%; background: #d1d5db;">0% 未着手</div>
+  </div>
+  <table>
+    <tr><th style="width: 40%;">タスク</th><th>状況</th></tr>
+    <tr><td>3.1 マルチテナント管理画面</td><td><span class="pending">⬜ 未着手</span></td></tr>
+    <tr><td>3.2 Stripe決済連携</td><td><span class="pending">⬜ 未着手</span></td></tr>
+    <tr><td>3.3 SLA・SSO対応</td><td><span class="pending">⬜ 未着手</span></td></tr>
+    <tr><td>3.4 インフラ本番化（AWS等）</td><td><span class="pending">⬜ 未着手</span></td></tr>
+  </table>
+</div>
+
+<h2>🏢 A社（教育系）試験運用 — 現在の状況</h2>
+
+<table>
+  <tr><th style="width: 40%;">項目</th><th>状況</th></tr>
+  <tr><td>提案資料作成</td><td><span class="done">✅ 完了</span> （PDF + ウォークスルーHTML）</td></tr>
+  <tr><td>導入ガイドPDF</td><td><span class="done">✅ 完了</span></td></tr>
+  <tr><td>情シス向けセキュリティ説明書</td><td><span class="done">✅ 完了</span></td></tr>
+  <tr><td>本番起動スクリプト（serve.sh）</td><td><span class="done">✅ 完了</span></td></tr>
+  <tr><td>ドメイン取得（inquira-ai.com）</td><td><span class="progress">🟡 進行中</span></td></tr>
+  <tr><td>Google OAuth 設定</td><td><span class="progress">🟡 進行中</span> （Audience 設定済、Clients 待ち）</td></tr>
+  <tr><td>Cloudflare Tunnel 設定</td><td><span class="pending">⬜ 未着手</span></td></tr>
+  <tr><td>A社ユーザリスト取得</td><td><span class="pending">⬜ 未着手</span></td></tr>
+  <tr><td>試験データ投入</td><td><span class="pending">⬜ 未着手</span> （1,000件のチケット分類待ち）</td></tr>
+  <tr><td>本番試験開始</td><td><span class="pending">⬜ 未着手</span></td></tr>
+</table>
+
+<h2>🎓 重要な技術指標</h2>
+
+<table>
+  <tr><th>指標</th><th>値</th><th>備考</th></tr>
+  <tr><td>テストカバレッジ</td><td><strong>88%</strong></td><td>(120→293件)</td></tr>
+  <tr><td>検索レイテンシ (5,000チャンク)</td><td><strong>5.2ms (p95 5.4ms)</strong></td><td>RAG最適化済</td></tr>
+  <tr><td>スループット</td><td><strong>200 QPS</strong></td><td>小〜中規模組織で余裕</td></tr>
+  <tr><td>アップロード上限</td><td><strong>1GB（既定）</strong></td><td>環境変数で拡張可</td></tr>
+  <tr><td>APIコスト削減</td><td><strong>30〜50%</strong></td><td>質問キャッシュ＋プロンプトキャッシュ</td></tr>
+  <tr><td>対応ファイル形式</td><td><strong>8種</strong></td><td>PDF/Word/Excel/PPT/CSV/JSON/MD/TXT</td></tr>
+  <tr><td>PII マスキング</td><td><strong>6種類×4業界</strong></td><td>general/education/healthcare/finance</td></tr>
+</table>
+
+<h2>⚠️ 開発上の残課題（優先度順）</h2>
+
+<table>
+  <tr>
+    <th>優先度</th>
+    <th>項目</th>
+    <th>影響</th>
+  </tr>
+  <tr>
+    <td><span class="critical">🔴 高</span></td>
+    <td>A社用データクレンジング（1,000件チケット分類）</td>
+    <td>試験運用の前提条件</td>
+  </tr>
+  <tr>
+    <td><span class="critical">🔴 高</span></td>
+    <td>Cloudflare Tunnel + ドメイン公開</td>
+    <td>A社からアクセスする経路</td>
+  </tr>
+  <tr>
+    <td><span class="progress">🟡 中</span></td>
+    <td>監査ログのCSVエクスポート UI 化</td>
+    <td>エンタープライズ要件、現状はAPIのみ</td>
+  </tr>
+  <tr>
+    <td><span class="progress">🟡 中</span></td>
+    <td>アップロード進捗バー</td>
+    <td>大容量取込時のUX</td>
+  </tr>
+  <tr>
+    <td><span class="progress">🟡 中</span></td>
+    <td>ドキュメントのバージョン管理</td>
+    <td>更新の多い文書での運用性</td>
+  </tr>
+  <tr>
+    <td><span class="pending">🟢 低</span></td>
+    <td>アクセス権限制御（部署別）</td>
+    <td>大規模運用時のセキュリティ要件</td>
+  </tr>
+  <tr>
+    <td><span class="pending">🟢 低</span></td>
+    <td>マルチテナント化（Phase 3）</td>
+    <td>2社目契約のタイミング</td>
+  </tr>
+  <tr>
+    <td><span class="pending">🟢 低</span></td>
+    <td>Stripe 課金連携（Phase 3）</td>
+    <td>セルフサーブSaaS化時</td>
+  </tr>
+</table>
+
+<h2>💡 推奨される次の打ち手</h2>
+
+<div class="alert alert-info">
+  <strong>📌 戦略の整理</strong><br>
+  プロダクトは <strong>「機能としては完成」</strong>、<strong>「実運用での検証段階」</strong>。新規開発より <strong>「A社で実際に動かして事例化」</strong> が最優先。
+</div>
+
+<div class="next-actions">
+  <h2>🚀 次にやるべきこと（優先順）</h2>
+  <ol>
+    <li><strong>自分のMacで一度フル動作確認</strong> — <code>./scripts/demo.sh</code> でデモモード起動して、機能を実体験する</li>
+    <li><strong>A社向け公開URL構築</strong> — <code>inquira-ai.com</code> 購入 → Cloudflare Tunnel 設定（既存ガイドあり）</li>
+    <li><strong>A社ユーザリスト取得</strong> — 試験参加者のGoogleアカウント収集</li>
+    <li><strong>A社のチケットデータ取り込みPoC</strong> — 1,000件中、上位2〜3割（パレート原則）でFAQ化</li>
+    <li><strong>2週間試験運用 → フィードバック収集</strong> — Phase 2 / 3 の優先順位を実データから決定</li>
+    <li><strong>事例化コンテンツ作成</strong> — 営業用の導入事例ページ・動画</li>
+  </ol>
+</div>
+
+<h2>📁 関連ドキュメント</h2>
+
+<ul>
+  <li><code>ROADMAP.md</code> — 3フェーズ別ロードマップ</li>
+  <li><code>CHANGELOG.md</code> — バージョン別変更履歴</li>
+  <li><code>docs/architecture_report.md</code> — システム構成</li>
+  <li><code>docs/specification.md</code> — 機能仕様</li>
+  <li><code>docs/a_company_security_brief.md</code> — A社向けセキュリティ説明</li>
+  <li><code>docs/setup_guide_mac.md</code> / <code>docs/setup_guide_windows.md</code> — 環境構築</li>
+  <li><code>docs/env_setup_visual.html</code> — .env 設定ガイド（視覚版）</li>
+  <li><code>docs/api_cost_analysis.md</code> — APIコスト試算</li>
+  <li><code>docs/scale_benchmark.md</code> — スケーラビリティ実測</li>
+  <li><code>docs/practical_test_report.md</code> — 実機テスト評価</li>
+</ul>
+
+<div style="margin-top: 60px; padding: 20px; background: #1f2937; color: #d1d5db; border-radius: 10px; text-align: center; font-size: 13px;">
+  Inquira — 開発サマリーレポート v0.7.2 / 2026-05-30<br>
+  ブランチ: claude/add-roadmap-docs-RmQNp
+</div>
+
+</body>
+</html>
