@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>週次レポート 2026-05-27〜05-30 | Inquira</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    line-height: 1.7;
+    color: #1f2937;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    background: #f9fafb;
+  }
+  h1 {
+    font-size: 28px;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    padding: 24px;
+    border-radius: 12px;
+    margin: 0 0 8px 0;
+  }
+  .subtitle { font-size: 13px; color: #6b7280; text-align: right; margin-bottom: 32px; }
+  h2 {
+    font-size: 20px;
+    margin-top: 40px;
+    border-left: 6px solid #3b82f6;
+    padding-left: 14px;
+    color: #1e40af;
+  }
+  h3 { font-size: 17px; margin-top: 24px; color: #1f2937; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  th {
+    background: #1f2937;
+    color: white;
+    padding: 12px;
+    text-align: left;
+    font-size: 13px;
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
+  tr:last-child td { border-bottom: none; }
+  .done { background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .next { background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .hero {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .stat { text-align: center; padding: 16px; background: #f3f4f6; border-radius: 8px; }
+  .stat-num { font-size: 28px; font-weight: bold; color: #1e40af; }
+  .stat-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+  .alert-success {
+    background: #d1fae5; border: 2px solid #10b981;
+    border-radius: 8px; padding: 16px 20px; margin: 16px 0; color: #065f46;
+  }
+  .alert-info {
+    background: #dbeafe; border: 2px solid #3b82f6;
+    border-radius: 8px; padding: 16px 20px; margin: 16px 0; color: #1e40af;
+  }
+  .alert-warn {
+    background: #fef3c7; border: 2px solid #f59e0b;
+    border-radius: 8px; padding: 16px 20px; margin: 16px 0; color: #92400e;
+  }
+  code {
+    background: #1f2937; color: #e5e7eb;
+    padding: 2px 6px; border-radius: 4px;
+    font-family: monospace; font-size: 13px;
+  }
+  pre {
+    background: #1f2937; color: #e5e7eb;
+    padding: 16px 20px; border-radius: 8px;
+    overflow-x: auto; font-size: 13px;
+    font-family: "SF Mono", Monaco, monospace;
+    line-height: 1.6;
+  }
+  .step {
+    background: white; border-radius: 10px;
+    padding: 20px; margin: 12px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-left: 6px solid #3b82f6;
+  }
+  .step-num {
+    display: inline-block; background: #3b82f6; color: white;
+    width: 28px; height: 28px; line-height: 28px;
+    text-align: center; border-radius: 50%;
+    font-weight: bold; margin-right: 10px; font-size: 14px;
+  }
+  .step-title { font-size: 18px; font-weight: bold; color: #1e40af; }
+  .arch-box {
+    background: #1f2937; color: #e5e7eb;
+    border-radius: 12px; padding: 24px;
+    font-family: "SF Mono", Monaco, monospace;
+    font-size: 14px; line-height: 2;
+  }
+  .arch-box .highlight { color: #34d399; font-weight: bold; }
+  .arch-box .arrow { color: #60a5fa; }
+  .tag-blue { background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+  .tag-green { background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+  .tag-yellow { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>📊 週次レポート — Inquira 試験運用セットアップ完了</h1>
+<div class="subtitle">期間: 2026-05-27（火）〜 2026-05-30（金）/ 作成: hideki.ishizashi@gmail.com</div>
+
+<div class="alert-success">
+  <strong>🎉 今週の最大の成果: <code>https://faq.inquira-ai.com</code> が外部公開できました！</strong><br>
+  A社のユーザがメールアドレスを登録するだけで、インターネット経由でログイン・利用できる状態になっています。
+</div>
+
+<h2>🏆 今週の成果サマリー</h2>
+
+<div class="hero">
+  <div class="stat">
+    <div class="stat-num">✅</div>
+    <div class="stat-label">ドメイン取得<br>inquira-ai.com</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">✅</div>
+    <div class="stat-label">Google OAuth<br>設定完了</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">✅</div>
+    <div class="stat-label">Cloudflare Tunnel<br>構築完了</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">✅</div>
+    <div class="stat-label">本番サーバー<br>起動成功</div>
+  </div>
+</div>
+
+<h2>📋 今週やったこと（詳細）</h2>
+
+<table>
+  <tr><th style="width:15%">日付</th><th style="width:40%">作業内容</th><th>結果</th></tr>
+  <tr>
+    <td>05-27（火）</td>
+    <td>Google Auth Platform セットアップ開始<br>OAuth Consent Screen ウィザード完了<br>Test users に自分のメール登録</td>
+    <td><span class="done">✅ 完了</span></td>
+  </tr>
+  <tr>
+    <td>05-28（水）</td>
+    <td>Cloudflare で <code>inquira-ai.com</code> ドメイン購入<br>Google OAuth Client ID 作成<br>JavaScript origins / Redirect URIs 設定</td>
+    <td><span class="done">✅ 完了</span></td>
+  </tr>
+  <tr>
+    <td>05-29（木）</td>
+    <td><code>cloudflared</code> インストール（ARM64対応）<br>Cloudflare にログイン・Tunnel 作成<br>DNS ルーティング設定（faq.inquira-ai.com）<br>設定ファイル（config.yml）作成</td>
+    <td><span class="done">✅ 完了</span></td>
+  </tr>
+  <tr>
+    <td>05-30（金）</td>
+    <td><code>.env</code> 本番値設定（OAuth / API Key / SESSION_SECRET）<br><code>serve.sh</code> で本番起動確認<br><strong>https://faq.inquira-ai.com 外部公開成功</strong></td>
+    <td><span class="done">✅ 完了</span></td>
+  </tr>
+</table>
+
+<h2>🏗️ 構築したシステムの構成</h2>
+
+<div class="arch-box">
+  <span style="color:#f59e0b;">A社ユーザ（ブラウザ）</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">↓ HTTPS</span><br>
+  <span class="highlight">https://faq.inquira-ai.com</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">↓ Cloudflare CDN + SSL（自動）</span><br>
+  <span style="color:#818cf8;">Cloudflare Tunnel（inquira-trial）</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">↓ 暗号化トンネル経由</span><br>
+  <span class="highlight">Mac（石澤さん）http://localhost:8000</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">↓</span><br>
+  <span style="color:#f9a8d4;">Inquira アプリ（Python/FastAPI）</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">↓ Google OAuth 認証</span><br>
+  <span style="color:#6ee7b7;">Claude AI（Anthropic API）で回答生成</span>
+</div>
+
+<h2>🔐 セキュリティの仕組み</h2>
+
+<table>
+  <tr><th>層</th><th>仕組み</th><th>効果</th></tr>
+  <tr>
+    <td>通信の暗号化</td>
+    <td>Cloudflare が自動で HTTPS/SSL を提供</td>
+    <td>通信内容の盗聴防止</td>
+  </tr>
+  <tr>
+    <td>認証</td>
+    <td>Google OAuth — Googleアカウントでのみログイン可</td>
+    <td>なりすまし防止</td>
+  </tr>
+  <tr>
+    <td>認可</td>
+    <td><code>ALLOWED_EMAILS</code> に登録したメールのみアクセス可</td>
+    <td>部外者のアクセス遮断</td>
+  </tr>
+  <tr>
+    <td>ポート公開なし</td>
+    <td>Mac のポートを直接インターネットに開けていない（Tunnel経由）</td>
+    <td>不正アクセスリスク最小化</td>
+  </tr>
+  <tr>
+    <td>AIの学習利用なし</td>
+    <td>Anthropic API — 入力データはAIの学習に使われない</td>
+    <td>社内情報の外部漏洩防止</td>
+  </tr>
+</table>
+
+<h2>⚠️ 現在の運用制約（試験運用フェーズ）</h2>
+
+<div class="alert-warn">
+  <strong>以下の点をA社に事前に伝えてください:</strong>
+  <ul style="margin: 8px 0 0 0;">
+    <li>利用可能時間 = 石澤さんの Mac が起動・Tunnel が稼働している時間のみ</li>
+    <li>目安: 平日 9:00〜18:00（夜間・土日祝は基本停止）</li>
+    <li>Mac シャットダウン・スリープ時はアクセス不可</li>
+    <li>本番化（24時間対応）はA社の正式導入時にサーバー移行を検討</li>
+  </ul>
+</div>
+
+<h2>📅 次のアクション</h2>
+
+<table>
+  <tr><th>優先度</th><th>タスク</th><th>担当</th><th>所要時間</th></tr>
+  <tr>
+    <td><span class="tag-blue">🔵 今すぐ</span></td>
+    <td>A社担当者にユーザリスト（Googleアカウントのメール）を依頼</td>
+    <td>石澤さん</td>
+    <td>5分（メール送信）</td>
+  </tr>
+  <tr>
+    <td><span class="tag-blue">🔵 今すぐ</span></td>
+    <td>Mac のスリープ防止設定</td>
+    <td>石澤さん</td>
+    <td>2分</td>
+  </tr>
+  <tr>
+    <td><span class="tag-green">🟢 リスト入手後</span></td>
+    <td>A社ユーザを Google Test users + <code>.env</code> に追加（本手順書参照）</td>
+    <td>石澤さん</td>
+    <td>5分</td>
+  </tr>
+  <tr>
+    <td><span class="tag-green">🟢 リスト入手後</span></td>
+    <td>A社メンバーにアクセスURL案内メールを送信</td>
+    <td>石澤さん</td>
+    <td>5分</td>
+  </tr>
+  <tr>
+    <td><span class="tag-yellow">🟡 試験中</span></td>
+    <td>社内文書（マニュアル等）を管理画面からアップロード</td>
+    <td>石澤さん</td>
+    <td>30分〜</td>
+  </tr>
+  <tr>
+    <td><span class="tag-yellow">🟡 2〜4週後</span></td>
+    <td>A社からフィードバック収集 → 本番化判断</td>
+    <td>石澤さん + A社</td>
+    <td>—</td>
+  </tr>
+</table>
+
+<h2>👥 A社ユーザを追加する手順</h2>
+
+<div class="alert-info">
+  <strong>A社からユーザリストが届いたら、以下の手順で設定します（所要5分）</strong>
+</div>
+
+<div class="step">
+  <span class="step-num">1</span>
+  <span class="step-title">Google Test users に追加</span>
+  <p style="margin-top:12px;">👉 <a href="https://console.cloud.google.com/auth/audience?project=inquiretrial">https://console.cloud.google.com/auth/audience?project=inquiretrial</a></p>
+  <ol>
+    <li><strong>Test users</strong> セクション → <strong>+ ADD USERS</strong></li>
+    <li>A社のメールアドレスを入力（改行区切りで複数追加可）:</li>
+  </ol>
+  <pre>tanaka@aaa-corp.co.jp
+suzuki@aaa-corp.co.jp
+yamada@aaa-corp.co.jp</pre>
+  <p>3. <strong>SAVE</strong> をクリック</p>
+</div>
+
+<div class="step">
+  <span class="step-num">2</span>
+  <span class="step-title">.env の ALLOWED_EMAILS に追加</span>
+  <p style="margin-top:12px;">Mac のターミナルで:</p>
+  <pre>open -e ~/faq_platform/.env</pre>
+  <p><code>ALLOWED_EMAILS=</code> の行を編集（カンマ区切りで追加）:</p>
+  <pre>ALLOWED_EMAILS=hideki.ishizashi@gmail.com,tanaka@aaa-corp.co.jp,suzuki@aaa-corp.co.jp</pre>
+  <p>保存（Cmd+S）</p>
+</div>
+
+<div class="step">
+  <span class="step-num">3</span>
+  <span class="step-title">アプリを再起動</span>
+  <p style="margin-top:12px;">serve.sh を起動しているターミナルで:</p>
+  <pre>Ctrl+C</pre>
+  <pre>PYTHON=python3.11 ./scripts/serve.sh</pre>
+  <p>⚠️ Tunnel（cloudflared）は再起動不要、そのままでOK</p>
+</div>
+
+<div class="step">
+  <span class="step-num">4</span>
+  <span class="step-title">A社メンバーに案内メールを送信</span>
+  <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:16px; margin-top:12px; font-size:14px;">
+    <strong>件名: 【Inquira】試験運用アクセスのご案内</strong><br><br>
+    〇〇様<br><br>
+    社内ヘルプデスクAI「Inquira」の試験運用にご参加いただきありがとうございます。<br>
+    以下のURLからアクセスいただけます。<br><br>
+    <strong>▼ アクセスURL</strong><br>
+    https://faq.inquira-ai.com<br><br>
+    <strong>▼ ログイン方法</strong><br>
+    1. 上記URLにアクセス<br>
+    2. 「Sign in with Google」をクリック<br>
+    3. このメールにお送りしたGoogleアカウントでログイン<br>
+    4. 「このアプリは確認されていません」と表示される場合<br>
+    　 →「詳細」→「faq.inquira-ai.com に移動」をクリック（試験中のため正常な表示です）<br><br>
+    <strong>▼ 利用可能時間（試験期間中）</strong><br>
+    平日 9:00〜18:00（提供側のPC稼働時間に依存します）<br><br>
+    ご不明点は hideki.ishizashi@gmail.com までご連絡ください。<br><br>
+    よろしくお願いいたします。
+  </div>
+</div>
+
+<h2>🔄 毎日の起動・停止手順</h2>
+
+<div class="card">
+  <h3>▶ 朝: 起動する時</h3>
+  <p><strong>ターミナルを2つ開いて順番に実行:</strong></p>
+
+  <p><strong>① アプリ起動（ターミナル1）</strong></p>
+  <pre>cd ~/faq_platform
+PYTHON=python3.11 ./scripts/serve.sh</pre>
+
+  <p><strong>② Tunnel 起動（ターミナル2）</strong></p>
+  <pre>cloudflared tunnel run inquira-trial</pre>
+
+  <p>→ 両方起動したら <strong>https://faq.inquira-ai.com</strong> にアクセスしてログイン確認</p>
+</div>
+
+<div class="card">
+  <h3>⏹ 夜: 停止する時</h3>
+  <p>両方のターミナルで <strong>Ctrl+C</strong> を押す。それだけでOK。</p>
+  <p>データは Mac の <code>~/faq_platform/data/</code> に保存されているので消えません。</p>
+</div>
+
+<div class="card">
+  <h3>💡 Mac のスリープ防止（推奨設定）</h3>
+  <p>稼働中に Mac がスリープするとアクセス不可になります。以下のいずれかで防止:</p>
+  <p><strong>方法A: ターミナルコマンド（起動中だけ有効）</strong></p>
+  <pre>caffeinate -d -i &</pre>
+  <p><strong>方法B: システム設定（恒久設定）</strong></p>
+  <p>「システム設定」→「ロック画面」→「スクリーンセーバー開始とディスプレイオフ」を「なし」に変更</p>
+</div>
+
+<h2>🔮 今後のロードマップ</h2>
+
+<table>
+  <tr><th>フェーズ</th><th>時期</th><th>内容</th></tr>
+  <tr>
+    <td><span class="tag-blue">現在</span></td>
+    <td>〜2026-06</td>
+    <td>A社での試験運用（Mac ホスティング）</td>
+  </tr>
+  <tr>
+    <td><span class="tag-green">次フェーズ</span></td>
+    <td>2026-07〜</td>
+    <td>A社のフィードバックをもとに機能改善・精度向上</td>
+  </tr>
+  <tr>
+    <td><span class="tag-yellow">本番化</span></td>
+    <td>A社GOサイン後</td>
+    <td>VPS / A社オンプレ移行 → 24時間稼働</td>
+  </tr>
+  <tr>
+    <td><span class="tag-yellow">SaaS展開</span></td>
+    <td>2026-Q3〜</td>
+    <td>2社目・3社目への横展開（Phase 3）</td>
+  </tr>
+</table>
+
+<div style="margin-top: 48px; padding: 20px; background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; border-radius: 12px; text-align: center;">
+  <div style="font-size: 20px; font-weight: bold; margin-bottom: 8px;">🚀 今週で「動くInquira」がA社に届く状態になりました</div>
+  <div style="font-size: 14px; opacity: 0.9;">A社からユーザリストを受け取ったら、5分で試験運用開始できます。</div>
+</div>
+
+<div style="margin-top: 32px; text-align: center; color: #6b7280; font-size: 12px;">
+  Inquira 週次レポート 2026-05-30 / hideki.ishizashi@gmail.com
+</div>
+
+</body>
+</html>
