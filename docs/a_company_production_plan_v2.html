@@ -254,14 +254,15 @@
   <tr><th>項目</th><th>選択肢</th><th>推奨</th></tr>
   <tr><td>契約期間</td><td>月次自動更新 / 年次一括</td><td><strong>月次自動更新</strong>（縛りなしで導入決断しやすく）</td></tr>
   <tr><td>料金体系</td><td>月額固定 / ユーザー数課金 / 質問数課金</td><td><strong>月額固定（API込み）</strong></td></tr>
-  <tr><td>初期費用</td><td>あり / なし</td><td><strong>あり（50,000〜100,000円）</strong></td></tr>
+  <tr><td>初期費用</td><td>あり / なし</td><td><strong>あり（金額は案件ごとに設定）</strong></td></tr>
   <tr><td>SLA</td><td>業務時間内 / 24時間</td><td><strong>業務時間内（9-18時）</strong></td></tr>
   <tr><td>サポート</td><td>メールのみ / Slack / 電話</td><td><strong>メール + Slack</strong></td></tr>
 </table>
 
 <div class="alert-info">
-  <strong>💡 推奨価格</strong>:<br>
-  初期構築費 <strong>100,000円</strong> + 月額 <strong>50,000円</strong>（API実費・保守・サポート込み、月1万問まで）
+  <strong>💡 価格設計の方針</strong>:<br>
+  料金は <strong>案件ごとに設定</strong>（A社の規模・利用人数・要求SLA・データ量を踏まえて算出）。<br>
+  構造としては <strong>初期構築費（一括） + 月額保守費（API実費込み）</strong> の二段構えを推奨。
 </div>
 
 <h3>検討2: データクレンジング方針 <span class="critical">🔴 最優先</span></h3>
@@ -359,24 +360,27 @@
 
 <table>
   <tr><th>項目</th><th>金額</th><th>頻度</th><th>備考</th></tr>
-  <tr><td>初期構築費</td><td><strong>100,000円</strong></td><td>一括</td><td>環境構築・OAuth設定・データ投入・操作レクチャー</td></tr>
-  <tr><td>月額保守費</td><td><strong>50,000円</strong></td><td>月額</td><td>API実費・サポート・保守すべて込み（月1万問まで）</td></tr>
-  <tr><td>サーバー</td><td>0円（A社オンプレ）</td><td>—</td><td>A社の既存設備</td></tr>
-  <tr><td>ドメイン</td><td>1,500円</td><td>年額</td><td>本人が継続保有</td></tr>
+  <tr><td>初期構築費</td><td>案件ごとに設定</td><td>一括</td><td>環境構築・OAuth設定・データ投入・操作レクチャー</td></tr>
+  <tr><td>月額保守費</td><td>案件ごとに設定</td><td>月額</td><td>API実費・サポート・保守を含めるかは契約で取り決め</td></tr>
+  <tr><td>サーバー</td><td>A社オンプレ</td><td>—</td><td>A社の既存設備を活用</td></tr>
+  <tr><td>ドメイン</td><td>本人負担</td><td>年額</td><td>本人が継続保有（<code>inquira-ai.com</code>）</td></tr>
 </table>
 
-<h3>本人の収支（参考）</h3>
+<h3>価格決定時に考慮する変数</h3>
 
 <table>
-  <tr><th>項目</th><th>金額</th></tr>
-  <tr><td>収入</td><td>+50,000円/月</td></tr>
-  <tr><td>API実費（試験運用フェーズ・本人キー使用時）</td><td>-15,000〜-25,000円</td></tr>
-  <tr><td>ドメイン</td><td>-125円（年1,500円÷12）</td></tr>
-  <tr><td><strong>粗利</strong></td><td><strong>+25,000〜+35,000円/月</strong></td></tr>
+  <tr><th>変数</th><th>金額への影響</th></tr>
+  <tr><td>利用人数</td><td>多いほど API 実費が増える → 月額に反映</td></tr>
+  <tr><td>取り込むデータ量</td><td>初期構築工数に影響 → 初期費用に反映</td></tr>
+  <tr><td>サポート範囲</td><td>業務時間内 / 24時間 / オンサイト等で月額が変動</td></tr>
+  <tr><td>SLA レベル</td><td>稼働保証 99% / 99.9% で月額が変動</td></tr>
+  <tr><td>API キー方式</td><td>本人キー（実費上乗せ）/ A社キー（実費 A社負担）で月額が大きく変わる</td></tr>
+  <tr><td>カスタム開発の有無</td><td>業界プリセット追加・UI改修等は別途見積</td></tr>
 </table>
 
 <div class="alert-info">
-  <strong>💡 A社キー切替後</strong>: 本人にAPI実費の負担がなくなるため、粗利は +50,000円/月 (実質-ドメイン代) に。10社展開時で <strong>月50万円</strong>の継続収入。
+  <strong>💡 価格設計のコツ</strong>:<br>
+  「①Claude API 実費」「②ホスティング費」「③本人の取り分」の3要素に分けて A社に説明すると、納得感が得やすい（詳細は <code>docs/deployment_guide.md</code> 参照）。
 </div>
 
 <h2>🔐 セキュリティ・コンプライアンス</h2>
