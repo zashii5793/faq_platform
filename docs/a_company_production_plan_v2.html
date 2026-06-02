@@ -180,27 +180,61 @@
   <p><strong>OS 選択肢（どちらも完全サポート）</strong>:</p>
 
   <table style="margin-top:10px;">
-    <tr><th>項目</th><th>Linux（推奨A）</th><th>Windows Server（推奨B）</th></tr>
-    <tr><td>OS</td><td>Ubuntu 22.04 LTS</td><td>Windows Server 2022 / 2019</td></tr>
-    <tr><td>メモリ</td><td>2GB+</td><td>4GB+</td></tr>
-    <tr><td>ディスク</td><td>20GB+</td><td>40GB+</td></tr>
-    <tr><td>Python</td><td>3.11+（apt）</td><td>3.11+（Microsoft Store / python.org）</td></tr>
-    <tr><td>サービス常駐</td><td>systemd</td><td>NSSM で Windows サービス化</td></tr>
-    <tr><td>リバースプロキシ</td><td>Nginx</td><td>IIS または Nginx for Windows</td></tr>
-    <tr><td>SSL 証明書</td><td>certbot（Let's Encrypt）</td><td>win-acme（Let's Encrypt）or 商用CA</td></tr>
-    <tr><td>FW</td><td>ufw</td><td>Windows Defender FW</td></tr>
-    <tr><td>参照ガイド</td><td>setup_guide_mac.md</td><td>setup_guide_windows.md（566行）</td></tr>
+    <tr><th>項目</th><th>Linux サーバー</th><th>Windows サーバー</th></tr>
+    <tr><td><strong>OS（基本ソフト）</strong></td><td>Ubuntu 22.04 LTS</td><td>Windows Server 2022 / 2019</td></tr>
+    <tr><td>メモリ</td><td>2GB 以上</td><td>4GB 以上</td></tr>
+    <tr><td>ディスク</td><td>20GB 以上</td><td>40GB 以上</td></tr>
+    <tr><td>必要なソフト</td><td>Python 3.11 以上</td><td>Python 3.11 以上</td></tr>
+    <tr><td>参照する手順書</td><td>setup_guide_mac.md（Linux も同様）</td><td>setup_guide_windows.md</td></tr>
   </table>
 
   <div class="change-note">
-    💡 <strong>選択指針</strong>: A社の既存サーバー資産に合わせるのが最も低リスク。「いつものOSを継続」が運用工数最小。
+    💡 <strong>選び方のシンプルな基準</strong><br>
+    ・A社にすでに使っているサーバーがあるなら、そのOSをそのまま使う（最も低リスク）<br>
+    ・新しく買うなら、A社情シスが管理に慣れているOS（Windows派の会社なら Windows）<br>
+    ・「Linux か Windows か」の判断は<strong>運用しやすさ最優先</strong>。性能はどちらも変わりません
   </div>
 
-  <p style="margin-top:12px;"><strong>共通要件</strong>:</p>
+  <p style="margin-top:14px;"><strong>運用に必要な周辺ソフト（情シス向け補足）</strong>:</p>
+
+  <table style="margin-top:8px;">
+    <tr><th>役割</th><th>Linux</th><th>Windows</th><th>何のためのもの?</th></tr>
+    <tr>
+      <td>常駐起動</td>
+      <td>systemd</td>
+      <td>NSSM</td>
+      <td>PCを再起動しても自動で立ち上がる仕組み。<br>Windowsの「サービス」と同じ</td>
+    </tr>
+    <tr>
+      <td>窓口役のソフト</td>
+      <td>Nginx</td>
+      <td>IIS（Windows標準）</td>
+      <td>外部からのアクセスを受けて、内部のアプリに橋渡しする。<br>「鍵のかかった建物の受付」のような役割</td>
+    </tr>
+    <tr>
+      <td>暗号化通信</td>
+      <td>Let's Encrypt（無料）</td>
+      <td>win-acme（同じく無料）<br>または商用の証明書</td>
+      <td>ブラウザで <code>https://</code> 表示・鍵マークが付くようにする。<br>通信内容を暗号化して盗聴を防ぐ</td>
+    </tr>
+    <tr>
+      <td>ファイアウォール</td>
+      <td>ufw</td>
+      <td>Windows Defender ファイアウォール</td>
+      <td>外部からの不要なアクセスをブロックする。<br>どちらもOS標準機能</td>
+    </tr>
+  </table>
+
+  <div class="alert-warn" style="margin-top:14px;">
+    📝 <strong>用語に不安があっても大丈夫</strong><br>
+    上の周辺ソフトは全て「本人」側で設定します。A社情シスは <strong>「サーバーOSの種類とスペックを伝えるだけ」</strong>。専門用語の理解は不要です。
+  </div>
+
+  <p style="margin-top:14px;"><strong>共通の前提条件</strong>:</p>
   <ul>
-    <li><strong>外部接続</strong>: Anthropic API への HTTPS 通信のみ許可（その他はFWで遮断）</li>
-    <li><strong>静的IP</strong>: 必須（社内DNSに登録）</li>
-    <li><strong>バックアップ</strong>: ディスク全体 or データディレクトリのみ（要相談）</li>
+    <li><strong>外部通信</strong>: AI（Anthropic API）への通信だけ許可。それ以外はファイアウォールで遮断</li>
+    <li><strong>固定IPアドレス</strong>: 必須（社内DNSに登録するため）</li>
+    <li><strong>バックアップ</strong>: サーバー全体か、データフォルダだけかは要相談</li>
   </ul>
 </div>
 
