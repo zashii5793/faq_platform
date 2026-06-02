@@ -482,12 +482,12 @@ button.send:disabled{{background:#9ca3af;box-shadow:none;transform:none;cursor:n
   </details>
 
   <details class="section" open>
-    <summary>🔥 よく聞かれる質問 <span id="popular-count"></span></summary>
+    <summary>⭐ よく聞かれる質問 <span id="popular-count"></span></summary>
     <div id="popular-queries"><div class="empty-list">読み込み中…</div></div>
   </details>
 
   <details class="section" open>
-    <summary>💬 みんなのナレッジ <span id="kb-count"></span></summary>
+    <summary>🤝 みんなのナレッジ <span id="kb-count"></span></summary>
     <div id="kb-list"><div class="empty-list">読み込み中…</div></div>
     <a class="upload-link" href="/knowledge-base" style="margin-top:8px">📚 すべて見る</a>
   </details>
@@ -661,7 +661,7 @@ async function loadStats(){{
       const chips=[];
       // 人気質問を優先（実際にユーザーが聞いている質問なのでヒット率高）
       for(const p of pop.slice(0,4)){{
-        chips.push(`<div class="chip popular" data-q="${{escape(p.question)}}">🔥 ${{escape(p.question.slice(0,40))}}${{p.question.length>40?'…':''}} <span class="src-hint">${{p.count}}回</span></div>`);
+        chips.push(`<div class="chip popular" data-q="${{escape(p.question)}}">⭐ ${{escape(p.question.slice(0,40))}}${{p.question.length>40?'…':''}} <span class="src-hint">${{p.count}}回</span></div>`);
       }}
       // 文書ベースで残り埋め
       const templates=['{{}}について教えて','{{}}の使い方は？','{{}}の手順を知りたい','{{}}でトラブルが起きた時'];
@@ -2473,7 +2473,7 @@ function renderDashboard(d){
     </div>
     <div class="dash-section" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
       <div>
-        <h4>🔥 質問が多いトピック TOP6</h4>
+        <h4>⭐ 質問が多いトピック TOP6</h4>
         <div class="dash-list">${topicRows}</div>
       </div>
       <div>
@@ -3535,6 +3535,29 @@ h1 .version-badge{display:inline-block;background:#e5e7eb;color:#6b7280;font-siz
 .stat-card .label{font-size:12px;color:#6b7280;font-weight:500;text-transform:uppercase;
                    letter-spacing:.04em}
 .stat-card .value{font-size:28px;color:#1a73e8;font-weight:700;margin-top:4px;letter-spacing:-.02em}
+.stat-card.clickable{cursor:pointer;transition:all .15s;position:relative}
+.stat-card.clickable:hover{border-color:#1a73e8;box-shadow:0 4px 12px rgba(26,115,232,.12);transform:translateY(-1px)}
+.stat-card .stat-hint{font-size:11px;color:#1a73e8;margin-top:6px;font-weight:500;opacity:0;transition:opacity .15s}
+.stat-card.clickable:hover .stat-hint{opacity:1}
+/* 貢献者モーダル */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;
+                display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#fff;border-radius:14px;max-width:480px;width:100%;max-height:80vh;
+            display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;
+               padding:18px 22px;border-bottom:1px solid #e5e7eb}
+.modal-header h3{margin:0;font-size:16px;color:#111827}
+.modal-close{background:transparent;border:0;font-size:24px;color:#9ca3af;cursor:pointer;
+              line-height:1;padding:0 4px}
+.modal-close:hover{color:#374151}
+.modal-body{padding:18px 22px;overflow-y:auto}
+.modal-desc{font-size:13px;color:#6b7280;margin:0 0 14px}
+.contributor-row{display:flex;justify-content:space-between;align-items:center;
+                  padding:10px 12px;border-bottom:1px solid #f3f4f6;font-size:14px}
+.contributor-row:last-child{border-bottom:0}
+.contributor-name{color:#1f2937;font-weight:500}
+.contributor-count{color:#1a73e8;font-weight:600;font-size:13px;
+                    background:#dbeafe;padding:2px 10px;border-radius:10px}
 .qa-list{display:flex;flex-direction:column;gap:14px}
 .qa-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px 22px;
          transition:box-shadow .15s}
@@ -3578,7 +3601,7 @@ h1 .version-badge{display:inline-block;background:#e5e7eb;color:#6b7280;font-siz
 <div class="page">
   <div class="page-header">
     <div>
-      <h1>💬 みんなのナレッジ <span class="version-badge">v__VERSION__</span></h1>
+      <h1>🤝 みんなのナレッジ <span class="version-badge">v__VERSION__</span></h1>
       <div class="subtitle">社員が共有した質問と回答の蓄積</div>
     </div>
     <a class="back-link" href="/">← チャットに戻る</a>
@@ -3621,15 +3644,64 @@ async function loadKB(q=''){
 }
 
 function renderStats(data){
-  const totalUp = (data.items||[]).reduce((a,x)=>a+x.votes_up, 0);
-  const totalResolved = (data.items||[]).reduce((a,x)=>a+x.resolved_count, 0);
-  const contributors = new Set((data.items||[]).map(x=>x.contributor).filter(Boolean)).size;
+  const items = data.items || [];
+  const totalUp = items.reduce((a,x)=>a+x.votes_up, 0);
+  const totalResolved = items.reduce((a,x)=>a+x.resolved_count, 0);
+  // 貢献者ごとの投稿数を集計
+  const contribCount = {};
+  for(const x of items){
+    if(!x.contributor) continue;
+    contribCount[x.contributor] = (contribCount[x.contributor] || 0) + 1;
+  }
+  const contributors = Object.keys(contribCount).length;
   document.getElementById('stats-row').innerHTML = `
     <div class="stat-card"><div class="label">📚 蓄積されたQ&A</div><div class="value">${data.total}</div></div>
     <div class="stat-card"><div class="label">👍 役立った投票</div><div class="value">${totalUp}</div></div>
     <div class="stat-card"><div class="label">✅ 解決報告</div><div class="value">${totalResolved}</div></div>
-    <div class="stat-card"><div class="label">👥 貢献した社員</div><div class="value">${contributors}</div></div>
+    <div class="stat-card clickable" id="stat-contributors" title="クリックで貢献者一覧を表示">
+      <div class="label">👥 貢献した社員</div>
+      <div class="value">${contributors}</div>
+      <div class="stat-hint">▾ 詳細を見る</div>
+    </div>
   `;
+  // 貢献者カードのクリックハンドラ
+  const card = document.getElementById('stat-contributors');
+  if(card && contributors > 0){
+    card.onclick = () => showContributorsModal(contribCount);
+  }
+}
+
+function showContributorsModal(contribCount){
+  // 投稿数の多い順にソート
+  const sorted = Object.entries(contribCount).sort((a,b) => b[1] - a[1]);
+  const rows = sorted.map(([name, count]) => `
+    <div class="contributor-row">
+      <span class="contributor-name">📝 ${escape(name)}</span>
+      <span class="contributor-count">${count} 件</span>
+    </div>
+  `).join('');
+  const html = `
+    <div class="modal-overlay" id="contributors-overlay">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>👥 貢献者一覧（${sorted.length}名）</h3>
+          <button class="modal-close" aria-label="閉じる">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">「みんなのナレッジ」に Q&A を共有した社員の一覧です。</p>
+          ${rows}
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+  const overlay = document.getElementById('contributors-overlay');
+  const close = () => overlay.remove();
+  overlay.querySelector('.modal-close').onclick = close;
+  overlay.onclick = (e) => { if(e.target === overlay) close(); };
+  document.addEventListener('keydown', function escHandler(e){
+    if(e.key === 'Escape'){ close(); document.removeEventListener('keydown', escHandler); }
+  });
 }
 
 function renderList(items){
