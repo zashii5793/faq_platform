@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Inquira 導入のご提案</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "IPAGothic", "Hiragino Sans", "Yu Gothic", sans-serif;
+    line-height: 1.75;
+    color: #1f2937;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 8px;
+    background: #fff;
+  }
+  /* === 表紙 === */
+  .cover {
+    text-align: center;
+    padding: 80px 20px 60px;
+    page-break-after: always;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    border-radius: 0;
+    margin: -8px -8px 0 -8px;
+  }
+  .cover .pre-title {
+    font-size: 14px;
+    letter-spacing: 0.3em;
+    opacity: 0.85;
+    margin-bottom: 24px;
+  }
+  .cover h1 {
+    font-size: 38px;
+    font-weight: bold;
+    margin: 0 0 20px;
+    letter-spacing: -0.01em;
+  }
+  .cover .tagline {
+    font-size: 18px;
+    font-weight: 400;
+    opacity: 0.95;
+    margin-bottom: 60px;
+    line-height: 1.6;
+  }
+  .cover .meta-box {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin-top: 30px;
+    text-align: left;
+    font-size: 13px;
+    line-height: 2;
+  }
+  .cover .meta-box .label { opacity: 0.7; display: inline-block; min-width: 80px; }
+
+  /* === 本文 === */
+  h2 {
+    font-size: 22px;
+    color: #1e40af;
+    border-bottom: 3px solid #3b82f6;
+    padding-bottom: 8px;
+    margin-top: 48px;
+    margin-bottom: 20px;
+  }
+  h3 {
+    font-size: 17px;
+    color: #1f2937;
+    margin-top: 28px;
+    margin-bottom: 12px;
+  }
+  p, li { font-size: 14px; }
+
+  .lead {
+    font-size: 15px;
+    color: #374151;
+    background: #f9fafb;
+    border-left: 4px solid #3b82f6;
+    padding: 14px 18px;
+    border-radius: 4px;
+    margin: 16px 0 24px;
+  }
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .hero-stat {
+    text-align: center;
+    background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 10px;
+    padding: 18px 12px;
+    border: 1px solid #bae6fd;
+  }
+  .hero-stat .num {
+    font-size: 28px;
+    font-weight: bold;
+    color: #1e40af;
+    line-height: 1.2;
+  }
+  .hero-stat .lbl {
+    font-size: 12px;
+    color: #475569;
+    margin-top: 6px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    background: white;
+    font-size: 13px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+  th {
+    background: #1e40af;
+    color: white;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 13px;
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  .feature-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 12px 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .feature-card .num-circle {
+    display: inline-block;
+    width: 32px; height: 32px;
+    line-height: 32px;
+    background: #1e40af;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    font-weight: bold;
+    margin-right: 12px;
+    font-size: 14px;
+  }
+  .feature-card .feature-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #1e40af;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .feature-card .feature-body {
+    margin-top: 12px;
+    color: #374151;
+    font-size: 14px;
+  }
+  .feature-card .feature-benefit {
+    background: #ecfdf5;
+    border-left: 3px solid #10b981;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #065f46;
+  }
+
+  .step-flow {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .step-box {
+    background: #fff;
+    border: 2px solid #3b82f6;
+    border-radius: 10px;
+    padding: 16px 14px;
+    text-align: center;
+  }
+  .step-box .step-num {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    width: 26px; height: 26px;
+    line-height: 26px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .step-box .step-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #1e40af;
+    margin: 6px 0;
+  }
+  .step-box .step-desc { font-size: 12px; color: #475569; }
+
+  .highlight-box {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .highlight-box .h-title {
+    font-weight: bold;
+    color: #1e40af;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .arch-figure {
+    background: #1e293b;
+    color: #f1f5f9;
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 2.2;
+    margin: 16px 0;
+  }
+  .arch-figure .arrow { color: #38bdf8; }
+  .arch-figure .item { color: #fef3c7; font-weight: bold; }
+  .arch-figure .small { font-size: 11px; opacity: 0.7; }
+
+  .security-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .security-item {
+    background: #fff;
+    border: 1px solid #d1fae5;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  .security-item .si-title {
+    font-weight: bold;
+    color: #065f46;
+    margin-bottom: 4px;
+  }
+  .security-item .si-desc { color: #4b5563; font-size: 12px; }
+
+  .closing {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 32px 28px;
+    margin: 40px 0 24px;
+    text-align: center;
+  }
+  .closing h2 {
+    color: white;
+    border: none;
+    padding: 0;
+    margin: 0 0 12px;
+  }
+
+  .footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    color: #9ca3af;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  ul.benefits {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+  }
+  ul.benefits li {
+    background: #fff;
+    border-left: 4px solid #10b981;
+    padding: 10px 14px;
+    margin: 6px 0;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  ul.benefits li::before { content: "✓ "; color: #10b981; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<!-- ===== 表紙 ===== -->
+<div class="cover">
+  <div class="pre-title">SERVICE PROPOSAL</div>
+  <h1>Inquira 導入のご提案</h1>
+  <div class="tagline">
+    AIによる社内ヘルプデスク自動応答<br>
+    — 同じ質問の繰り返しから現場を解放します —
+  </div>
+
+  <div class="meta-box">
+    <div><span class="label">ご提案先</span>： 御社 御中</div>
+    <div><span class="label">ご提案日</span>： 2026年6月</div>
+    <div><span class="label">サービス名</span>： Inquira（インクワイラ）</div>
+    <div><span class="label">バージョン</span>： v0.8.0</div>
+  </div>
+</div>
+
+<!-- ===== 1. 御社の課題 ===== -->
+<h2>1. 御社の課題と弊社の認識</h2>
+
+<div class="lead">
+  「同じ質問が繰り返される」「ナレッジが個人と紙とチケットに散在している」<br>
+  どの会社にもあるこの問題を、御社でも感じていらっしゃるのではないでしょうか。
+</div>
+
+<table>
+  <tr><th style="width:40%">よくあるお困りごと</th><th>Inquira による解決</th></tr>
+  <tr>
+    <td>担当者が同じ問い合わせ対応に追われ、本来の業務時間が削られている</td>
+    <td>AIが社内ドキュメントを根拠に自動で回答。問い合わせ件数を削減</td>
+  </tr>
+  <tr>
+    <td>ベテランの知見が個人に集中しており、退職時に失われる懸念がある</td>
+    <td>解決した方法をその場で共有できる「ナレッジ蓄積」機能</td>
+  </tr>
+  <tr>
+    <td>マニュアルや規程が複数の場所に散らばっており、最新版がわからない</td>
+    <td>各種ファイル形式をそのまま取り込み、一元検索可能</td>
+  </tr>
+  <tr>
+    <td>ChatGPT等を導入したいが、社内データを外部に送ることに抵抗がある</td>
+    <td>御社サーバー内で運用、データは社外に出ません</td>
+  </tr>
+</table>
+
+<!-- ===== 2. サービス概要 ===== -->
+<h2>2. Inquira とは</h2>
+
+<div class="lead">
+  <strong>Inquira（インクワイラ）</strong>は、御社の既存ドキュメントを根拠に AI が回答する
+  社内ヘルプデスク向けのセルフサービス FAQ プラットフォームです。
+</div>
+
+<div class="hero-stats">
+  <div class="hero-stat">
+    <div class="num">8形式</div>
+    <div class="lbl">PDF/Word/Excel/PPT 等<br>多形式ファイル対応</div>
+  </div>
+  <div class="hero-stat">
+    <div class="num">3秒</div>
+    <div class="lbl">平均応答時間<br>（通常質問）</div>
+  </div>
+  <div class="hero-stat">
+    <div class="num">学習に<br>使われない</div>
+    <div class="lbl">商用 AI API 採用で<br>機密データを保護</div>
+  </div>
+</div>
+
+<h3>サービスの全体イメージ</h3>
+
+<div class="arch-figure">
+  <span class="item">社員のスマホ・PC</span><br>
+  <span class="arrow">↓</span> （いつものブラウザでアクセス）<br>
+  <span class="item">Inquira（御社サーバー内で稼働）</span><br>
+  <span class="arrow">↓</span> （AIに必要な部分だけを送信）<br>
+  <span class="item">Claude AI（学習に利用しない契約）</span><br>
+  <span class="arrow">↓</span><br>
+  <span class="item">回答 → 出典付きで社員に返却</span>
+  <div class="small" style="margin-top:14px;">※ 御社のデータは Inquira サーバー内に保管されます</div>
+</div>
+
+<!-- ===== 3. 主な機能 ===== -->
+<h2>3. 主な機能</h2>
+
+<div class="feature-card">
+  <span class="num-circle">1</span>
+  <span class="feature-title">AI による自動回答</span>
+  <div class="feature-body">
+    社員が日本語で質問するだけで、社内ドキュメントから根拠を提示しつつ AI が回答します。
+    「キーワード検索」と違い、自然な文章で質問できます。
+  </div>
+  <div class="feature-benefit">
+    → 担当者への問い合わせを <strong>3割削減</strong>（標準的な利用シーンでの想定）
+  </div>
+</div>
+
+<div class="feature-card">
+  <span class="num-circle">2</span>
+  <span class="feature-title">出典の明示と原本リンク</span>
+  <div class="feature-body">
+    回答に対して「どのファイルのどの部分を根拠にしたか」を必ず表示。原本（PDF等）を
+    ワンクリックで開けるため、社員は答えの妥当性を確認できます。
+  </div>
+  <div class="feature-benefit">
+    → AIが間違えても気づける、安心の透明性設計
+  </div>
+</div>
+
+<div class="feature-card">
+  <span class="num-circle">3</span>
+  <span class="feature-title">多形式ドキュメント取り込み</span>
+  <div class="feature-body">
+    PDF、Word、Excel、PowerPoint、CSV、JSON、Markdown、テキストの 8 形式に対応。
+    既存のマニュアル・規程・FAQ集をそのまま登録できます。
+  </div>
+  <div class="feature-benefit">
+    → 「新しい形式に作り直す」工数が不要
+  </div>
+</div>
+
+<div class="feature-card">
+  <span class="num-circle">4</span>
+  <span class="feature-title">ナレッジ蓄積機能</span>
+  <div class="feature-body">
+    社員が解決した方法を「みんなのナレッジ」に共有できます。投票や「解決した」マーカーで
+    どの回答が役に立ったかも可視化されます。
+  </div>
+  <div class="feature-benefit">
+    → ベテランの暗黙知を組織の資産に
+  </div>
+</div>
+
+<div class="feature-card">
+  <span class="num-circle">5</span>
+  <span class="feature-title">個人情報の自動マスキング</span>
+  <div class="feature-body">
+    取り込むファイルに含まれるメールアドレス・電話番号・クレジットカード・マイナンバー等を
+    自動的にマスキング処理します。業界別プリセット（教育/医療/金融）も用意。
+  </div>
+  <div class="feature-benefit">
+    → 個人情報保護の運用負荷を軽減
+  </div>
+</div>
+
+<div class="feature-card">
+  <span class="num-circle">6</span>
+  <span class="feature-title">管理画面・利用状況ダッシュボード</span>
+  <div class="feature-body">
+    どの質問が多いか、どの回答が役に立たなかったか、誰が貢献しているかを管理画面で
+    確認できます。データに基づいた改善が可能です。
+  </div>
+  <div class="feature-benefit">
+    → FAQ の「次に拡充すべき領域」が見える
+  </div>
+</div>
+
+<!-- ===== 4. 導入後の利用イメージ ===== -->
+<h2>4. 導入後の利用イメージ</h2>
+
+<table>
+  <tr><th style="width:25%">利用シーン</th><th>従来</th><th>Inquira 導入後</th></tr>
+  <tr>
+    <td>パスワード忘れ</td>
+    <td>情シスへ電話・チケット起票 → 数時間後に対応</td>
+    <td>Inquiraに質問 → その場で手順表示</td>
+  </tr>
+  <tr>
+    <td>有給休暇の申請方法</td>
+    <td>人事に確認・誰かに聞く</td>
+    <td>「年休の申請方法は?」→ 規程と申請フォームURL を即時案内</td>
+  </tr>
+  <tr>
+    <td>システムの操作方法</td>
+    <td>マニュアルPDFを探す → 該当ページを目視で探す</td>
+    <td>具体的な質問で該当箇所を AI が指し示す</td>
+  </tr>
+  <tr>
+    <td>新人OJT</td>
+    <td>先輩が毎回同じ説明を繰り返す</td>
+    <td>新人がまず Inquira で自己解決 → 残った質問だけ先輩に</td>
+  </tr>
+</table>
+
+<!-- ===== 5. システム構成・データの安全性 ===== -->
+<h2>5. システム構成とデータの安全性</h2>
+
+<div class="lead">
+  御社の社内サーバー（オンプレミス）上で運用するため、<strong>御社のデータは社外に保存されません</strong>。
+</div>
+
+<h3>サーバー要件</h3>
+
+<table>
+  <tr><th>項目</th><th>Linux サーバー</th><th>Windows サーバー</th></tr>
+  <tr><td>OS</td><td>Ubuntu 22.04 LTS 等</td><td>Windows Server 2022 / 2019</td></tr>
+  <tr><td>メモリ</td><td>2GB 以上</td><td>4GB 以上</td></tr>
+  <tr><td>ディスク</td><td>20GB 以上</td><td>40GB 以上</td></tr>
+</table>
+
+<p style="font-size:13px;color:#6b7280;margin-top:8px;">
+※ 既存サーバーへの追加導入も可能です。新規調達の必要はありません。
+</p>
+
+<h3>セキュリティ対策</h3>
+
+<div class="security-grid">
+  <div class="security-item">
+    <div class="si-title">🔒 通信の暗号化</div>
+    <div class="si-desc">HTTPS（SSL/TLS）で全通信を暗号化</div>
+  </div>
+  <div class="security-item">
+    <div class="si-title">🔑 認証</div>
+    <div class="si-desc">Googleアカウント認証。許可されたメールのみアクセス可能</div>
+  </div>
+  <div class="security-item">
+    <div class="si-title">🏢 データ保管</div>
+    <div class="si-desc">御社サーバー内に保管。社外サービスへの保存なし</div>
+  </div>
+  <div class="security-item">
+    <div class="si-title">🤖 AI 学習対象外</div>
+    <div class="si-desc">Anthropic 社の商用契約条項で「学習に使わない」が担保</div>
+  </div>
+  <div class="security-item">
+    <div class="si-title">🛡 個人情報マスキング</div>
+    <div class="si-desc">メール・電話・カード・マイナンバー等を自動マスク</div>
+  </div>
+  <div class="security-item">
+    <div class="si-title">📋 監査ログ</div>
+    <div class="si-desc">誰がいつ何を質問したかを記録、1年以上保管</div>
+  </div>
+</div>
+
+<!-- ===== 6. 導入の流れ ===== -->
+<h2>6. 導入の流れ（目安：3週間）</h2>
+
+<div class="step-flow">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-title">Week 1<br>準備・契約</div>
+    <div class="step-desc">
+      要件整理・契約締結<br>
+      サーバー仕様の確認
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-title">Week 2<br>セットアップ</div>
+    <div class="step-desc">
+      Inquira インストール<br>
+      御社ドキュメントの取り込み<br>
+      動作確認
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-title">Week 3<br>本番リリース</div>
+    <div class="step-desc">
+      管理者トレーニング<br>
+      社員への利用案内<br>
+      本番運用開始
+    </div>
+  </div>
+</div>
+
+<h3>御社にご準備いただくもの</h3>
+
+<ul class="benefits">
+  <li>社内サーバー（既存または新規、上記スペック以上）</li>
+  <li>取り込みたいドキュメント（マニュアル・規程・FAQ集など）</li>
+  <li>利用者の Google アカウント情報（Workspace ドメイン or 個別メール）</li>
+  <li>情シス担当者の窓口（弊社からの作業協力依頼用）</li>
+</ul>
+
+<p style="font-size:13px;color:#6b7280;">
+※ 上記以外の専門的なセットアップ作業（Webサーバー設定・SSL・常駐化等）は弊社で実施します。
+</p>
+
+<!-- ===== 7. 料金 ===== -->
+<h2>7. 料金体系</h2>
+
+<div class="lead">
+  御社の利用規模・要件に応じて個別にお見積りいたします。<br>
+  以下は料金構造の概要です。
+</div>
+
+<table>
+  <tr><th>項目</th><th>形態</th><th>含まれるもの</th></tr>
+  <tr>
+    <td><strong>初期構築費</strong></td>
+    <td>一括</td>
+    <td>環境構築・OAuth設定・初期データ投入・操作トレーニング</td>
+  </tr>
+  <tr>
+    <td><strong>月額保守費</strong></td>
+    <td>月額固定</td>
+    <td>稼働監視・不具合対応・バージョンアップ・問い合わせサポート</td>
+  </tr>
+  <tr>
+    <td><strong>AI API 利用料</strong></td>
+    <td>従量 / 内包</td>
+    <td>Claude API の実費。月額に内包するか実費精算かは選択可</td>
+  </tr>
+</table>
+
+<div class="highlight-box">
+  <div class="h-title">💡 料金算定の主な変数</div>
+  <p style="margin:6px 0 0;font-size:13px;">
+    ご利用人数 / 取り込みデータ量 / サポート範囲 / SLA レベル / 月間質問数 など
+  </p>
+</div>
+
+<!-- ===== 8. サポート体制 ===== -->
+<h2>8. サポート体制</h2>
+
+<table>
+  <tr><th>項目</th><th>標準</th></tr>
+  <tr><td>対応窓口</td><td>メール / Slack（御社ご希望に応じて）</td></tr>
+  <tr><td>対応時間</td><td>平日 9:00〜18:00</td></tr>
+  <tr><td>初動目標</td><td>営業時間内 4時間以内</td></tr>
+  <tr><td>定期点検</td><td>月次（稼働状況・利用状況レポート提出）</td></tr>
+  <tr><td>機能改善</td><td>四半期ごとのバージョンアップを順次反映</td></tr>
+</table>
+
+<!-- ===== 9. 試験運用での実績 ===== -->
+<h2>9. 試験運用での実績</h2>
+
+<div class="lead">
+  本サービスは試験運用フェーズを経て、機能・運用面ともに実用レベルに達しています。
+</div>
+
+<table>
+  <tr><th>項目</th><th>数値</th></tr>
+  <tr><td>システム品質テスト</td><td>353 件のテスト、カバレッジ 88%</td></tr>
+  <tr><td>検索応答性能</td><td>5,000 件のチャンクで 5.2ms</td></tr>
+  <tr><td>同時アクセス処理性能</td><td>200 リクエスト/秒</td></tr>
+  <tr><td>取り込み可能サイズ</td><td>1 ファイルあたり最大 1GB</td></tr>
+  <tr><td>API コスト削減実績</td><td>キャッシュ最適化により 30〜50% 削減</td></tr>
+</table>
+
+<!-- ===== クロージング ===== -->
+<div class="closing">
+  <h2>次のステップ</h2>
+  <p style="margin:14px 0;font-size:15px;">
+    ご検討にあたって、まずはオンラインミーティング（30〜60分）で<br>
+    御社のご利用イメージを伺わせてください。
+  </p>
+  <p style="margin:14px 0;font-size:14px;opacity:0.9;">
+    具体的なお見積りは、要件確認後にご提示いたします。<br>
+    実機デモのご希望もお気軽にお申し付けください。
+  </p>
+</div>
+
+<div class="footer">
+  Inquira 導入のご提案書 / 2026年6月作成 / 弊社
+</div>
+
+</body>
+</html>
