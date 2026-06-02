@@ -1,271 +1,426 @@
-# Inquira — 社内問い合わせを"自己解決"に変えるFAQプラットフォーム
+# Inquira — 操作マニュアル
 
 [![Test](https://github.com/zashii5793/faq_platform/actions/workflows/test.yml/badge.svg)](https://github.com/zashii5793/faq_platform/actions/workflows/test.yml)
 
-> どの企業にもある「**同じ質問が何度も来る**」「**ナレッジが個人と紙とチケットに散在する**」問題を、
-> 既存ドキュメントを根拠に Claude が回答するセルフサービス FAQ で解決します。
+> 社内ドキュメントを根拠に AI が回答する **セルフサービス FAQ プラットフォーム**。
+> 本ドキュメントでは **各機能の使い方** を説明します。
+
+> 🛠 **インストール・サーバー構築の手順** → [docs/setup_guide_mac.md](./docs/setup_guide_mac.md) / [docs/setup_guide_windows.md](./docs/setup_guide_windows.md) を参照
 
 ---
 
-## 🚀 自分で動かす（Mac 向け 3 通り）
+## 📑 目次
 
-### 方法A: uv ★最速・推奨
-
-[uv](https://docs.astral.sh/uv/) は Rust 製の Python パッケージマネージャ。pyenv のビルドより **10倍速い**。
-
-```bash
-brew install uv
-git clone https://github.com/zashii5793/faq_platform.git
-cd faq_platform
-git checkout claude/add-roadmap-docs-RmQNp
-
-uv venv --python 3.11
-source .venv/bin/activate
-uv pip install -e ".[dev]"
-
-DEMO_MODE=1 FAQ_MASTER_DIR=./data/demo_faq SESSION_SECRET=demo \
-  uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
-
-→ ブラウザで http://127.0.0.1:8000/
-
-### 方法B: Docker ★ゼロ設定
-
-Python のバージョン違いやビルド失敗を**完全に避けたい**ならこれ。
-
-```bash
-git clone https://github.com/zashii5793/faq_platform.git
-cd faq_platform
-git checkout claude/add-roadmap-docs-RmQNp
-
-docker compose up --build
-```
-
-初回ビルド 2〜4分（Python イメージ DL + 依存インストール）。
-2回目以降はキャッシュが効いて 10秒以内で起動。
-
-→ ブラウザで http://127.0.0.1:8000/
-
-停止: `docker compose down`
-
-### 方法C: 既存 Python 3.11+ がある場合
-
-`python3 --version` で 3.11 以上なら、最も軽量に動く。
-
-```bash
-git clone https://github.com/zashii5793/faq_platform.git
-cd faq_platform
-git checkout claude/add-roadmap-docs-RmQNp
-./scripts/demo.sh
-```
-
-スクリプトが venv 作成・依存インストール・テスト実行・サーバ起動まで自動でやります。
+1. [Inquira でできること](#-inquira-でできること)
+2. [ログイン](#-ログイン)
+3. [チャット画面の使い方](#-チャット画面の使い方)
+4. [回答の見方（出典・関連度・確信度）](#-回答の見方出典関連度確信度)
+5. [フィードバック（👍 役立った / 👎 改善要望）](#-フィードバック)
+6. [自分で答えを共有する](#-自分で答えを共有する)
+7. [みんなのナレッジ（共有Q&A一覧）](#-みんなのナレッジ共有qa一覧)
+8. [サイドバーの使い方](#-サイドバーの使い方)
+9. [管理画面（文書取り込み・運用）](#-管理画面文書取り込み運用)
+10. [モバイルで使う](#-モバイルで使う)
+11. [よくある質問・Tips](#-よくある質問tips)
 
 ---
 
-## 📱 携帯で試す（同じ WiFi 内から）
+## 🎯 Inquira でできること
 
-**Mac で起動 → iPhone から触る** の手順：
-
-```bash
-# Mac 側でサーバを LAN 公開モードで起動
-HOST=0.0.0.0 ./scripts/demo.sh
-```
-
-起動メッセージに **LAN IP** が自動表示されます：
-
-```
-🚀 Inquira を起動します
-   ┌──────────────────────────────────────────────────────────┐
-   │ 💻 PC ブラウザ:   http://127.0.0.1:8000/                      │
-   │ 📱 携帯/タブレット: http://192.168.1.42:8000/  ← 同じWiFi内から  │
-   │ 📁 ナレッジ追加:   http://192.168.1.42:8000/admin/upload         │
-   └──────────────────────────────────────────────────────────┘
-```
-
-**iPhone で**：
-1. Mac と同じ WiFi に接続されていることを確認
-2. Safari で表示された LAN IP を開く（例: `http://192.168.1.42:8000/`）
-3. サイドバーは左上の **☰ ボタン** で開閉
-
-> ⚠ DEMO_MODE は認証なしで動きます。**社内 WiFi など信頼できるネットワークでのみ使用** してください。
-> 自宅の WiFi でも他端末からは見えますが、ゲストネットワーク等は注意。
-
-### モバイル UI のポイント
-
-| 機能 | モバイル時の挙動 |
+| シーン | できること |
 |---|---|
-| サイドバー | ☰ で開く・スクリーン外タップで閉じる |
-| チャットバブル | 幅 90% に拡張 |
-| 入力欄 | iOS 自動ズーム防止（`font-size: 16px`） |
-| アップロード画面 | 1カラム表示・フッターボタン全幅 |
+| **質問する** | 「○○の手続き方法は?」と日本語で質問するだけで AI が社内ドキュメントから回答 |
+| **出典の確認** | どのファイルのどの部分を根拠にしたかを表示。原本ファイルもワンクリックで開ける |
+| **ナレッジ蓄積** | 自分が解決した方法を共有 → 他の社員もすぐ参照可能 |
+| **重複質問の削減** | 入力中に「似た質問が既にあります」をリアルタイムサジェスト |
+| **問い合わせ削減** | 同じ質問のたびに人に聞かなくて良くなる |
+
+### 想定ユーザー
+
+- **一般社員**: 質問する・共有する・閲覧する
+- **管理者**: 文書を取り込む・設定を変える・利用状況を確認する
 
 ---
 
+## 🔐 ログイン
+
+### 一般ユーザー
+
+1. ブラウザで会社から案内された URL を開く
+2. 「Sign in with Google」をクリック
+3. **会社のメールアドレス（Googleアカウント）** でログイン
+4. 「このアプリは確認されていません」と出る場合 → 「詳細」→「○○に移動」をクリック（試験運用中は正常な表示）
+
+### ログアウト
+
+- 画面右上の **「ログアウト」** をクリック
+
+> 💡 ログインできない場合は管理者に「ALLOWED_EMAILS にメールを追加してください」と依頼してください
+
 ---
 
-## 🔬 検索精度を上げる（Embedding 切替・任意）
+## 💬 チャット画面の使い方
 
-デフォルトは TF-IDF（モデルDL不要・軽量）ですが、精度を上げたい場合は **multilingual-e5** に切替可能：
+### 基本の質問フロー
 
-```bash
-# 1. embedding 用の依存をインストール
-pip install -e ".[embedding]"
-
-# 2. 環境変数で指定して起動（小: 470MB / 大: 2.2GB）
-EMBEDDING_BACKEND=e5-small ./scripts/demo_company.sh
-# または
-EMBEDDING_BACKEND=e5-large ./scripts/demo_company.sh
+```
+①画面下の入力欄に質問を入力
+②[送信] または Enter キーを押す
+③AIが社内ドキュメントから回答を生成（通常3〜10秒）
+④回答内容と出典を確認
 ```
 
-| バックエンド | モデルサイズ | 精度 | 起動時間 | メモリ |
-|---|---|---|---|---|
-| `tfidf` (デフォルト) | 0 | 中 (74%) | 即時 | 軽量 |
-| `e5-small` | 470MB | 高 | 初回30秒 | 1〜2GB |
-| `e5-large` | 2.2GB | 最高 | 初回2〜5分 | 4〜6GB |
+### 質問の書き方のコツ
 
-> 初回起動時のみ HuggingFace からモデルがダウンロードされます（以降キャッシュ）。
-> ベクトル化結果は `data/embeddings.npz` に保存され、文書追加時のみ再計算されます。
-
----
-
-## トラブルシューティング
-
-| 症状 | 対処 |
+| ❌ あまり良くない | ✅ より良い |
 |---|---|
-| `port 8000` 使用中 | `PORT=8080 ./scripts/demo.sh` のように変えて起動 |
-| 古い venv で起動失敗 | `rm -rf .venv && ./scripts/demo.sh` |
-| pyenv のビルドが終わらない | 案A (uv) または案B (Docker) を使う |
-| Docker が無い | `brew install --cask docker` で Docker Desktop を入れる |
+| 「パスワード」 | 「メールパスワードの変更方法を教えて」 |
+| 「経費」 | 「出張時の交通費精算の手順は?」 |
+| 「来週休む」 | 「年次有給休暇の申請方法を教えて」 |
+
+→ **「何を知りたいか」を文章で書く** のがコツ。キーワードだけよりも文章の方が AI が意図を正しく理解します。
+
+### リアルタイムサジェスト
+
+質問を入力していると、**「似た質問が既にあります」** が表示されることがあります。
+- クリックするとその過去 Q&A に飛んで、即座に答えを確認できます
+- 重複質問を減らせる仕組みです
 
 ---
 
-## なぜ作るか
+## 📎 回答の見方（出典・関連度・確信度）
 
-- 社内ヘルプデスク／情報システム部門の問い合わせ工数の **40〜60%** は同種反復質問
-- 既存のチャットボット製品はテンプレ運用で構築コストが高い
-- LLM × RAG なら **既存ドキュメントを学習なしで回答ソース化** でき、保守も軽い
-- 学習に使われない商用 API + 社内ホストで **データ主権を維持** できる
+### 回答カードの構成
 
-## 主要機能（PoC）
+```
+┌────────────────────────────────────────────┐
+│ AIの回答テキスト                                  │
+│                                              │
+│ 確信度 75% · 回答可                              │
+│                                              │
+│ 📎 参照ドキュメント 3件                          │
+│  📄 就業規則.pdf  セクション12  関連度 高 (0.42) │
+│  🔍 全文を見る   📎 原本を開く                   │
+└────────────────────────────────────────────┘
+```
 
-| 機能 | 内容 |
+### 確信度（パーセント）
+
+| 値 | 意味 |
 |---|---|
-| 自然言語 Q&A | 社員が自由記述で質問 → Claude が関連チャンクを参照して回答 |
-| 出典必須 | 回答には必ず「どのドキュメントを参照したか」を明示 |
-| Google SSO | 許可ドメイン／メールリストで社内アクセスを制限 |
-| マスキング | 業界別 PII パターンで送信前にトークン化（汎用 + 教育/医療/金融プリセット） |
-| 監査ログ | 全クエリを JSONL で記録 |
-| デモモード | 認証・APIキー無しでローカル動作確認可能 |
+| **70%以上** | 高い確信。AIの回答をほぼそのまま信頼できる |
+| **30〜70%** | 中程度。回答と一緒に必ず出典も確認 |
+| **0〜30%** | 低い。「該当情報なし」表示の可能性。出典を見て自分で判断 |
 
-## 構成
+### 関連度（高 / 中 / 低）
+
+各出典ドキュメントとの関連度を3段階で表示:
+- **高 (0.3+)**: 質問にズバリ関連する内容
+- **中 (0.15〜0.3)**: ある程度関連する内容
+- **低 (0.15未満)**: 弱い関連性。参考程度
+
+### 「全文を見る」
+
+参照ドキュメントの **該当箇所の全文** をモーダル表示。同じファイルの前後の文脈も確認できます。
+
+### 「📎 原本を開く」
+
+PDF / Excel / PowerPoint などの **元ファイル** をブラウザで直接表示。図表・画像が含まれる文書はこちらで確認するのが確実です。
+
+---
+
+## 👍 フィードバック
+
+### 👍 役立った
+
+回答が役に立ったらクリック。
+- AIの学習データに反映 → 次回以降の精度向上
+- 「よく聞かれる質問」の人気ランキングに加算
+
+### 👎 改善要望
+
+回答が不十分・間違っていたらクリック。
+- **改善内容の入力欄** が表示されるので、何を期待していたかを書く
+- 管理者の改善要望リストに送信される
+- 管理者が補足ドキュメントを取り込めば次回から正しい回答に
+
+### 📩 FAQ追加リクエスト
+
+「該当情報なし」と回答された時に表示されるボタン。
+- 「この質問に答えられる文書を追加してください」と管理者に依頼できます
+
+---
+
+## 💡 自分で答えを共有する
+
+社内の有識者に直接聞いて解決した内容を、**みんなに見える形で残せる** 機能です。
+
+### 使い方
+
+1. 「該当情報なし」と回答された時に表示される **「💬 自分で見つけた答えを共有」** ボタンをクリック
+2. ポップアップで質問と回答を入力
+3. **「公開してインデックスに反映」にチェック** → 次回以降、同じ質問に AI が答えられるようになる
+4. **「投稿者名を表示」にチェック** → 誰が答えたか分かる
+
+### 共有された回答の見え方
+
+- 黄色枠 + 「💬 ユーザー提供」バッジ で「公式FAQではない」と明示
+- 出典として表示される
+
+---
+
+## 🤝 みんなのナレッジ（共有Q&A一覧）
+
+`/knowledge-base` ページで、社員が共有した Q&A を **一覧 + 全文検索** できます。
+
+### 統計カード
+
+ページ上部に4つのカードが表示されます:
+
+- 📚 **蓄積されたQ&A** — 全件数
+- 👍 **役立った投票** — 累計投票数
+- ✅ **解決報告** — 「解決した」と報告された件数
+- 👥 **貢献した社員** — 投稿者の人数（**クリックで詳細表示**）
+
+### 各 Q&A カードでできること
+
+| ボタン | 動作 |
+|---|---|
+| 質問テキストをクリック | チャット画面に飛んで再質問 |
+| ▾ 全文を表示 | 回答の全文を展開（長い回答用） |
+| 👍 役立った | 投票 |
+| ✅ 解決した | 「自分も解決できた」マーカー |
+| 👎 違うかも | 否定的なフィードバック |
+| 💬 これと同じ質問をする | チャット画面に再投入 |
+
+### 検索
+
+ページ上部の検索欄で全文検索できます。
+
+---
+
+## 📋 サイドバーの使い方
+
+### ユーザー向けセクション
+
+| セクション | 内容 |
+|---|---|
+| ⭐ **よく聞かれる質問** | 直近で人気の質問トップ。クリックで再質問 |
+| 🤝 **みんなのナレッジ** | 直近の共有Q&A。詳細は `/knowledge-base` |
+| 📜 **問い合わせ履歴** | 自分の質問履歴（最大100件） |
+
+### 管理者向けセクション（管理権限がある場合のみ）
+
+| セクション | 内容 |
+|---|---|
+| ⭐ 質問が多いトピック TOP6 | 全体の質問頻度ランキング |
+| 📩 改善要望のあった質問 | 👎評価+コメント付き質問の一覧 |
+| 📁 取り込み済み文書 | 全ドキュメント一覧へのリンク |
+
+サイドバー上部の「▾」で **折りたたみ可能**。
+
+---
+
+## ⚙️ 管理画面（文書取り込み・運用）
+
+URL: `/admin/upload`
+
+管理画面は 4つのタブで構成されています。
+
+### ① 📁 ファイル取込
+
+社内ドキュメントを AI の回答ソースとして取り込みます。
+
+#### 対応フォーマット
+
+| 形式 | 拡張子 |
+|---|---|
+| PDF | `.pdf` |
+| Word | `.docx` |
+| Excel | `.xlsx`, `.xls` |
+| PowerPoint | `.pptx` |
+| CSV | `.csv` |
+| JSON | `.json` |
+| Markdown | `.md` |
+| テキスト | `.txt` |
+
+**最大 1GB / 1ファイル** まで（`MAX_UPLOAD_MB` で変更可）。
+
+#### 取り込み手順
 
 ```
-app/
-  main.py        FastAPI + Google SSO + RAG エンドポイント
-  auth.py        Google OAuth・許可ドメイン/メール判定
-  rag.py         FAQマスター読み込み + TF-IDF 検索
-  llm.py         Anthropic Claude 呼び出し（システムプロンプトは設定駆動）
-  masking.py     汎用PII + 業界別パターンによるマスキング
-  audit.py       JSONL 形式の監査ログ
-  config.py      環境変数読み込み
-data/
-  faq_master/    FAQ正本（顧客ごとの実データ。Git 管理外）
-  demo_faq/      デモ用サンプル（教育系想定）
-  raw/           元データ置き場（チケットCSV 等、Git 管理外）
-scripts/
-  classify_tickets.py  チケットCSV を Claude で自動分類するデモ
-docs/
-  specification.md           技術仕様書
-  requirements_demo_education.md 導入企業向け導入事例（要件）
-  business_analysis.md       ビジネス用途分析
-tests/                      pytest
+1. ファイルをドラッグ&ドロップ（or [ファイル選択]）
+   ↓
+2. 自動でクレンジング・PII マスキング・チャンク分割を実行
+   ↓
+3. 「📊 取り込み分析結果」が表示される
+   ├ 警告（赤）: 取り込み非推奨（クレジットカード/個人情報多数等）
+   ├ 注意（黄）: 取り込み可能だが要確認
+   └ 安全（緑）: そのまま取り込み OK
+   ↓
+4. [✅ 選択を確定して取り込む] をクリック
+   ↓
+5. 検索インデックスに反映 → チャット画面で即時使えるように
 ```
 
-## 🎬 30秒で見る（ブラウザだけで動く）
+> ⚠ 警告が出ても、確認のうえ **「警告を無視して取り込む」** ボタンで強制取り込み可能
 
-サーバ・APIキー・依存インストール **すべて不要**。ブラウザで開くだけ：
+### ② 📊 利用状況
 
+| 表示項目 | 内容 |
+|---|---|
+| 累計質問数 | 全期間の質問数 |
+| 直近の質問数 | 1日 / 1週間 / 1ヶ月の推移 |
+| よく聞かれる質問 TOP10 | 頻度ランキング |
+| 確信度別の分布 | 高/中/低 の割合 |
+| 回答できなかった質問 | 「該当情報なし」になった質問の一覧 |
+
+### ③ 💬 履歴・要望
+
+| サブセクション | 内容 |
+|---|---|
+| 質問履歴 | 全社員の質問履歴を検索・閲覧 |
+| 👎 改善要望 | フィードバックで送られた改善要望の一覧 |
+| 📩 FAQ追加リクエスト | 「FAQ未登録」と申請された質問 |
+
+### ④ 🗂 設定・出力
+
+| 設定項目 | 説明 |
+|---|---|
+| プロダクト名 | 画面タイトル（例: Inquira） |
+| 組織名 | AIの自己紹介に使われる |
+| アシスタント役割 | 例: 社内ヘルプデスク / カスタマーサポート |
+| マスキング業界プリセット | general / education / healthcare / finance |
+| **FAQ 格納フォルダ** | 取り込み済み FAQ の保存先（v0.8.0〜） |
+| **原本ファイル格納フォルダ** | 元ファイルの保存先（v0.8.0〜） |
+
+→ **保存ボタンで即時反映**、再起動後も維持されます。
+
+#### エクスポート機能
+
+- **質問履歴の CSV/JSON エクスポート** — 監査・分析用にダウンロード可能
+- **取り込み済み文書の一覧出力**
+
+#### 取り込み済み文書の管理
+
+- **一覧表示**: 全ファイルの一覧、サイズ、取り込み日
+- **削除**: 不要になった文書を削除（検索対象から除外）
+- **原本閲覧**: PDF などの原本ファイルを直接開く
+
+---
+
+## 📱 モバイルで使う
+
+スマホ・タブレットのブラウザでもそのまま利用できます。
+
+### モバイル UI の特徴
+
+- レスポンシブデザイン（画面幅に自動適応）
+- サイドバーは **ハンバーガーメニュー** に格納
+- 質問入力欄が画面下部に固定（親指で打ちやすい）
+- 出典カードは縦並びで読みやすく
+- 写真撮影で資料をアップロード可能（管理者のみ）
+
+### LAN内で使う（オフィス内）
+
+サーバーを `HOST=0.0.0.0` で起動すると、同じ Wi-Fi の端末からアクセス可能:
 ```
-docs/demo.html
+http://192.168.x.x:8000/
 ```
+表示される LAN IP は起動メッセージに出ます。
 
-クライアントサイドで FAQ 検索・スコアリング・マスキングをシミュレートします。
-業界プリセット切替（汎用 / 教育 / 金融 / 医療）も動作確認可能。
+---
 
-スクリーンショット：
-- [`docs/demo_interactive_initial.png`](./docs/demo_interactive_initial.png) — 初期画面
-- [`docs/demo_interactive_session.png`](./docs/demo_interactive_session.png) — 4問やり取り＋マスキング適用
+## ❓ よくある質問・Tips
 
-## クイックスタート（デモ）
+### Q. 自分の質問は他の社員に見られますか?
 
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+**A.** 管理画面では見られます。一般ユーザーは自分の履歴のみ閲覧可能です。
+共有Q&A（みんなのナレッジ）は **自分で公開チェックを入れた時のみ** 公開されます。
 
-# 認証バイパスのデモモードで起動
-DEMO_MODE=1 FAQ_MASTER_DIR=./data/demo_faq SESSION_SECRET=demo \
-  uvicorn app.main:app --host 127.0.0.1 --port 8000
+### Q. AIが間違えた回答をした時はどうすれば?
 
-# 別ターミナル:
-curl -s -X POST http://127.0.0.1:8000/api/ask \
-  -H "Content-Type: application/json" \
-  -d '{"question":"出席の保存ボタンが効かない"}' | python -m json.tool
-```
+**A.** 👎 ボタンで改善要望を送ってください。管理者が補足ドキュメントを取り込めば次回から改善されます。
+急ぎなら「💬 自分で見つけた答えを共有」で正しい回答を共有することもできます。
 
-## 本番セットアップ
+### Q. PDF の画像/図表が出てきません
 
-1. `cp .env.example .env` で環境変数を設定
-2. `ORG_NAME` / `ASSISTANT_ROLE` で導入企業に合わせたペルソナを定義
-3. `MASKING_INDUSTRY` で業界別マスキング (`general` / `education` / `healthcare` / `finance`)
-4. `data/faq_master/` に正本ドキュメントを配置（`.md` / `.txt`）
-5. `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+**A.** Inquira はテキスト解析が中心です。図表は **「📎 原本を開く」** で元ファイルを直接見るのが確実です。
 
-## テスト
+### Q. 「該当情報なし」と言われる質問が多いです
 
-```bash
-pytest
-```
+**A.** 以下を確認してください:
+- 取り込んだ文書が質問内容をカバーしているか
+- 質問の書き方が曖昧でないか（「何が知りたいか」を文章で）
+- 管理者に該当文書の取り込みを依頼
 
-## ロードマップ・関連文書
+### Q. 質問への回答が遅いです
 
-- [ROADMAP.md](./ROADMAP.md) — 全体ロードマップ（Phase 1〜3）
-- **[docs/blog_post.md](./docs/blog_post.md) — ブログ記事（note/Zenn/Qiita 掲載用）**
-- **[docs/customer_proposal.md](./docs/customer_proposal.md) — 顧客提案資料テンプレ**
-- **[docs/practical_test_report.md](./docs/practical_test_report.md) — 実用テスト 8シナリオ評価**
-- **[docs/api_cost_analysis.md](./docs/api_cost_analysis.md) — API コスト試算と無料運用設計**
-- **[docs/product_assessment.md](./docs/product_assessment.md) — プロダクト評価**
+**A.** 通常 3〜10秒。それ以上かかる場合:
+- 同じ質問の **2回目以降は質問キャッシュ** が効いて高速化（300秒以内）
+- 取り込み中は重くなる可能性あり → 取り込み完了後に再質問
 
-### セットアップ手順
+### Q. 一度取り込んだファイルを削除したい
 
-- [docs/setup_guide_mac.md](./docs/setup_guide_mac.md) — Mac 開発環境
-- [docs/setup_guide_windows.md](./docs/setup_guide_windows.md) — Windows 開発環境
-- [docs/data_storage_guide.md](./docs/data_storage_guide.md) — **データ保存先・バックアップ・容量見積もり**
-- [docs/api_key_setup.md](./docs/api_key_setup.md) — Anthropic API キー
-- **[docs/google_oauth_setup.md](./docs/google_oauth_setup.md) — Google OAuth 設定**
-- **[docs/https_deployment.md](./docs/https_deployment.md) — HTTPS デプロイ手順**
+**A.** 管理画面 → 取り込み済み文書 → 該当ファイルの「削除」ボタン。検索対象から除外されます。
 
-### 設計・仕組み
+### Q. データのバックアップは取れますか?
 
-- [docs/architecture_report.md](./docs/architecture_report.md) — アーキテクチャ解説（非エンジニア向け）
-- [docs/scale_benchmark.md](./docs/scale_benchmark.md) — **スケーラビリティ・ベンチマーク（5000文書の応答時間実測）**
-- [docs/specification.md](./docs/specification.md) — 技術仕様書
-- [docs/ui_specification.md](./docs/ui_specification.md) — UI設計仕様
-- [docs/business_analysis.md](./docs/business_analysis.md) — ビジネス用途分析
-- [docs/requirements_demo_education.md](./docs/requirements_demo_education.md) — 導入企業 導入事例
+**A.** はい。`scripts/backup.sh` で全データをバックアップできます。詳細は [`docs/data_storage_guide.md`](./docs/data_storage_guide.md) を参照。
 
-### スクリプト・ツール
+---
 
-- [scripts/demo_company.sh](./scripts/demo_company.sh) — デモ会社想定デモ起動
-- [scripts/test_anthropic.py](./scripts/test_anthropic.py) — API キー疎通確認
-- **[scripts/production_smoke_test.py](./scripts/production_smoke_test.py) — 本番動作確認（実回答品質テスト）**
-- [scripts/benchmark_search.py](./scripts/benchmark_search.py) — 検索精度ベンチマーク
-- [scripts/classify_tickets.py](./scripts/classify_tickets.py) — チケット自動分類
+## 📚 関連ドキュメント
 
-## セキュリティ要点
+### セットアップ・インストール手順
 
-- **Anthropic 商用 API のみ使用**（個人プラン禁止 / 学習に使われない）
-- API ログ保持 7日（標準）。必要なら ZDR 契約検討
-- Google Workspace SSO + 許可ドメイン/メール
-- 質問は送信前に `app/masking.py` でマスキング
-- 全アクセスを `data/audit/audit-YYYY-MM-DD.jsonl` に記録
+- [`docs/setup_guide_mac.md`](./docs/setup_guide_mac.md) — Mac で動かす手順
+- [`docs/setup_guide_windows.md`](./docs/setup_guide_windows.md) — Windows で動かす手順
+- [`docs/api_key_setup.md`](./docs/api_key_setup.md) — Anthropic API キー取得手順
+- [`docs/google_oauth_setup.md`](./docs/google_oauth_setup.md) — Google OAuth 設定手順
+- [`docs/https_deployment.md`](./docs/https_deployment.md) — 本番 HTTPS デプロイ
+
+### 管理者・運用向け
+
+- [`docs/setup_for_admin.md`](./docs/setup_for_admin.md) — 管理者向け全体ガイド
+- [`docs/data_storage_guide.md`](./docs/data_storage_guide.md) — データ保存場所・バックアップ
+- [`docs/deployment_guide.md`](./docs/deployment_guide.md) — A社向け導入ガイド・料金構造
+
+### 仕様・設計
+
+- [`docs/specification.md`](./docs/specification.md) — 機能仕様
+- [`docs/architecture_report.md`](./docs/architecture_report.md) — システム構成
+- [`docs/ui_specification.md`](./docs/ui_specification.md) — UI 仕様
+- [`docs/api_cost_analysis.md`](./docs/api_cost_analysis.md) — API コスト試算
+- [`ROADMAP.md`](./ROADMAP.md) — 開発ロードマップ
+- [`CHANGELOG.md`](./CHANGELOG.md) — リリースノート
+
+### 技術検証レポート
+
+- [`docs/practical_test_report.md`](./docs/practical_test_report.md) — 実機テスト評価
+- [`docs/scale_benchmark.md`](./docs/scale_benchmark.md) — スケーラビリティ実測
+- [`docs/quality_improvement_report.md`](./docs/quality_improvement_report.md) — 品質改善履歴
+
+---
+
+## 🔐 セキュリティ要点
+
+- **HTTPS 通信**（本番運用時）
+- **Google OAuth 認証** — パスワード管理不要
+- **ALLOWED_EMAILS / ALLOWED_DOMAIN** で許可制
+- **PII マスキング** — メール/電話/カード/マイナンバー/IPアドレス/URL を自動マスク
+- **AI 学習に利用されない** — Anthropic API の商用契約条項で担保
+- **監査ログ** — 全操作を 1年以上保管可能（cron で日次バックアップ）
+
+詳細は [`docs/a_company_security_brief.md`](./docs/a_company_security_brief.md) を参照。
+
+---
+
+## 📞 お問い合わせ・サポート
+
+- バグ報告・機能要望: GitHub Issues
+- 導入相談: 提供元にお問い合わせください
+
+---
+
+**バージョン**: v0.8.0 / **対応 Python**: 3.11+ / **動作 OS**: macOS / Linux / Windows
