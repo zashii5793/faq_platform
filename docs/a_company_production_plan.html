@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>A社 本番導入計画 | Inquira</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "IPAGothic", "Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", sans-serif;
+    line-height: 1.7;
+    color: #1f2937;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    background: #f9fafb;
+  }
+  h1 {
+    font-size: 28px;
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    color: white;
+    padding: 24px;
+    border-radius: 12px;
+    margin: 0 0 8px 0;
+  }
+  .subtitle { font-size: 13px; color: #6b7280; text-align: right; margin-bottom: 32px; }
+  h2 {
+    font-size: 22px;
+    margin-top: 48px;
+    border-left: 6px solid #059669;
+    padding-left: 14px;
+    color: #047857;
+  }
+  h3 {
+    font-size: 18px;
+    margin-top: 28px;
+    color: #1f2937;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  th {
+    background: #1f2937;
+    color: white;
+    padding: 12px;
+    text-align: left;
+    font-size: 13px;
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .critical { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .high { background: #fed7aa; color: #9a3412; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .medium { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .low { background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .decision { background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .task { background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .me { background: #f3e8ff; color: #6b21a8; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .a-company { background: #fce7f3; color: #9f1239; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .both { background: #fef9c3; color: #713f12; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .alert-info {
+    background: #dbeafe; border: 2px solid #3b82f6;
+    border-radius: 8px; padding: 16px 20px; margin: 16px 0; color: #1e40af;
+  }
+  .alert-warn {
+    background: #fef3c7; border: 2px solid #f59e0b;
+    border-radius: 8px; padding: 16px 20px; margin: 16px 0; color: #92400e;
+  }
+  .alert-success {
+    background: #d1fae5; border: 2px solid #10b981;
+    border-radius: 8px; padding: 16px 20px; margin: 16px 0; color: #065f46;
+  }
+  code {
+    background: #1f2937; color: #e5e7eb;
+    padding: 2px 6px; border-radius: 4px;
+    font-family: monospace; font-size: 13px;
+  }
+  pre {
+    background: #1f2937; color: #e5e7eb;
+    padding: 16px 20px; border-radius: 8px;
+    overflow-x: auto; font-size: 13px;
+    font-family: "SF Mono", Monaco, monospace;
+    line-height: 1.6;
+  }
+  .recommended {
+    background: #d1fae5;
+    border-left: 4px solid #10b981;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 4px;
+  }
+  .recommended::before {
+    content: "💡 推奨案: ";
+    font-weight: bold;
+    color: #047857;
+  }
+  .phase-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-top: 5px solid;
+  }
+  .phase-1 { border-top-color: #ef4444; }
+  .phase-2 { border-top-color: #f59e0b; }
+  .phase-3 { border-top-color: #10b981; }
+  .phase-4 { border-top-color: #3b82f6; }
+  .hero {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .stat { text-align: center; padding: 16px; background: #f3f4f6; border-radius: 8px; }
+  .stat-num { font-size: 28px; font-weight: bold; color: #047857; }
+  .stat-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+  .next-action {
+    background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+  }
+  .next-action h2 { border: none; color: white; padding-left: 0; margin-top: 0; }
+  .next-action ol li { margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<h1>🚀 A社 本番導入計画 — タスクと意思決定一覧</h1>
+<div class="subtitle">作成: 2026-05-30 / 試験運用 → 本契約フェーズへ移行</div>
+
+<div class="alert-success">
+  <strong>🎉 試験運用フェーズが成功し、A社から本格導入の意思表示がありました。</strong><br>
+  本ドキュメントは、本契約・本番運用開始までに必要なすべてのタスクと意思決定をまとめた実行計画書です。
+</div>
+
+<h2>📊 全体サマリー</h2>
+
+<div class="hero">
+  <div class="stat">
+    <div class="stat-num">5</div>
+    <div class="stat-label">意思決定が<br>必要な項目</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">28</div>
+    <div class="stat-label">実作業タスク</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">4〜6週</div>
+    <div class="stat-label">想定期間</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">4</div>
+    <div class="stat-label">フェーズ</div>
+  </div>
+</div>
+
+<h2>🤝 凡例</h2>
+
+<table>
+  <tr><th>マーク</th><th>意味</th></tr>
+  <tr><td><span class="critical">🔴 最優先</span></td><td>これが決まらないと先に進めない</td></tr>
+  <tr><td><span class="high">🟠 高</span></td><td>早めに動く必要あり</td></tr>
+  <tr><td><span class="medium">🟡 中</span></td><td>段階的に進めればOK</td></tr>
+  <tr><td><span class="low">🟢 低</span></td><td>後回しで構わない</td></tr>
+  <tr><td><span class="me">本人</span></td><td>こちらの担当</td></tr>
+  <tr><td><span class="a-company">A社</span></td><td>A社の担当</td></tr>
+  <tr><td><span class="both">両者</span></td><td>協議・共同作業</td></tr>
+  <tr><td><span class="decision">DECISION</span></td><td>意思決定が必要</td></tr>
+  <tr><td><span class="task">TASK</span></td><td>具体的な実作業</td></tr>
+</table>
+
+<h2>🎯 Part 1: 先に決めるべき 5つの意思決定</h2>
+
+<p><strong>これらが決まらないと作業計画が確定できません。A社との合意形成を最優先で。</strong></p>
+
+<h3>決定1: ホスティング先 <span class="critical">🔴 最優先</span> <span class="decision">DECISION</span></h3>
+
+<table>
+  <tr><th style="width:25%">選択肢</th><th style="width:25%">月額</th><th style="width:25%">設定難易度</th><th>向き不向き</th></tr>
+  <tr>
+    <td><strong>A) A社オンプレ</strong><br>（社内サーバー）</td>
+    <td>サーバー代込み<br>（既存資産活用なら +0円）</td>
+    <td>🔴 難（半日〜1日）</td>
+    <td>データ主権重視・既存サーバーあり</td>
+  </tr>
+  <tr>
+    <td><strong>B) VPS</strong><br>（さくらVPS/ConoHa/Linode等）</td>
+    <td>2,000〜5,000円</td>
+    <td>🟢 易（2時間）</td>
+    <td>低コスト・スモールスタート</td>
+  </tr>
+  <tr>
+    <td><strong>C) クラウド</strong><br>（AWS/GCP/Azure）</td>
+    <td>10,000〜30,000円</td>
+    <td>🟡 中（半日）</td>
+    <td>スケール要件・将来の拡張</td>
+  </tr>
+  <tr>
+    <td><strong>D) Render等のPaaS</strong></td>
+    <td>0〜3,000円（Free〜Standard）</td>
+    <td>🟢 易（30分）</td>
+    <td>PoC継続・運用工数最小</td>
+  </tr>
+</table>
+
+<div class="recommended">
+  A社の場合、教育機関なので「データを社内に置きたい」要望が強いはず。<br>
+  <strong>第1候補: A社オンプレ</strong>（情シスにLinuxサーバーがあれば）<br>
+  <strong>第2候補: VPS（さくらVPS東京リージョン）</strong>（オンプレ不可なら、データ国内・低コスト）
+</div>
+
+<h3>決定2: Anthropic APIキー所有者 <span class="critical">🔴 最優先</span> <span class="decision">DECISION</span></h3>
+
+<table>
+  <tr><th>方式</th><th>請求</th><th>メリット</th><th>デメリット</th></tr>
+  <tr>
+    <td><strong>方式X: 本人キー パススルー</strong></td>
+    <td>本人 → A社へ実費転送</td>
+    <td>変動リスクなし、A社決算楽</td>
+    <td>月額が読みにくい、税務処理が手間</td>
+  </tr>
+  <tr>
+    <td><strong>方式Y: A社キー直接</strong></td>
+    <td>A社 → Anthropic 直接</td>
+    <td>本人介在なし、透明性最大</td>
+    <td>A社が技術的設定対応、海外送金</td>
+  </tr>
+  <tr>
+    <td><strong>方式Z: 本人キー + 月額固定</strong></td>
+    <td>本人 → A社へ月額○円固定（API込み）</td>
+    <td>A社予算立てやすい、本人にマークアップ余地</td>
+    <td>本人が変動リスク負担</td>
+  </tr>
+</table>
+
+<div class="recommended">
+  <strong>方式Z（月額固定・API込み）</strong>がA社・本人双方にとって扱いやすい。<br>
+  「想定 ○○問/月までは月額○○円、超過分のみ実費精算」のハイブリッド設計。<br>
+  目安: 35名規模・月15,000〜25,000円のAPI実費 → 月額40,000円（API+保守込み）など。
+</div>
+
+<h3>決定3: 認証方式 <span class="critical">🔴 最優先</span> <span class="decision">DECISION</span></h3>
+
+<table>
+  <tr><th>方式</th><th>前提</th><th>運用負荷</th></tr>
+  <tr>
+    <td><strong>① 現状のGoogle OAuth（test users方式）</strong></td>
+    <td>手動でテストユーザー追加・100名上限</td>
+    <td>🟢 低（試験運用と同じ）</td>
+  </tr>
+  <tr>
+    <td><strong>② Google OAuth 本番公開</strong></td>
+    <td>OAuth verification 申請（1〜2週）・ドメイン認証必要</td>
+    <td>🟡 中（初回のみ手間）</td>
+  </tr>
+  <tr>
+    <td><strong>③ Google Workspace SSO + 許可ドメイン</strong></td>
+    <td>A社がGoogle Workspaceドメイン保有</td>
+    <td>🟢 低（ドメイン名のみ.envに）</td>
+  </tr>
+  <tr>
+    <td><strong>④ SAML/OIDC SSO</strong></td>
+    <td>A社がIdP（Microsoft Entra/Okta等）保有・Phase 3実装必要</td>
+    <td>🔴 高（追加開発・3週間〜）</td>
+  </tr>
+</table>
+
+<div class="recommended">
+  A社が Google Workspace を使っていれば <strong>③（ALLOWED_DOMAINで全社員自動許可）</strong>が最楽。<br>
+  使っていない場合は <strong>②（OAuth verification申請）</strong>で本番公開。
+</div>
+
+<h3>決定4: ドメインとURL <span class="high">🟠 高</span> <span class="decision">DECISION</span></h3>
+
+<table>
+  <tr><th>選択肢</th><th>URL例</th><th>備考</th></tr>
+  <tr>
+    <td>現状の <code>inquira-ai.com</code> 継続</td>
+    <td><code>faq.inquira-ai.com</code></td>
+    <td>本人保有ドメイン、追加コストなし</td>
+  </tr>
+  <tr>
+    <td>A社既存ドメインのサブドメイン</td>
+    <td><code>faq.aaa-corp.co.jp</code></td>
+    <td>A社の管理下、信頼感↑、A社DNS設定要</td>
+  </tr>
+  <tr>
+    <td>A社用に新規ドメイン取得</td>
+    <td><code>aaa-help.com</code> 等</td>
+    <td>独自感、取得費用 約2,000円/年</td>
+  </tr>
+</table>
+
+<div class="recommended">
+  <strong>A社既存ドメインのサブドメイン</strong>がベスト。<br>
+  ・ユーザーが「うちの会社のサービス」と認識して安心<br>
+  ・ブラウザ警告（試験運用時の「確認されていません」）が出にくい
+</div>
+
+<h3>決定5: 契約形態と料金 <span class="critical">🔴 最優先</span> <span class="decision">DECISION</span></h3>
+
+<table>
+  <tr><th>項目</th><th>選択肢</th></tr>
+  <tr><td>契約期間</td><td>月次自動更新 / 年次一括 / 3年契約</td></tr>
+  <tr><td>料金体系</td><td>月額固定 / ユーザー数課金 / 質問数課金</td></tr>
+  <tr><td>初期費用</td><td>あり（○○円） / なし（月額に内包）</td></tr>
+  <tr><td>SLA</td><td>業務時間内対応 / 24h対応 / なし</td></tr>
+  <tr><td>サポート</td><td>メールのみ / 電話あり / オンサイトあり</td></tr>
+</table>
+
+<div class="recommended">
+  初回案: <strong>初期構築費 50,000円 + 月額 40,000円（API・保守・サポート込み）</strong><br>
+  ・契約期間: 月次自動更新（縛りなしで導入決断しやすく）<br>
+  ・SLA: 業務時間内（9:00-18:00）対応、月の稼働率99%目標<br>
+  ・サポート: メール + Slack（A社のSlackに招待してもらう）
+</div>
+
+<h2>🛠️ Part 2: 実作業タスク（4フェーズ・28タスク）</h2>
+
+<div class="phase-card phase-1">
+  <h3>フェーズ1: 契約・準備（1〜2週間）</h3>
+
+  <table>
+    <tr><th style="width:5%">#</th><th style="width:45%">タスク</th><th style="width:15%">担当</th><th style="width:15%">優先度</th><th>所要</th></tr>
+    <tr><td>1</td><td>本契約書作成・締結（料金・SLA・解約条件）</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>3〜5日</td></tr>
+    <tr><td>2</td><td>個人情報保護に関する契約書（DPA）作成</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>2〜3日</td></tr>
+    <tr><td>3</td><td>請求書発行設定（インボイス番号等）</td><td><span class="me">本人</span></td><td><span class="high">🟠 高</span></td><td>1日</td></tr>
+    <tr><td>4</td><td>A社情シス担当者キックオフMTG</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>1日</td></tr>
+    <tr><td>5</td><td>サーバー仕様確定（OS/CPU/メモリ/ディスク）</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>1〜2日</td></tr>
+    <tr><td>6</td><td>ネットワーク要件確認（社内LAN/プロキシ/FW）</td><td><span class="both">両者</span></td><td><span class="high">🟠 高</span></td><td>1日</td></tr>
+    <tr><td>7</td><td>A社のドメイン管理者確認（DNS設定権限）</td><td><span class="a-company">A社</span></td><td><span class="high">🟠 高</span></td><td>1日</td></tr>
+  </table>
+</div>
+
+<div class="phase-card phase-2">
+  <h3>フェーズ2: インフラ構築（1〜2週間）</h3>
+
+  <table>
+    <tr><th style="width:5%">#</th><th style="width:45%">タスク</th><th style="width:15%">担当</th><th style="width:15%">優先度</th><th>所要</th></tr>
+    <tr><td>8</td><td>サーバー調達・OS（Ubuntu 22.04 LTS推奨）インストール</td><td><span class="a-company">A社</span></td><td><span class="critical">🔴 最優先</span></td><td>2〜3日</td></tr>
+    <tr><td>9</td><td>SSH/SSL接続設定、Python 3.11+ インストール</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>1日</td></tr>
+    <tr><td>10</td><td>本番ドメイン取得・DNS設定（決定4の選択次第）</td><td><span class="a-company">A社</span></td><td><span class="high">🟠 高</span></td><td>1日</td></tr>
+    <tr><td>11</td><td>SSL証明書取得（Let's Encrypt / 商用証明書）</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>1日</td></tr>
+    <tr><td>12</td><td>Nginx リバースプロキシ設定</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>1日</td></tr>
+    <tr><td>13</td><td>Inquira アプリ本番デプロイ（systemd登録）</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>1日</td></tr>
+    <tr><td>14</td><td>本番 Google OAuth 設定（決定3の選択次第）</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>1〜2日</td></tr>
+    <tr><td>15</td><td>Anthropic API キー本番設定（決定2の方式次第）</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
+    <tr><td>16</td><td>監査ログ・バックアップ自動化（cron設定）</td><td><span class="me">本人</span></td><td><span class="high">🟠 高</span></td><td>1日</td></tr>
+    <tr><td>17</td><td>監視・アラート設定（UptimeRobot等）</td><td><span class="me">本人</span></td><td><span class="medium">🟡 中</span></td><td>0.5日</td></tr>
+    <tr><td>18</td><td>ファイアウォール設定（80/443のみ開放）</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
+  </table>
+</div>
+
+<div class="phase-card phase-3">
+  <h3>フェーズ3: データ移行・コンテンツ整備（1〜2週間）</h3>
+
+  <table>
+    <tr><th style="width:5%">#</th><th style="width:45%">タスク</th><th style="width:15%">担当</th><th style="width:15%">優先度</th><th>所要</th></tr>
+    <tr><td>19</td><td>試験運用データのバックアップ・本番への移行</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
+    <tr><td>20</td><td>1,000件チケットのクレンジング・分類（パレート上位）</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>3〜5日</td></tr>
+    <tr><td>21</td><td>A社マニュアル類の本番取り込み</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>2〜3日</td></tr>
+    <tr><td>22</td><td>業界プリセット（教育系）の調整</td><td><span class="me">本人</span></td><td><span class="medium">🟡 中</span></td><td>1日</td></tr>
+    <tr><td>23</td><td>初期FAQ品質テスト（社内20問程度のQA）</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>1〜2日</td></tr>
+  </table>
+</div>
+
+<div class="phase-card phase-4">
+  <h3>フェーズ4: 本番リリース・運用開始（1週間）</h3>
+
+  <table>
+    <tr><th style="width:5%">#</th><th style="width:45%">タスク</th><th style="width:15%">担当</th><th style="width:15%">優先度</th><th>所要</th></tr>
+    <tr><td>24</td><td>A社全社員向け操作マニュアル作成（A社のロゴ入り）</td><td><span class="me">本人</span></td><td><span class="high">🟠 高</span></td><td>1〜2日</td></tr>
+    <tr><td>25</td><td>A社管理者向け運用マニュアル作成（取込・削除・運用）</td><td><span class="me">本人</span></td><td><span class="high">🟠 高</span></td><td>1日</td></tr>
+    <tr><td>26</td><td>A社管理者へのトレーニング実施（オンサイト or Zoom）</td><td><span class="both">両者</span></td><td><span class="high">🟠 高</span></td><td>0.5日</td></tr>
+    <tr><td>27</td><td>A社全社員へのキックオフ告知（社内メール）</td><td><span class="a-company">A社</span></td><td><span class="high">🟠 高</span></td><td>0.5日</td></tr>
+    <tr><td>28</td><td>本番リリース・初週密着サポート</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>5日</td></tr>
+  </table>
+</div>
+
+<h2>📅 想定タイムライン</h2>
+
+<table>
+  <tr><th>週</th><th>主な作業</th><th>マイルストーン</th></tr>
+  <tr><td>Week 1</td><td>決定1〜5の合意、契約締結、キックオフMTG</td><td>契約締結</td></tr>
+  <tr><td>Week 2</td><td>サーバー調達、ドメイン取得、基本インフラ構築</td><td>サーバー準備完了</td></tr>
+  <tr><td>Week 3</td><td>Inquiraアプリデプロイ、OAuth/SSL設定、監視設定</td><td>本番環境動作確認</td></tr>
+  <tr><td>Week 4</td><td>データクレンジング、文書取り込み、品質テスト</td><td>コンテンツ準備完了</td></tr>
+  <tr><td>Week 5</td><td>マニュアル作成、A社管理者トレーニング</td><td>運用準備完了</td></tr>
+  <tr><td>Week 6</td><td>本番リリース、初週密着サポート</td><td>🎉 本格運用開始</td></tr>
+</table>
+
+<h2>💰 想定コスト構造（A社視点）</h2>
+
+<table>
+  <tr><th>項目</th><th>金額（試算）</th><th>頻度</th><th>備考</th></tr>
+  <tr><td>初期構築費</td><td>50,000〜100,000円</td><td>一括</td><td>環境構築・OAuth設定・初期データ投入・操作レクチャー</td></tr>
+  <tr><td>月額保守費</td><td>30,000〜50,000円</td><td>月額</td><td>稼働監視・不具合対応・バージョンアップ・サポート</td></tr>
+  <tr><td>Claude API実費</td><td>15,000〜25,000円</td><td>月額（変動）</td><td>35名・標準シナリオ。質問数で変動</td></tr>
+  <tr><td>ホスティング費（VPS時）</td><td>2,000〜5,000円</td><td>月額</td><td>オンプレなら不要</td></tr>
+  <tr><td>ドメイン費用</td><td>1,500〜3,000円</td><td>年額</td><td>新規取得時のみ</td></tr>
+</table>
+
+<div class="alert-info">
+  <strong>💡 推奨提示価格</strong><br>
+  「初期 100,000円 + 月額 50,000円（API・保守・ホスティング込み）」<br>
+  → A社が予算を立てやすい単純な構造。本人にとっても変動リスク低い。
+</div>
+
+<h2>🔐 セキュリティ・コンプライアンス対応</h2>
+
+<table>
+  <tr><th>項目</th><th>対応</th><th>備考</th></tr>
+  <tr><td>個人情報保護法対応</td><td>DPA契約締結、利用目的明確化</td><td>教育機関は特に厳格</td></tr>
+  <tr><td>データ保管場所</td><td>日本国内サーバー（A社オンプレ or 国内VPS）</td><td>海外移転禁止条項</td></tr>
+  <tr><td>アクセスログ保管</td><td>監査ログ 1年以上保管（cron で日次バックアップ）</td><td>すでに実装済</td></tr>
+  <tr><td>暗号化通信</td><td>HTTPS必須（SSL証明書）</td><td>Let's Encrypt自動更新</td></tr>
+  <tr><td>パスワード認証なし</td><td>Google OAuth一本化</td><td>パスワード漏洩リスクゼロ</td></tr>
+  <tr><td>PII マスキング</td><td>業界プリセット（education）適用</td><td>すでに実装済</td></tr>
+  <tr><td>AIによる学習利用</td><td>Anthropic APIは学習に利用しない契約</td><td>商用契約条項で担保</td></tr>
+  <tr><td>バックアップ</td><td>日次自動バックアップ、3世代保管</td><td>Phase2で設定</td></tr>
+</table>
+
+<h2>⚠️ リスクと対策</h2>
+
+<table>
+  <tr><th>リスク</th><th>影響</th><th>対策</th></tr>
+  <tr><td>API実費が想定を大幅超過</td><td>本人の持ち出し or A社請求増</td><td>月間質問数上限設定、キャッシュ最適化、超過時の事前通知</td></tr>
+  <tr><td>サーバー障害（A社オンプレ）</td><td>サービス停止</td><td>監視アラート、バックアップ、復旧手順書</td></tr>
+  <tr><td>データ漏洩</td><td>信用失墜・損害賠償</td><td>SSL、認証、PIIマスキング、監査ログ、契約書での責任範囲明確化</td></tr>
+  <tr><td>A社の人事異動で担当変更</td><td>運用継続性</td><td>運用マニュアル整備、Slack共有チャネル維持</td></tr>
+  <tr><td>Claude APIの仕様変更</td><td>機能停止</td><td>バージョン固定、変更時の事前通知契約</td></tr>
+  <tr><td>本人側のリソース不足</td><td>サポート遅延</td><td>営業時間SLA明確化、緊急時連絡先2系統</td></tr>
+</table>
+
+<h2>🎯 成功指標（KPI）</h2>
+
+<table>
+  <tr><th>指標</th><th>目標値（3ヶ月後）</th></tr>
+  <tr><td>月間アクティブユーザー率</td><td>登録者の70%以上</td></tr>
+  <tr><td>質問解決率（自己解決できた割合）</td><td>60%以上</td></tr>
+  <tr><td>ヘルプデスクへの問い合わせ削減率</td><td>30%以上</td></tr>
+  <tr><td>サービス稼働率</td><td>99%以上</td></tr>
+  <tr><td>1質問あたりの平均応答時間</td><td>3秒以内</td></tr>
+  <tr><td>A社満足度スコア（NPS）</td><td>40以上</td></tr>
+</table>
+
+<div class="next-action">
+  <h2>🎬 直近の次アクション（1週間以内）</h2>
+  <ol>
+    <li><strong>A社情シス担当者とキックオフMTG設定</strong>（決定1〜5を一気に詰める）</li>
+    <li><strong>A社のサーバー環境・Google Workspace有無を確認</strong>（決定1・3に直結）</li>
+    <li><strong>本契約書ドラフト作成</strong>（料金体系・SLA・解約条件）</li>
+    <li><strong>API実費の正式試算</strong>（試験運用の実測値ベースで再算出）</li>
+    <li><strong>本人側のリソース計画</strong>（フェーズ2〜4で何日確保するか）</li>
+  </ol>
+</div>
+
+<h2>📞 A社へのキックオフMTG アジェンダ案</h2>
+
+<div class="card">
+  <p><strong>所要時間: 90分</strong></p>
+  <ol>
+    <li><strong>試験運用の振り返り（10分）</strong><br>
+      ・利用状況・フィードバック・改善点
+    </li>
+    <li><strong>本格導入の前提確認（15分）</strong><br>
+      ・利用人数（試験時 → 本番時）<br>
+      ・利用範囲（部署限定 → 全社展開）<br>
+      ・期待効果と KPI
+    </li>
+    <li><strong>技術要件の決定（30分）</strong><br>
+      ・ホスティング先（オンプレ/VPS/クラウド）<br>
+      ・認証方式（Google Workspace有無）<br>
+      ・ドメイン<br>
+      ・API契約形態
+    </li>
+    <li><strong>契約・料金体系の合意（20分）</strong><br>
+      ・料金プラン提示<br>
+      ・SLA・サポート範囲<br>
+      ・契約期間
+    </li>
+    <li><strong>スケジュール調整（10分）</strong><br>
+      ・本番リリース目標日<br>
+      ・各フェーズの担当者
+    </li>
+    <li><strong>次回打ち合わせの設定（5分）</strong></li>
+  </ol>
+</div>
+
+<div style="margin-top: 48px; padding: 20px; background: linear-gradient(135deg, #047857, #10b981); color: white; border-radius: 12px; text-align: center;">
+  <div style="font-size: 20px; font-weight: bold; margin-bottom: 8px;">🚀 試験運用 → 本契約 — Inquira初の有償導入事例</div>
+  <div style="font-size: 14px; opacity: 0.9;">A社の成功事例は、2社目以降の営業材料として大きな価値を持ちます。</div>
+</div>
+
+<div style="margin-top: 32px; text-align: center; color: #6b7280; font-size: 12px;">
+  Inquira A社本番導入計画 / 2026-05-30 / 担当: 本人
+</div>
+
+</body>
+</html>
