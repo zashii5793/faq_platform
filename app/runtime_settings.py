@@ -1,4 +1,4 @@
-"""ランタイムで編集可能な組織情報（ORG_NAME, ASSISTANT_ROLE 等）。
+"""ランタイムで編集可能な組織情報・ストレージパス設定。
 
 `.env` の値を初期値として、UI から上書き可能。
 変更は `data/org_settings.json` に保存され、次回起動時にも反映される。
@@ -22,6 +22,15 @@ EDITABLE_KEYS = {
     "org_name",
     "assistant_role",
     "masking_industry",
+    # --- ストレージパス（A社オンプレ運用で利用者がディレクトリを切替できるよう公開） ---
+    "faq_master_dir",
+    "raw_upload_dir",
+}
+
+# Path 型として扱うキー（str から Path への変換が必要）
+PATH_KEYS = {
+    "faq_master_dir",
+    "raw_upload_dir",
 }
 
 
@@ -36,7 +45,8 @@ def load_and_apply() -> dict[str, Any]:
     applied: dict[str, Any] = {}
     for key, value in data.items():
         if key in EDITABLE_KEYS and value:
-            setattr(settings, key, value)
+            applied_value = Path(value) if key in PATH_KEYS else value
+            setattr(settings, key, applied_value)
             applied[key] = value
     return applied
 
@@ -52,8 +62,38 @@ def current_overrides() -> dict[str, Any]:
 
 
 def get_effective() -> dict[str, Any]:
-    """編集可能キーの「現在有効な値」を返す（オーバーライド適用後）。"""
-    return {key: getattr(settings, key) for key in EDITABLE_KEYS}
+    """編集可能キーの「現在有効な値」を返す（オーバーライド適用後）。
+
+    Path 型は str に変換して返す（JSON 化のため）。
+    """
+    result: dict[str, Any] = {}
+    for key in EDITABLE_KEYS:
+        value = getattr(settings, key)
+        result[key] = str(value) if isinstance(value, Path) else value
+    return result
+
+
+def _validate_path(key: str, value: str) -> Path:
+    """ストレージパスの妥当性チェック。
+
+    - 親ディレクトリが存在することを確認（無ければ作成試行）
+    - 書き込み権限があることを確認
+    """
+    path = Path(value).expanduser()
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except (OSError, PermissionError) as e:
+        raise ValueError(f"{key}: ディレクトリを作成できません ({e})") from e
+    if not path.is_dir():
+        raise ValueError(f"{key}: 指定パスはディレクトリではありません")
+    # 書き込み権限テスト（一時ファイル作成 → 削除）
+    test_file = path / ".inquira_write_test"
+    try:
+        test_file.touch()
+        test_file.unlink()
+    except (OSError, PermissionError) as e:
+        raise ValueError(f"{key}: 書き込み権限がありません ({e})") from e
+    return path
 
 
 def update(updates: dict[str, Any]) -> dict[str, Any]:
@@ -80,11 +120,18 @@ def update(updates: dict[str, Any]) -> dict[str, Any]:
         if not value:
             existing.pop(key, None)
             continue
-        if len(value) > 200:
-            raise ValueError(f"{key} は 200 文字以内にしてください")
-        existing[key] = value
-        setattr(settings, key, value)
-        applied[key] = value
+        max_len = 500 if key in PATH_KEYS else 200
+        if len(value) > max_len:
+            raise ValueError(f"{key} は {max_len} 文字以内にしてください")
+        if key in PATH_KEYS:
+            path = _validate_path(key, value)
+            setattr(settings, key, path)
+            existing[key] = str(path)
+            applied[key] = str(path)
+        else:
+            existing[key] = value
+            setattr(settings, key, value)
+            applied[key] = value
 
     OVERRIDES_PATH.write_text(
         json.dumps(existing, ensure_ascii=False, indent=2),

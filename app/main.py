@@ -2289,13 +2289,18 @@ const SETTINGS_LABELS = {
   org_name: '組織名',
   assistant_role: 'アシスタント役割',
   masking_industry: 'マスキング業界プリセット',
+  faq_master_dir: 'FAQ 格納フォルダ',
+  raw_upload_dir: '原本ファイル格納フォルダ',
 };
 const SETTINGS_HINTS = {
   product_name: 'チャット画面のタイトルに表示されます（例: Inquira）',
   org_name: 'AIの自己紹介に使われます（例: 株式会社○○）',
   assistant_role: 'AIの役割設定（例: 社内ヘルプデスク / 顧客サポート）',
   masking_industry: 'PII検出の業界辞書（general / education / medical / finance）',
+  faq_master_dir: '取り込み済み FAQ（クレンジング後の Markdown）の保存先。例: /opt/inquira/data/faq_master または /Users/me/inquira-data/faq',
+  raw_upload_dir: 'アップロード元の原本ファイル（PDF/Excel等）の保存先。例: /opt/inquira/data/raw',
 };
+const SETTINGS_PATH_KEYS = new Set(['faq_master_dir', 'raw_upload_dir']);
 
 async function loadSettings(){
   settingsSection.innerHTML = '<div class="empty-msg"><span class="spinner"></span>読み込み中…</div>';
@@ -2315,14 +2320,18 @@ function renderSettings(data){
   const keys = data.editable_keys || [];
   const rows = keys.map(k => {
     const isOverride = k in overrides;
+    const isPath = SETTINGS_PATH_KEYS.has(k);
+    const maxLen = isPath ? 500 : 200;
+    const pathHint = isPath ? '<div class="setting-hint" style="color:#9a3412;">⚠ パス変更後は <b>取り込み済みデータを新フォルダに移してから</b> アプリ再起動を推奨。既存ファイルは自動移動されません。</div>' : '';
     return `
       <div class="setting-row">
         <label class="setting-label">
           ${SETTINGS_LABELS[k] || k}
           ${isOverride ? '<span class="setting-badge">UIから編集済</span>' : '<span class="setting-badge default">.env デフォルト</span>'}
         </label>
-        <input type="text" data-key="${k}" value="${escape(eff[k] || '')}" maxlength="200"/>
+        <input type="text" data-key="${k}" value="${escape(eff[k] || '')}" maxlength="${maxLen}"/>
         <div class="setting-hint">${escape(SETTINGS_HINTS[k] || '')}</div>
+        ${pathHint}
       </div>
     `;
   }).join('');
