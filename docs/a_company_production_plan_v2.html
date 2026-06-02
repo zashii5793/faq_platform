@@ -175,12 +175,32 @@
 
 <div class="decided-section">
   <h3>🏢 サーバー: A社オンプレ <span class="decided">確定</span></h3>
-  <p>A社の社内サーバー（Linuxサーバー）に Inquira をインストール。データは A社の建物内に保管。</p>
+  <p>A社の社内サーバー（Linux または <strong>Windows Server</strong>）に Inquira をインストール。データは A社の建物内に保管。</p>
+
+  <p><strong>OS 選択肢（どちらも完全サポート）</strong>:</p>
+
+  <table style="margin-top:10px;">
+    <tr><th>項目</th><th>Linux（推奨A）</th><th>Windows Server（推奨B）</th></tr>
+    <tr><td>OS</td><td>Ubuntu 22.04 LTS</td><td>Windows Server 2022 / 2019</td></tr>
+    <tr><td>メモリ</td><td>2GB+</td><td>4GB+</td></tr>
+    <tr><td>ディスク</td><td>20GB+</td><td>40GB+</td></tr>
+    <tr><td>Python</td><td>3.11+（apt）</td><td>3.11+（Microsoft Store / python.org）</td></tr>
+    <tr><td>サービス常駐</td><td>systemd</td><td>NSSM で Windows サービス化</td></tr>
+    <tr><td>リバースプロキシ</td><td>Nginx</td><td>IIS または Nginx for Windows</td></tr>
+    <tr><td>SSL 証明書</td><td>certbot（Let's Encrypt）</td><td>win-acme（Let's Encrypt）or 商用CA</td></tr>
+    <tr><td>FW</td><td>ufw</td><td>Windows Defender FW</td></tr>
+    <tr><td>参照ガイド</td><td>setup_guide_mac.md</td><td>setup_guide_windows.md（566行）</td></tr>
+  </table>
+
+  <div class="change-note">
+    💡 <strong>選択指針</strong>: A社の既存サーバー資産に合わせるのが最も低リスク。「いつものOSを継続」が運用工数最小。
+  </div>
+
+  <p style="margin-top:12px;"><strong>共通要件</strong>:</p>
   <ul>
-    <li><strong>OS</strong>: Ubuntu 22.04 LTS（推奨）または既存の Linux サーバー</li>
-    <li><strong>スペック</strong>: 2GB メモリ / 4GB ディスク以上</li>
-    <li><strong>必須</strong>: Python 3.11+</li>
-    <li><strong>外部接続</strong>: Anthropic API への HTTPS 通信のみ</li>
+    <li><strong>外部接続</strong>: Anthropic API への HTTPS 通信のみ許可（その他はFWで遮断）</li>
+    <li><strong>静的IP</strong>: 必須（社内DNSに登録）</li>
+    <li><strong>バックアップ</strong>: ディスク全体 or データディレクトリのみ（要相談）</li>
   </ul>
 </div>
 
@@ -297,9 +317,9 @@
     <tr><td>2</td><td>A社情シス担当者キックオフMTG（検討1〜3を決定）</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>1日</td></tr>
     <tr><td>3</td><td>契約締結・印鑑回収</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>2〜3日</td></tr>
     <tr><td>4</td><td>個人情報保護に関する契約書（DPA）締結</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>並行</td></tr>
-    <tr><td>5</td><td>A社サーバー仕様確定・調達発注</td><td><span class="a-company">A社</span></td><td><span class="critical">🔴 最優先</span></td><td>1〜2日</td></tr>
-    <tr><td>6</td><td>サーバーOS（Ubuntu 22.04 LTS）インストール</td><td><span class="a-company">A社</span></td><td><span class="high">🟠 高</span></td><td>0.5日</td></tr>
-    <tr><td>7</td><td>Python 3.11、git、systemd の準備</td><td><span class="a-company">A社</span></td><td><span class="high">🟠 高</span></td><td>0.5日</td></tr>
+    <tr><td>5</td><td>A社サーバー仕様確定（<strong>Linux/Windows どちらかを選択</strong>）・調達発注</td><td><span class="a-company">A社</span></td><td><span class="critical">🔴 最優先</span></td><td>1〜2日</td></tr>
+    <tr><td>6</td><td>サーバーOSインストール（Ubuntu 22.04 LTS または Windows Server 2022）</td><td><span class="a-company">A社</span></td><td><span class="high">🟠 高</span></td><td>0.5日</td></tr>
+    <tr><td>7</td><td>Python 3.11 + git のインストール（Linux: apt / Windows: Microsoft Store または python.org）</td><td><span class="a-company">A社</span></td><td><span class="high">🟠 高</span></td><td>0.5日</td></tr>
     <tr><td>8</td><td>ネットワーク・FW 要件確認（Anthropic API への HTTPS 通信のみ許可）</td><td><span class="both">両者</span></td><td><span class="high">🟠 高</span></td><td>0.5日</td></tr>
   </table>
 </div>
@@ -311,9 +331,9 @@
     <tr><th style="width:5%">#</th><th style="width:45%">タスク</th><th style="width:15%">担当</th><th style="width:15%">優先度</th><th>所要</th></tr>
     <tr><td>9</td><td>SSH 接続確立、git clone でリポジトリ展開</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
     <tr><td>10</td><td><code>.env</code> 本番設定（APIキー・OAuth）</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
-    <tr><td>11</td><td>SSL 証明書取得（オンプレ運用なら自己署名 or 内部CA）</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
-    <tr><td>12</td><td>Nginx リバースプロキシ設定</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
-    <tr><td>13</td><td>Inquira を <code>serve.sh</code> で起動 → systemd 化</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
+    <tr><td>11</td><td>SSL 証明書取得（Linux: certbot / Windows: win-acme、内部CA も可）</td><td><span class="both">両者</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
+    <tr><td>12</td><td>リバースプロキシ設定（Linux: Nginx / Windows: <strong>IIS</strong> または Nginx for Windows）</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
+    <tr><td>13</td><td>Inquira を常駐起動（Linux: <code>serve.sh</code> → systemd / Windows: PowerShell → <strong>NSSM</strong>）</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
     <tr><td>14</td><td>管理画面から <strong>ストレージパスを A社専用パスに設定</strong>（v0.8.0 新機能）</td><td><span class="me">本人</span></td><td><span class="high">🟠 高</span></td><td>0.1日</td></tr>
     <tr><td>15</td><td>Google OAuth 本番設定（A社管理者メール許可）</td><td><span class="me">本人</span></td><td><span class="critical">🔴 最優先</span></td><td>0.5日</td></tr>
     <tr><td>16</td><td>監査ログ・バックアップ自動化（cron 設定）</td><td><span class="me">本人</span></td><td><span class="high">🟠 高</span></td><td>0.5日</td></tr>
@@ -385,6 +405,7 @@
   <tr><td>Claude API の仕様変更</td><td>バージョン固定、変更時の事前通知契約</td></tr>
   <tr><td>本人側リソース不足</td><td>営業時間SLA明確化、緊急時連絡先2系統</td></tr>
   <tr><td><strong>A社キー切替時のトラブル</strong></td><td>切替前にテストキーで動作確認、ロールバック手順用意</td></tr>
+  <tr><td><strong>Windows特有の問題（パス区切り・サービス起動）</strong></td><td>setup_guide_windows.md で検証済の手順を踏襲、本人側で事前検証環境を用意</td></tr>
 </table>
 
 <h2>🎯 成功指標（KPI）</h2>
@@ -416,7 +437,7 @@
   <tr><th>セクション</th><th>所要</th><th>議題</th></tr>
   <tr><td>振り返り</td><td>10分</td><td>試験運用の利用状況・フィードバック・改善点</td></tr>
   <tr><td>運用前提</td><td>15分</td><td>利用人数・部署範囲・期待効果・KPI</td></tr>
-  <tr><td>技術要件</td><td>20分</td><td>サーバー仕様確認、ネットワーク、SSL方針</td></tr>
+  <tr><td>技術要件</td><td>20分</td><td><strong>サーバーOS（Linux/Windows）選択</strong>、スペック、ネットワーク、SSL方針</td></tr>
   <tr><td>契約・料金</td><td>20分</td><td>料金プラン、SLA、サポート、契約期間</td></tr>
   <tr><td>データ取り込み方針</td><td>15分</td><td>クレンジング方針、マスキング、月次更新</td></tr>
   <tr><td>スケジュール</td><td>10分</td><td>本番リリース目標日、各タスク担当者</td></tr>
