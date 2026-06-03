@@ -1,0 +1,103 @@
+# Inquira 自社サーバー導入用 docker-compose
+#
+# クライアント（A社等）が用意した VPS / オンプレ Linux に Inquira を 1社分
+# デプロイする標準構成。Inquira 本体 + Caddy（SSL終端）の 2 コンテナで完結する。
+#
+# データはすべて ${DATA_DIR}（クライアントサーバー内）に保存される。
+# Inquira 提供元（運営）は SSH 権限を持たない限り、このサーバーには触れない。
+#
+# === 導入手順 ===
+#   1) このディレクトリ一式をクライアントサーバーの /srv/inquira-deploy/ 等に配置
+#   2) cp .env.example .env してすべての必須項目を埋める
+#   3) sudo mkdir -p /srv/inquira/data && sudo chown 1000:1000 /srv/inquira/data
+#   4) docker compose up -d
+#   5) DNS で ${CLIENT_HOST} を このサーバーの IP に向ける（A レコード）
+#      → Caddy が Let's Encrypt から自動で HTTPS 証明書を取得
+#
+# === バックアップ ===
+#   ${DATA_DIR} を tar / rsync で取得すれば全データを保全できる。
+#   詳細は docs/data_storage_guide.md を参照。
+
+services:
+  inquira:
+    image: ${INQUIRA_IMAGE:-ghcr.io/zashii5793/inquira:latest}
+    container_name: inquira-app
+    restart: unless-stopped
+
+    expose:
+      - "8000"
+
+    environment:
+      PRODUCT_NAME: Inquira
+      ORG_NAME: ${ORG_NAME}
+      ASSISTANT_ROLE: ${ASSISTANT_ROLE:-社内ヘルプデスク}
+
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-6}
+
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: https://${CLIENT_HOST}/auth/callback
+      ALLOWED_DOMAIN: ${ALLOWED_DOMAIN}
+      ALLOWED_EMAILS: ${ALLOWED_EMAILS}
+
+      SESSION_SECRET: ${SESSION_SECRET}
+
+      # データはコンテナ内では /app/data 配下に置く。
+      # ホスト側の DATA_DIR にマウントされるため、実体はクライアントサーバー内に残る。
+      FAQ_MASTER_DIR: /app/data/faq_master
+      INDEX_PATH: /app/data/index.json
+      AUDIT_LOG_DIR: /app/data/audit
+      FEEDBACK_PATH: /app/data/feedback_scores.json
+      ORG_SETTINGS_PATH: /app/data/org_settings.json
+      RAW_UPLOAD_DIR: /app/data/raw
+      EMBEDDING_CACHE_PATH: /app/data/embeddings.npz
+
+      MASKING_INDUSTRY: ${MASKING_INDUSTRY:-general}
+      EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-tfidf}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-1024}
+
+      DEMO_MODE: "false"
+
+    volumes:
+      # クライアントサーバー内のディレクトリにマウント。
+      # 一般スタッフからも Inquira 運営からも、ここへの直接アクセスは不可。
+      - ${DATA_DIR:-/srv/inquira/data}:/app/data
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    networks:
+      - inquira_net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: inquira-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CLIENT_HOST: ${CLIENT_HOST}
+      ACME_EMAIL: ${ACME_EMAIL:-ops@inquira.app}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      inquira:
+        condition: service_healthy
+    networks:
+      - inquira_net
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  inquira_net:
+    driver: bridge

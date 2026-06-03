@@ -1,0 +1,23 @@
+# 単一クライアント向け Caddy 設定（自社サーバー導入用）
+#
+# {$CLIENT_HOST} は環境変数から展開される（例: a-company.inquira.app）。
+# Let's Encrypt から自動で TLS 証明書を取得・更新する。
+
+{
+    email {$ACME_EMAIL}
+}
+
+{$CLIENT_HOST} {
+    reverse_proxy inquira-app:8000 {
+        health_uri /healthz
+        health_interval 30s
+    }
+    encode gzip
+    # アクセスログ。Caddy ボリュームに残る。情シスのみアクセス可。
+    log {
+        output file /data/access.log {
+            roll_size 100mb
+            roll_keep 10
+        }
+    }
+}
