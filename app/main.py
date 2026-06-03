@@ -86,6 +86,56 @@ p{{color:#6b7280;margin:0 0 24px}}
 </div></body></html>"""
 
 
+def _data_storage_info_html() -> str:
+    """データ保管場所と「サーバー管理者以外は直接アクセス不可」を明示するセクション。
+
+    Inquira は完全ローカル保存型のため、データは Inquira を動かしているサーバー内にしか
+    存在しない。サーバー管理者（情シス）以外の一般スタッフも、Inquira 提供元（運営）も、
+    OS レベルではこのデータには到達できない — それを UI 上で明示する。
+    """
+    rows_data = [
+        ("FAQマスター", settings.faq_master_dir),
+        ("検索インデックス", settings.index_path),
+        ("監査ログ", settings.audit_log_dir),
+        ("フィードバック", settings.feedback_path),
+        ("組織設定", settings.org_settings_path),
+        ("アップロード原本", settings.raw_upload_dir),
+    ]
+    rows = "".join(
+        f'<div class="data-path-row">'
+        f'<div class="data-path-name">{_esc(name)}</div>'
+        f'<code class="data-path-value">{_esc(str(Path(p).resolve()))}</code>'
+        f"</div>"
+        for name, p in rows_data
+    )
+    return f"""
+  <details class="section section-admin" open>
+    <summary>💾 データの保管場所</summary>
+    <div class="data-paths">{rows}</div>
+    <div class="data-access-note">
+      <div class="dan-row"><b>🔒 サーバー管理者のみアクセス可</b><br>
+        上記パスは <b>このサーバー内</b> のファイルです。OS レベルで読み書きするには
+        <b>サーバー管理者権限（SSH ログイン）</b> が必要です。
+        一般スタッフが Inquira の UI から見られるのは整形後の本文のみで、ファイル実体には届きません。</div>
+      <div class="dan-row" style="margin-top:8px"><b>🌐 Inquira 運営からもアクセス不可</b><br>
+        Inquira 提供元はこのサーバーへのアクセス権を <b>持っていません</b>。
+        運営側からデータに直接触れることはできず、サポート対応時も
+        貴社情シスから明示の許可と SSH 権限の発行があって初めてアクセスが可能になります。</div>
+    </div>
+  </details>
+"""
+
+
+def _data_trust_line_html() -> str:
+    """画面下部に常時表示する、データ主権についての短い注記。"""
+    return (
+        '<div class="data-trust-line">'
+        "🔒 データは貴社サーバー内に保管されています "
+        "／ Inquira 運営（提供元）からはアクセスできません"
+        "</div>"
+    )
+
+
 def _chat_page(user_email: str) -> str:
     return f"""<!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
@@ -450,6 +500,23 @@ header .org{{font-size:15px;font-weight:600;color:#1f2937}}
                               box-shadow:0 2px 6px rgba(16,185,129,.3)}}
 .feedback button.down.active{{background:#dc2626;color:#fff;border-color:#dc2626;
                                 box-shadow:0 2px 6px rgba(220,38,38,.3)}}
+/* データ保管情報パネル（管理者ビュー） */
+.data-paths{{margin-bottom:10px}}
+.data-path-row{{display:flex;flex-direction:column;gap:2px;padding:6px 0;
+                border-bottom:1px dashed #f3f4f6}}
+.data-path-row:last-child{{border-bottom:0;padding-bottom:0}}
+.data-path-name{{font-size:11px;color:#6b7280;font-weight:600}}
+.data-path-value{{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+                  font-size:11px;color:#374151;background:#f9fafb;padding:3px 6px;
+                  border-radius:4px;word-break:break-all;display:block;
+                  border:1px solid #f3f4f6}}
+.data-access-note{{background:#fef9e7;border:1px solid #fde68a;border-radius:8px;
+                    padding:10px 12px;font-size:11.5px;color:#78350f;line-height:1.6}}
+.dan-row b{{color:#92400e}}
+/* フッターの「データ主権」常時表示ライン */
+.data-trust-line{{background:#f8fafc;border-top:1px solid #e5e7eb;
+                  padding:8px 28px;font-size:11.5px;color:#475569;text-align:center;
+                  letter-spacing:.01em}}
 footer.input-area{{background:#fff;border-top:1px solid #e5e7eb;padding:16px 28px;
                     box-shadow:0 -1px 4px rgba(0,0,0,.03)}}
 .input-wrap{{display:flex;gap:10px;max-width:960px;margin:0 auto}}
@@ -529,6 +596,7 @@ button.send:disabled{{background:#9ca3af;box-shadow:none;transform:none;cursor:n
     <summary>⚠ 改善要望のあった質問 <span id="fb-issues-count"></span></summary>
     <ul id="fb-issues"><li class="empty-list" style="list-style:none;padding-left:0">なし</li></ul>
   </details>
+{_data_storage_info_html()}
 </aside>
 
 <main>
@@ -559,6 +627,7 @@ button.send:disabled{{background:#9ca3af;box-shadow:none;transform:none;cursor:n
       </form>
     </div>
   </footer>
+  {_data_trust_line_html()}
 </main>
 
 <script>
