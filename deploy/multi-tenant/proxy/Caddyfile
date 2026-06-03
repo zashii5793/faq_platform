@@ -1,0 +1,34 @@
+# Caddyfile — *.inquira.app ワイルドカード終端
+#
+# クライアントを追加するたびに books の中に1ブロック増やすだけ。
+# Caddy 自体の再読込:  docker exec inquira-proxy caddy reload --config /etc/caddy/Caddyfile
+#
+# DNS-01 によるワイルドカード証明書を使う場合は、下の {env.DNS_API_TOKEN} と
+# プロバイダ別の caddy-dns プラグインを設定する（Caddy 公式ドキュメント参照）。
+
+{
+    email ops@inquira.app
+    # ワイルドカード証明書を使う場合は DNS-01 challenge を有効化:
+    # acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+}
+
+# クライアントごとに1ブロックずつ追加。
+# provision-client.sh が自動で追記する。
+
+# === BEGIN CLIENTS ===
+
+a-company.inquira.app {
+    reverse_proxy inquira-a-company:8000 {
+        health_uri /healthz
+        health_interval 30s
+    }
+    encode gzip
+    log {
+        output file /data/access-a-company.log {
+            roll_size 100mb
+            roll_keep 10
+        }
+    }
+}
+
+# === END CLIENTS ===

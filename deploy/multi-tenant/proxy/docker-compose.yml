@@ -1,0 +1,32 @@
+# 全テナント共通のリバースプロキシ
+#
+# Caddy が *.inquira.app のワイルドカード証明書を Let's Encrypt から自動取得し、
+# 各クライアントコンテナ (inquira-<slug>) に振り分ける。
+#
+# 起動:
+#   docker network create inquira_net   # 初回のみ
+#   docker compose up -d
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: inquira-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data       # 証明書・ACME アカウント
+      - caddy_config:/config
+    networks:
+      - inquira_net
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  inquira_net:
+    external: true
+    name: inquira_net

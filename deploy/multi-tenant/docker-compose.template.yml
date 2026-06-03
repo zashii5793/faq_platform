@@ -1,0 +1,85 @@
+# Inquira マルチテナント用 docker-compose テンプレート
+#
+# 1社追加するときの使い方:
+#   1) このディレクトリを `clients/<slug>/` にコピー
+#   2) `.env` を埋める（クライアント固有値）
+#   3) docker compose up -d
+#
+# 全社共通のリバースプロキシ（Caddy）は ../proxy/ 側で起動済み前提。
+# Caddy が <slug>.inquira.app への HTTPS を終端し、本コンテナの 8000 番に流す。
+
+services:
+  inquira:
+    image: ${INQUIRA_IMAGE:-ghcr.io/zashii5793/inquira:latest}
+    container_name: inquira-${CLIENT_SLUG}
+    restart: unless-stopped
+
+    # 外部公開はしない。Caddy 経由の inquira_net 経由でのみアクセス可能。
+    expose:
+      - "8000"
+
+    environment:
+      # --- 識別 ---
+      PRODUCT_NAME: Inquira
+      ORG_NAME: ${ORG_NAME}
+      ASSISTANT_ROLE: ${ASSISTANT_ROLE:-社内ヘルプデスク}
+
+      # --- Anthropic ---
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-6}
+
+      # --- Google OAuth ---
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: https://${CLIENT_SLUG}.${ROOT_DOMAIN}/auth/callback
+      ALLOWED_DOMAIN: ${ALLOWED_DOMAIN}
+      ALLOWED_EMAILS: ${ALLOWED_EMAILS}
+
+      # --- セッション ---
+      SESSION_SECRET: ${SESSION_SECRET}
+
+      # --- データ保存先（コンテナ内パス。ホスト側でマウント） ---
+      FAQ_MASTER_DIR: /app/data/faq_master
+      INDEX_PATH: /app/data/index.json
+      AUDIT_LOG_DIR: /app/data/audit
+      FEEDBACK_PATH: /app/data/feedback_scores.json
+      ORG_SETTINGS_PATH: /app/data/org_settings.json
+      RAW_UPLOAD_DIR: /app/data/raw
+      EMBEDDING_CACHE_PATH: /app/data/embeddings.npz
+
+      # --- 業界別マスキング ---
+      MASKING_INDUSTRY: ${MASKING_INDUSTRY:-general}
+
+      # --- 検索バックエンド ---
+      EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-tfidf}
+
+      # --- アップロード上限 ---
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-1024}
+
+      DEMO_MODE: "false"
+
+    volumes:
+      # クライアントごとに独立したディレクトリにマウント。
+      # 既定では ./data/ をマウント（provision スクリプトが用意する）。
+      - ${DATA_DIR:-./data}:/app/data
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    networks:
+      - inquira_net
+
+    labels:
+      # Caddy 用ラベル（caddy-docker-proxy を使う場合のホスト名宣言）
+      caddy: ${CLIENT_SLUG}.${ROOT_DOMAIN}
+      caddy.reverse_proxy: "{{upstreams 8000}}"
+
+networks:
+  # 全社共通の外部ネットワーク。proxy 側で作成済み。
+  inquira_net:
+    external: true
+    name: inquira_net
