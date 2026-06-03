@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Inquira 導入のご提案（Docker 標準導入版）</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "IPAGothic", "Hiragino Sans", "Yu Gothic", sans-serif;
+    line-height: 1.75;
+    color: #1f2937;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 8px;
+    background: #fff;
+  }
+  /* === 表紙 === */
+  .cover {
+    text-align: center;
+    padding: 80px 20px 60px;
+    page-break-after: always;
+    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    color: white;
+    border-radius: 0;
+    margin: -8px -8px 0 -8px;
+  }
+  .cover .pre-title {
+    font-size: 14px;
+    letter-spacing: 0.3em;
+    opacity: 0.85;
+    margin-bottom: 24px;
+  }
+  .cover h1 {
+    font-size: 38px;
+    font-weight: bold;
+    margin: 0 0 20px;
+    letter-spacing: -0.01em;
+  }
+  .cover .tagline {
+    font-size: 18px;
+    font-weight: 400;
+    opacity: 0.95;
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
+  .cover .key-points {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 30px 0;
+  }
+  .cover .key-pill {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .cover .meta-box {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin-top: 30px;
+    text-align: left;
+    font-size: 13px;
+    line-height: 2;
+  }
+  .cover .meta-box .label { opacity: 0.7; display: inline-block; min-width: 80px; }
+
+  /* === 本文 === */
+  h2 {
+    font-size: 22px;
+    color: #0f766e;
+    border-bottom: 3px solid #14b8a6;
+    padding-bottom: 8px;
+    margin-top: 48px;
+    margin-bottom: 20px;
+  }
+  h3 {
+    font-size: 17px;
+    color: #1f2937;
+    margin-top: 28px;
+    margin-bottom: 12px;
+  }
+  p, li { font-size: 14px; }
+
+  .lead {
+    font-size: 15px;
+    color: #374151;
+    background: #f9fafb;
+    border-left: 4px solid #14b8a6;
+    padding: 14px 18px;
+    border-radius: 4px;
+    margin: 16px 0 24px;
+  }
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .hero-stat {
+    text-align: center;
+    background: linear-gradient(180deg, #f0fdfa 0%, #ccfbf1 100%);
+    border-radius: 10px;
+    padding: 18px 12px;
+    border: 1px solid #99f6e4;
+  }
+  .hero-stat .num {
+    font-size: 28px;
+    font-weight: bold;
+    color: #0f766e;
+    line-height: 1.2;
+  }
+  .hero-stat .lbl {
+    font-size: 12px;
+    color: #475569;
+    margin-top: 6px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    background: white;
+    font-size: 13px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+  th {
+    background: #0f766e;
+    color: white;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 13px;
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  .step-flow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+  }
+  .step-box {
+    background: #fff;
+    border: 2px solid #14b8a6;
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .step-box .step-num {
+    display: inline-block;
+    background: #14b8a6;
+    color: white;
+    width: 26px; height: 26px;
+    line-height: 26px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .step-box .step-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #0f766e;
+    margin: 6px 0;
+  }
+  .step-box .step-desc { font-size: 11px; color: #475569; }
+
+  .highlight-box {
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .highlight-box .h-title {
+    font-weight: bold;
+    color: #0f766e;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .warning-box {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: #78350f;
+  }
+
+  .arch-figure {
+    background: #1e293b;
+    color: #f1f5f9;
+    border-radius: 10px;
+    padding: 24px;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.9;
+    margin: 16px 0;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .arch-figure .accent { color: #5eead4; font-weight: bold; }
+  .arch-figure .muted  { color: #94a3b8; }
+
+  .trust-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .trust-card {
+    background: #fff;
+    border: 1px solid #d1fae5;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .trust-card .tc-title {
+    font-weight: bold;
+    color: #065f46;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+  .trust-card .tc-desc { color: #4b5563; font-size: 12.5px; line-height: 1.7; }
+
+  .ui-mock {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 14px 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+  .ui-mock .um-label {
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .ui-mock .um-trust {
+    background: #f8fafc;
+    border-top: 1px solid #e5e7eb;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #475569;
+    text-align: center;
+    border-radius: 0 0 6px 6px;
+  }
+  .ui-mock .um-storage {
+    background: #fef9e7;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #78350f;
+    line-height: 1.6;
+  }
+  .ui-mock .um-storage code {
+    background: #fff;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+
+  .plan-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 18px 0;
+  }
+  .plan-card {
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px 14px;
+  }
+  .plan-card.recommended {
+    border-color: #14b8a6;
+    background: #f0fdfa;
+  }
+  .plan-card .pc-name {
+    font-size: 15px;
+    font-weight: bold;
+    color: #0f766e;
+    margin-bottom: 4px;
+  }
+  .plan-card .pc-sub {
+    font-size: 11px;
+    color: #6b7280;
+    margin-bottom: 10px;
+  }
+  .plan-card .pc-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+  }
+  .plan-card .pc-list li {
+    font-size: 12px;
+    padding: 4px 0;
+    border-bottom: 1px dashed #f3f4f6;
+  }
+  .plan-card .pc-list li:last-child { border-bottom: none; }
+  .plan-card .pc-tag {
+    display: inline-block;
+    background: #14b8a6;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .closing {
+    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 32px 28px;
+    margin: 40px 0 24px;
+    text-align: center;
+  }
+  .closing h2 {
+    color: white;
+    border: none;
+    padding: 0;
+    margin: 0 0 12px;
+  }
+
+  .footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    color: #9ca3af;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  ul.benefits {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+  }
+  ul.benefits li {
+    background: #fff;
+    border-left: 4px solid #10b981;
+    padding: 10px 14px;
+    margin: 6px 0;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  ul.benefits li::before { content: "✓ "; color: #10b981; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<!-- ===== 表紙 ===== -->
+<div class="cover">
+  <div class="pre-title">SERVICE PROPOSAL · DOCKER EDITION</div>
+  <h1>Inquira 導入のご提案</h1>
+  <div class="tagline">
+    AIによる社内ヘルプデスク自動応答<br>
+    — 30分でデプロイ、データは貴社サーバー内に閉じます —
+  </div>
+
+  <div class="key-points">
+    <div class="key-pill">⚡ 30分でデプロイ完了</div>
+    <div class="key-pill">🔒 データは貴社サーバー内</div>
+    <div class="key-pill">🌐 弊社からアクセス不可</div>
+  </div>
+
+  <div class="meta-box">
+    <div><span class="label">ご提案先</span>： 御社 御中</div>
+    <div><span class="label">ご提案日</span>： 2026年6月</div>
+    <div><span class="label">サービス名</span>： Inquira（インクワイラ）</div>
+    <div><span class="label">導入形態</span>： Docker 標準形（自社サーバー導入）</div>
+  </div>
+</div>
+
+<!-- ===== 1. 御社の課題 ===== -->
+<h2>1. 御社の課題と弊社の認識</h2>
+
+<div class="lead">
+  「同じ質問が繰り返される」「ナレッジが個人と紙とチケットに散在している」<br>
+  「ChatGPT 等を試したいが、社内データを外部に出すのは抵抗がある」 — どの会社にもあるこの問題を、御社でも感じていらっしゃるのではないでしょうか。
+</div>
+
+<table>
+  <tr><th style="width:40%">よくあるお困りごと</th><th>Inquira による解決</th></tr>
+  <tr>
+    <td>担当者が同じ問い合わせ対応に追われ、本来の業務時間が削られている</td>
+    <td>AI が社内ドキュメントを根拠に自動で回答。問い合わせ件数を削減</td>
+  </tr>
+  <tr>
+    <td>ベテランの知見が個人に集中しており、退職時に失われる懸念がある</td>
+    <td>解決した方法をその場で共有できる「ナレッジ蓄積」機能</td>
+  </tr>
+  <tr>
+    <td>マニュアルや規程が複数の場所に散らばっており、最新版がわからない</td>
+    <td>各種ファイル形式をそのまま取り込み、一元検索可能</td>
+  </tr>
+  <tr>
+    <td>ChatGPT 等を導入したいが、社内データを外部に送ることに抵抗がある</td>
+    <td><b>御社サーバー内で運用、データは社外に出ません</b>。これを画面上にも常時表示します</td>
+  </tr>
+  <tr>
+    <td>新しいツール導入は構築期間が長く、稟議が通りにくい</td>
+    <td><b>Docker 1コマンドで 30 分デプロイ</b>。試用環境はその日のうちに立ち上げ可能</td>
+  </tr>
+</table>
+
+<!-- ===== 2. サービス概要 ===== -->
+<h2>2. Inquira とは</h2>
+
+<div class="lead">
+  <strong>Inquira（インクワイラ）</strong>は、御社の既存ドキュメントを根拠に AI が回答する
+  社内ヘルプデスク向けのセルフサービス FAQ プラットフォームです。<br>
+  Docker コンテナで配布しているため、御社サーバー上で完結します。
+</div>
+
+<div class="hero-stats">
+  <div class="hero-stat">
+    <div class="num">30分</div>
+    <div class="lbl">デプロイ作業時間<br>（DNS 反映を除く）</div>
+  </div>
+  <div class="hero-stat">
+    <div class="num">3秒</div>
+    <div class="lbl">平均応答時間<br>（通常質問）</div>
+  </div>
+  <div class="hero-stat">
+    <div class="num">0%</div>
+    <div class="lbl">弊社のデータアクセス<br>（物理的に不可）</div>
+  </div>
+</div>
+
+<!-- ===== 3. 主な機能 ===== -->
+<h2>3. 主な機能</h2>
+
+<ul class="benefits">
+  <li><strong>多形式ファイル取り込み</strong>：PDF / Word / Excel / PowerPoint / Markdown / テキスト / HTML / CSV の 8 形式に対応</li>
+  <li><strong>出典付き回答</strong>：どの文書のどの部分を根拠にしたかを必ず提示。確信度も表示</li>
+  <li><strong>ナレッジ蓄積</strong>：解決した質問を回答者がその場で共有 → 他社員もすぐ参照可能</li>
+  <li><strong>重複質問サジェスト</strong>：入力中に「似た質問が既にあります」をリアルタイム表示</li>
+  <li><strong>業界別マスキング</strong>：一般 / 教育 / 医療 / 金融の各業界に応じた個人情報マスキング</li>
+  <li><strong>Google Workspace SSO</strong>：御社の Google アカウントでログイン。許可ドメイン/メールで制御</li>
+  <li><strong>監査ログ</strong>：質問・操作の全履歴を JSONL で日次保存。法令保全に対応</li>
+  <li><strong>管理画面</strong>：ドキュメント追加・削除、利用状況分析、改善要望対応、エクスポート</li>
+</ul>
+
+<!-- ===== 4. 導入後の利用イメージ ===== -->
+<h2>4. 導入後の利用イメージ</h2>
+
+<div class="highlight-box">
+  <div class="h-title">利用シーン</div>
+  <p style="margin:6px 0 0;font-size:13px;">
+    新人社員が「経費精算の領収書はいつまでに提出？」と質問 → AI が経費規程から回答 +
+    出典として規程の該当ページを提示。<br>
+    回答に不足があれば 👎 を押して改善要望を投げる → 管理者が文書を補足取り込み → 再質問で改善された回答が返る。
+  </p>
+</div>
+
+<table>
+  <tr><th style="width:30%">ユーザー</th><th>主な使い方</th></tr>
+  <tr><td>一般社員</td><td>質問する / 過去 Q&A を参照する / 自分が解決した方法を共有する</td></tr>
+  <tr><td>管理者（情シス）</td><td>文書を取り込む / 利用状況を分析する / 改善要望に対応する</td></tr>
+  <tr><td>経営層</td><td>月次レポートで利用状況 / 削減効果を確認</td></tr>
+</table>
+
+<!-- ===== 5. システム構成とデータの安全性 ===== -->
+<h2>5. システム構成とデータの安全性</h2>
+
+<div class="lead">
+  Inquira は <b>御社サーバー内で完結する Docker コンテナ</b> として提供されます。
+  データの実体はすべて御社サーバー内のディスクに置かれ、弊社（提供元）は
+  通常運用ではこのサーバーへのアクセス権を持ちません。
+</div>
+
+<h3>構成図</h3>
+
+<div class="arch-figure"><span class="accent">[ 御社サーバー / VPS or オンプレ Linux ]</span>
+   │
+   ├ <span class="accent">Inquira コンテナ</span>     (Docker)
+   ├ <span class="accent">Caddy コンテナ</span>      (HTTPS 終端 / Let's Encrypt 自動更新)
+   │
+   └ /srv/inquira/data/  <span class="muted"># データ実体・御社情シスのみアクセス可</span>
+          ├ faq_master/         <span class="muted"># 取り込み済み文書</span>
+          ├ audit/              <span class="muted"># 監査ログ (法令保全)</span>
+          ├ org_settings.json
+          └ ...
+              ▲
+              │ 唯一の外部通信:
+              │ <span class="accent">Anthropic Claude API</span> (マスキング済み質問のみ)
+              ▼
+   <span class="muted">[ 一般社員 ]</span> https://inquira.<御社ドメイン>
+</div>
+
+<h3>データ主権の「3層担保」</h3>
+
+<div class="trust-grid">
+  <div class="trust-card">
+    <div class="tc-title">① 物理層</div>
+    <div class="tc-desc">
+      データは <b>御社サーバーのディスク内</b> にしか存在しません。
+      弊社は通常運用で SSH 権限を持たないため、物理的にアクセスできません。
+    </div>
+  </div>
+  <div class="trust-card">
+    <div class="tc-title">② UI 層</div>
+    <div class="tc-desc">
+      全画面の下部に <b>「データは貴社サーバー内 / 弊社からアクセス不可」</b>
+      を常時表示。一般社員も常に確認できます。
+    </div>
+  </div>
+  <div class="trust-card">
+    <div class="tc-title">③ 契約層</div>
+    <div class="tc-desc">
+      サポート時にサーバーアクセスが必要な場合は、御社情シスから
+      <b>明示の許可と SSH 鍵の一時発行</b> が必要であることを契約に明記します。
+    </div>
+  </div>
+</div>
+
+<h3>画面上での明示（UI イメージ）</h3>
+
+<div class="ui-mock">
+  <div class="um-label">管理者ビュー — サイドバー</div>
+  <div class="um-storage">
+    <div><b>💾 データの保管場所</b></div>
+    <div style="margin-top:6px">
+      FAQマスター &nbsp; <code>/srv/inquira/data/faq_master</code><br>
+      検索インデックス &nbsp; <code>/srv/inquira/data/index.json</code><br>
+      監査ログ &nbsp; <code>/srv/inquira/data/audit</code><br>
+      組織設定 &nbsp; <code>/srv/inquira/data/org_settings.json</code>
+    </div>
+    <div style="margin-top:10px">
+      🔒 <b>サーバー管理者のみアクセス可</b>。一般スタッフは UI 経由でのみ閲覧でき、ファイル実体には届きません。<br>
+      🌐 <b>Inquira 運営からもアクセス不可</b>。提供元はこのサーバーへのアクセス権を持っていません。
+    </div>
+  </div>
+  <div class="um-trust" style="margin-top:14px">
+    🔒 データは貴社サーバー内に保管されています ／ Inquira 運営（提供元）からはアクセスできません
+  </div>
+</div>
+
+<h3>サーバー要件</h3>
+
+<table>
+  <tr><th>項目</th><th>最小</th><th>推奨</th></tr>
+  <tr><td>OS</td><td>Linux (Ubuntu 22.04+ / Debian 12+ / RHEL 9+)</td><td>同左</td></tr>
+  <tr><td>CPU</td><td>2 コア</td><td>4 コア</td></tr>
+  <tr><td>メモリ</td><td>4 GB</td><td>8 GB (高精度モード時)</td></tr>
+  <tr><td>ストレージ</td><td>SSD 30 GB</td><td>SSD 100 GB</td></tr>
+  <tr><td>ネットワーク</td><td>外部から 80/443 到達可</td><td>同左</td></tr>
+  <tr><td>必要ソフト</td><td>Docker Engine 24+ / docker compose plugin</td><td>同左</td></tr>
+</table>
+
+<div class="warning-box">
+  <b>外部通信は1経路のみ</b>：御社サーバー → Anthropic API （HTTPS 443番ポート）。
+  この通信もマスキング処理（個人情報・社外秘マーカー）を経た上で行われます。
+  既存ファイアウォール環境では、Anthropic API のドメインへの outbound 通信を許可いただきます。
+</div>
+
+<!-- ===== 6. 導入の流れ ===== -->
+<h2>6. 導入の流れ — 実作業は30分</h2>
+
+<div class="lead">
+  従来のオンプレ業務システム導入は数週間が標準でしたが、Inquira は <b>Docker による配布</b> のため
+  デプロイ実作業は <b>30分</b> で完了します。試用期間は別途お取りいただく形です。
+</div>
+
+<div class="step-flow">
+  <div class="step-box">
+    <div class="step-num">1</div>
+    <div class="step-title">事前準備<br>(1〜3日)</div>
+    <div class="step-desc">
+      ヒアリング・契約<br>
+      サーバー要件確認<br>
+      御社準備物の整理
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">2</div>
+    <div class="step-title">デプロイ<br>(30分)</div>
+    <div class="step-desc">
+      docker compose up<br>
+      DNS 切り替え<br>
+      動作確認
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">3</div>
+    <div class="step-title">初期データ投入<br>(0.5〜2日)</div>
+    <div class="step-desc">
+      文書取り込み<br>
+      しきい値調整<br>
+      テスト質問
+    </div>
+  </div>
+  <div class="step-box">
+    <div class="step-num">4</div>
+    <div class="step-title">試用 → 本番<br>(1〜2週)</div>
+    <div class="step-desc">
+      5〜10名で試用<br>
+      フィードバック反映<br>
+      全社展開
+    </div>
+  </div>
+</div>
+
+<h3>御社にご準備いただくもの</h3>
+
+<ul class="benefits">
+  <li>サーバー（既存または新規 / 上記要件以上 / Docker インストール済み）</li>
+  <li>SSH 接続情報（弊社のデプロイ作業用、作業完了後に失効可）</li>
+  <li>公開ホスト名（例: <code>inquira.御社ドメイン</code>）と DNS 操作権限</li>
+  <li>取り込みたいドキュメント（マニュアル・規程・FAQ集など）</li>
+  <li>利用者の Google アカウント情報（Workspace ドメイン or 個別メール）</li>
+  <li>情シス担当者の窓口（弊社からの作業協力依頼用）</li>
+</ul>
+
+<p style="font-size:13px;color:#6b7280;">
+※ 上記以外の専門的な設定作業（HTTPS 終端・Google OAuth 連携・運用監視 等）は弊社で実施します。
+</p>
+
+<!-- ===== 7. 料金体系 ===== -->
+<h2>7. 料金体系 — 3プランから選択</h2>
+
+<div class="lead">
+  Anthropic API の <b>誰の財布で支払うか</b> によって 3 つのプランをご用意しています。
+  御社の規模・運用方針に合わせてお選びいただけます。
+</div>
+
+<div class="plan-grid">
+  <div class="plan-card recommended">
+    <div class="pc-tag">推奨</div>
+    <div class="pc-name">A. 包括プラン</div>
+    <div class="pc-sub">Inquira-managed / 月額固定</div>
+    <ul class="pc-list">
+      <li>月額固定費に <b>API 利用料を含む</b></li>
+      <li>「月◯◯問まで」の上限あり</li>
+      <li>料金の予測可能性 ◎</li>
+      <li>小〜中規模に最適</li>
+    </ul>
+  </div>
+  <div class="plan-card">
+    <div class="pc-name">B. 実費連動プラン</div>
+    <div class="pc-sub">弊社管理キー + 実費精算</div>
+    <ul class="pc-list">
+      <li>月額管理費 + API 実費</li>
+      <li>使用量上限なし</li>
+      <li>変動が大きい場合に最適</li>
+      <li>月次で透明な使用状況レポート</li>
+    </ul>
+  </div>
+  <div class="plan-card">
+    <div class="pc-name">C. BYO プラン</div>
+    <div class="pc-sub">御社が Anthropic と直接契約</div>
+    <ul class="pc-list">
+      <li>月額管理費のみ</li>
+      <li>API 代は御社で直接支払い</li>
+      <li>Anthropic との直接契約要</li>
+      <li>大規模・法務要件で選択</li>
+    </ul>
+  </div>
+</div>
+
+<table>
+  <tr><th>項目</th><th>形態</th><th>含まれるもの</th></tr>
+  <tr>
+    <td><strong>初期構築費</strong></td>
+    <td>一括</td>
+    <td>環境構築・OAuth 設定・初期データ投入・操作トレーニング</td>
+  </tr>
+  <tr>
+    <td><strong>月額利用料</strong></td>
+    <td>月額固定</td>
+    <td>稼働監視・不具合対応・バージョンアップ・問い合わせサポート（プラン A/B は API 利用料も含む）</td>
+  </tr>
+  <tr>
+    <td><strong>API 利用料</strong></td>
+    <td>プラン依存</td>
+    <td>A: 月額固定に内包 / B: 実費精算 / C: 御社直接契約</td>
+  </tr>
+</table>
+
+<div class="highlight-box">
+  <div class="h-title">💡 料金算定の主な変数</div>
+  <p style="margin:6px 0 0;font-size:13px;">
+    ご利用人数 / 取り込みデータ量 / サポート範囲 / SLA レベル / 月間質問数 など。<br>
+    具体的なお見積りは、要件確認後にご提示いたします。
+  </p>
+</div>
+
+<!-- ===== 8. サポート体制 ===== -->
+<h2>8. サポート体制</h2>
+
+<table>
+  <tr><th>項目</th><th>標準</th></tr>
+  <tr><td>対応窓口</td><td>メール / Slack（御社ご希望に応じて）</td></tr>
+  <tr><td>対応時間</td><td>平日 9:00〜18:00</td></tr>
+  <tr><td>初動目標</td><td>営業時間内 4 時間以内</td></tr>
+  <tr><td>定期点検</td><td>月次（稼働状況・利用状況レポート提出）</td></tr>
+  <tr><td>機能改善</td><td>四半期ごとのバージョンアップを順次反映</td></tr>
+  <tr><td>サーバーアクセス</td><td><b>原則なし</b>。サポート時のみ御社情シスから SSH 鍵の一時発行を受け、作業完了後に返却</td></tr>
+</table>
+
+<!-- ===== 9. 試験運用での実績 ===== -->
+<h2>9. 試験運用での実績</h2>
+
+<div class="lead">
+  本サービスは試験運用フェーズを経て、機能・運用面ともに実用レベルに達しています。
+</div>
+
+<table>
+  <tr><th>項目</th><th>数値</th></tr>
+  <tr><td>システム品質テスト</td><td>353 件のテスト、カバレッジ 88%</td></tr>
+  <tr><td>検索応答性能</td><td>5,000 件のチャンクで 5.2ms</td></tr>
+  <tr><td>同時アクセス処理性能</td><td>200 リクエスト/秒</td></tr>
+  <tr><td>取り込み可能サイズ</td><td>1 ファイルあたり最大 1GB</td></tr>
+  <tr><td>API コスト削減実績</td><td>キャッシュ最適化により 30〜50% 削減</td></tr>
+  <tr><td>データ主権の UI 明示</td><td>全画面常時表示 + 管理画面に保管パス一覧</td></tr>
+</table>
+
+<!-- ===== クロージング ===== -->
+<div class="closing">
+  <h2>次のステップ</h2>
+  <p style="margin:14px 0;font-size:15px;">
+    ご検討にあたって、まずはオンラインミーティング（30〜60分）で<br>
+    御社のご利用イメージを伺わせてください。
+  </p>
+  <p style="margin:14px 0;font-size:14px;opacity:0.9;">
+    その場で <b>10 分の実機デモ</b> もご覧いただけます。<br>
+    具体的なお見積りは要件確認後にご提示いたします。
+  </p>
+</div>
+
+<div class="footer">
+  Inquira 導入のご提案書（Docker 標準導入版） / 2026 年 6 月作成 / 弊社
+</div>
+
+</body>
+</html>
