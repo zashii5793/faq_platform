@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     raw_upload_dir: Path = Path("./data/raw")
     # 共有Q&A のメタ情報（投票数・解決マーカー）
     shared_qa_meta_path: Path = Path("./data/shared_qa_meta.json")
+    # 自動 FAQ 候補化の状態・設定
+    faq_candidates_path: Path = Path("./data/faq_candidates.json")
+    faq_candidate_settings_path: Path = Path("./data/faq_candidate_settings.json")
+    # 工数削減レポートのしきい値（1質問あたりの削減時間・時給）
+    impact_settings_path: Path = Path("./data/impact_settings.json")
 
     # アップロード可能な最大ファイルサイズ（MB）。大きな社内マニュアルの取り込み用。
     # 注意: ファイルは一旦メモリに読み込まれるため、サーバーのメモリに余裕を持たせること。

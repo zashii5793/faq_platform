@@ -10,7 +10,15 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import __version__, audit, runtime_settings, shared_qa
+from . import (
+    __version__,
+    audit,
+    faq_candidate_settings,
+    faq_candidates,
+    impact,
+    runtime_settings,
+    shared_qa,
+)
 from .auth import is_email_allowed, oauth, require_user
 from .config import settings
 from .ingest import analyze as ingest_analyze, ingest as ingest_commit
@@ -29,6 +37,18 @@ app = FastAPI(title="Servicenet Internal FAQ (PoC)")
 # 起動時に保存済みの組織情報オーバーライドを反映
 runtime_settings.load_and_apply()
 app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
+
+
+@app.on_event("startup")
+async def _detect_faq_candidates_on_startup() -> None:
+    """設定で有効なら起動時に FAQ 候補検出を1回走らせる。失敗してもサービスは続行。"""
+    try:
+        if faq_candidate_settings.load().auto_detect_on_startup:
+            faq_candidates.detect()
+    except Exception as e:  # noqa: BLE001
+        import logging
+
+        logging.getLogger(__name__).warning("FAQ 候補検出 失敗: %s", e)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -1505,6 +1525,7 @@ async def ask(payload: AskRequest, user: dict = Depends(require_user)) -> AskRes
         sources=[c.chunk_id for c, _ in chunks],
         confidence=confidence,
         answered=True,
+        answer=response_text,
         is_reference=is_reference,
     )
     return AskResponse(
@@ -1561,7 +1582,55 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',san
            cursor:pointer;transition:all .15s;white-space:nowrap}
 .admin-tab:hover{background:#fff;color:#1f2937}
 .admin-tab.active{background:#fff;color:#1a73e8;box-shadow:0 2px 6px rgba(0,0,0,.08);font-weight:600}
+.tab-badge{display:inline-block;background:#ef4444;color:#fff;font-size:10px;
+           padding:1px 7px;border-radius:999px;margin-left:4px;font-weight:600;vertical-align:middle}
 .admin-pane[hidden]{display:none}
+/* === KPI カード (削減効果タブ) === */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:12px 0 24px}
+.kpi-card{background:linear-gradient(180deg,#f0fdfa 0%,#ccfbf1 100%);
+          border:1px solid #99f6e4;border-radius:12px;padding:18px 16px}
+.kpi-card .kpi-num{font-size:30px;font-weight:700;color:#0f766e;line-height:1.1}
+.kpi-card .kpi-num small{font-size:14px;font-weight:500;color:#475569;margin-left:4px}
+.kpi-card .kpi-label{font-size:11px;color:#475569;margin-top:6px;letter-spacing:.04em;text-transform:uppercase}
+.kpi-card .kpi-sub{font-size:12px;color:#475569;margin-top:8px}
+.kpi-card .kpi-sub .pos{color:#059669;font-weight:600}
+.kpi-card .kpi-sub .neg{color:#dc2626;font-weight:600}
+/* === 月次推移バー === */
+.monthly-bars{display:flex;align-items:flex-end;gap:6px;height:120px;padding:8px 0 4px;
+              border-bottom:1px solid #e5e7eb;margin-bottom:6px;overflow-x:auto}
+.monthly-bar{flex:0 0 38px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.monthly-bar .bar{width:24px;background:linear-gradient(180deg,#5eead4 0%,#14b8a6 100%);
+                  border-radius:4px 4px 0 0;min-height:2px}
+.monthly-bar .lbl{font-size:10px;color:#6b7280;writing-mode:vertical-rl;height:36px}
+/* === 候補カード === */
+.cand-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:10px 0}
+.cand-card .cand-q{font-size:14px;font-weight:600;color:#1f2937;margin-bottom:6px}
+.cand-card .cand-meta{font-size:12px;color:#6b7280;margin-bottom:10px}
+.cand-card .cand-meta .chip{display:inline-block;background:#f0fdfa;color:#0f766e;
+                            padding:2px 8px;border-radius:999px;margin-right:6px;font-size:11px}
+.cand-card .cand-answer{background:#f9fafb;border-left:3px solid #14b8a6;
+                        padding:10px 14px;font-size:13px;color:#374151;border-radius:4px;
+                        max-height:180px;overflow:auto;white-space:pre-wrap}
+.cand-card .cand-other-qs{font-size:12px;color:#6b7280;margin-top:8px}
+.cand-card .cand-actions{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+.cand-card .btn-approve{background:#14b8a6;color:#fff;border:0;padding:8px 16px;
+                        border-radius:6px;cursor:pointer;font-size:13px;font-weight:500}
+.cand-card .btn-reject{background:transparent;color:#6b7280;border:1px solid #d1d5db;
+                       padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+.cand-card .btn-edit{background:transparent;color:#1a73e8;border:1px solid #93c5fd;
+                     padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+.cand-card.approved{opacity:.6;background:#f0fdf4}
+.cand-card.rejected{opacity:.5;background:#fafafa}
+/* === 設定パネル === */
+.settings-panel{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;
+                padding:18px;margin-top:18px}
+.settings-panel h4{margin:0 0 12px;font-size:14px;color:#1f2937}
+.settings-panel .row{display:flex;gap:10px;align-items:center;margin:8px 0;font-size:13px;flex-wrap:wrap}
+.settings-panel .row label{min-width:240px;color:#374151}
+.settings-panel .row input[type=number]{width:90px;padding:5px 8px;border:1px solid #d1d5db;border-radius:6px}
+.settings-panel .row input[type=range]{width:160px}
+.settings-panel .save-btn{background:#1a73e8;color:#fff;border:0;padding:8px 16px;
+                          border-radius:6px;cursor:pointer;font-size:13px;margin-top:8px}
 .step-title{font-size:13px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;
             font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .step-num{background:#1a73e8;color:#fff;width:22px;height:22px;border-radius:50%;
@@ -1737,6 +1806,8 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
     <nav class="admin-tabs" id="adminTabs">
       <button class="admin-tab active" data-tab="ingest">📁 ファイル取り込み</button>
       <button class="admin-tab" data-tab="analytics">📊 利用状況</button>
+      <button class="admin-tab" data-tab="impact">📈 削減効果</button>
+      <button class="admin-tab" data-tab="candidates">🌱 FAQ 候補 <span id="candidatePendingBadge" class="tab-badge" hidden>0</span></button>
       <button class="admin-tab" data-tab="history">🔍 履歴・要望</button>
       <button class="admin-tab" data-tab="settings">⚙ 設定・出力</button>
     </nav>
@@ -1808,6 +1879,30 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
       <div class="empty-msg">読み込み中…</div>
     </div>
     </div><!-- /pane: history -->
+
+    <!-- ===== タブ: 削減効果 ===== -->
+    <div class="admin-pane" data-pane="impact" hidden>
+    <div class="step-title"><span class="step-num">📈</span>Inquira がどれだけ工数を減らしたか</div>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:8px">
+      AI が回答した質問数 × 1質問あたりの想定削減時間（=「資料を探す or 人に聞く」想定）で算出します。
+      下部の<b>計算前提</b>を貴社の運用に合わせて調整してください。
+    </p>
+    <div id="impact-section" style="font-size:13px;color:#6b7280">
+      <div class="empty-msg">読み込み中…</div>
+    </div>
+    </div><!-- /pane: impact -->
+
+    <!-- ===== タブ: FAQ 候補 ===== -->
+    <div class="admin-pane" data-pane="candidates" hidden>
+    <div class="step-title"><span class="step-num">🌱</span>解決した会話から FAQ 候補を自動生成</div>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:8px">
+      過去の質問履歴を分析し、<b>「複数のユーザーが繰り返し聞いた、高い確信度で回答された質問」</b> を FAQ 候補として提示します。
+      承認すると正式な FAQ ドキュメントに昇格し、以後の検索結果にヒットするようになります。
+    </p>
+    <div id="candidates-section" style="font-size:13px;color:#6b7280">
+      <div class="empty-msg">読み込み中…</div>
+    </div>
+    </div><!-- /pane: candidates -->
 
     <!-- ===== タブ4: 設定・出力 ===== -->
     <div class="admin-pane" data-pane="settings" hidden>
@@ -2619,8 +2714,354 @@ loadDashboard();
 loadDocuments();
 loadFaqRequests();
 loadSettings();
+loadImpact();
+loadCandidates();
+
+// ========== 📈 削減効果タブ ==========
+async function loadImpact() {
+  const sec = document.getElementById('impact-section');
+  if (!sec) return;
+  try {
+    const r = await fetch('/api/admin/impact');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    renderImpact(d);
+  } catch (e) {
+    sec.innerHTML = `<div class="empty-msg">読み込みエラー: ${e.message}</div>`;
+  }
+}
+
+function renderImpact(d) {
+  const sec = document.getElementById('impact-section');
+  const s = d.summary;
+  const cfg = d.settings;
+  const yen = (n) => (n || 0).toLocaleString('ja-JP');
+  const last30 = d.last_30_days || {};
+  const growth = last30.growth_pct || 0;
+  const growthHtml = last30.vs_previous_30_days >= 0
+    ? `<span class="pos">▲ ${growth}% 増</span>`
+    : `<span class="neg">▼ ${Math.abs(growth)}% 減</span>`;
+
+  const kpis = `
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-num">${yen(s.hours_saved)}<small>時間</small></div>
+        <div class="kpi-label">累計 削減時間</div>
+        <div class="kpi-sub">≒ <b>${yen(s.days_saved)}人日</b> 相当</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">¥${yen(s.cost_saved_yen)}</div>
+        <div class="kpi-label">累計 削減コスト</div>
+        <div class="kpi-sub">時給 ¥${yen(cfg.hourly_rate_yen)} 換算</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">${yen(s.total_answered)}<small>件</small></div>
+        <div class="kpi-label">AI 回答済み質問</div>
+        <div class="kpi-sub">回答率 <b>${s.answer_rate_pct}%</b></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num">${yen(s.unique_users)}<small>名</small></div>
+        <div class="kpi-label">利用ユーザー数</div>
+        <div class="kpi-sub">直近30日: ${yen(last30.answered)}件 ${growthHtml}</div>
+      </div>
+    </div>
+  `;
+
+  let monthlyHtml = '';
+  if (d.monthly && d.monthly.length > 0) {
+    const maxAns = Math.max(...d.monthly.map(m => m.answered || 0), 1);
+    const bars = d.monthly.map(m => {
+      const h = Math.max(2, Math.round((m.answered || 0) / maxAns * 100));
+      return `<div class="monthly-bar" title="${m.month}: ${m.answered}件 / ${Math.round((m.minutes_saved||0)/60)}h">
+        <div class="bar" style="height:${h}%"></div>
+        <div class="lbl">${m.month}</div>
+      </div>`;
+    }).join('');
+    monthlyHtml = `
+      <div class="step-title" style="margin-top:18px"><span class="step-num">📊</span>月次 回答件数推移</div>
+      <div class="monthly-bars">${bars}</div>
+    `;
+  }
+
+  const settingsHtml = `
+    <div class="settings-panel">
+      <h4>⚙ 計算前提（貴社の運用に合わせて調整）</h4>
+      <div class="row">
+        <label>1質問あたりの削減時間（分）</label>
+        <input type="number" id="impMinAns" min="1" max="120" value="${cfg.minutes_saved_per_answered_query}"/>
+        <span style="color:#6b7280">※ AIなしで「資料を探す/人に聞く」想定</span>
+      </div>
+      <div class="row">
+        <label>共有回答1件の整備削減（分）</label>
+        <input type="number" id="impMinShared" min="0" max="240" value="${cfg.minutes_saved_per_faq_shared}"/>
+      </div>
+      <div class="row">
+        <label>平均時給（円）</label>
+        <input type="number" id="impHourly" min="500" max="20000" step="100" value="${cfg.hourly_rate_yen}"/>
+      </div>
+      <button class="save-btn" id="impSaveBtn">💾 保存して再計算</button>
+    </div>
+  `;
+
+  sec.innerHTML = kpis + monthlyHtml + settingsHtml;
+  document.getElementById('impSaveBtn').onclick = async () => {
+    const body = {
+      minutes_saved_per_answered_query: Number(document.getElementById('impMinAns').value),
+      minutes_saved_per_faq_shared: Number(document.getElementById('impMinShared').value),
+      hourly_rate_yen: Number(document.getElementById('impHourly').value),
+    };
+    await fetch('/api/admin/impact-settings', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    loadImpact();
+  };
+}
+
+// ========== 🌱 FAQ 候補タブ ==========
+let _candidatesData = null;
+let _candidateSettings = null;
+
+async function loadCandidates() {
+  const sec = document.getElementById('candidates-section');
+  if (!sec) return;
+  try {
+    const [listR, setR] = await Promise.all([
+      fetch('/api/admin/faq-candidates'),
+      fetch('/api/admin/faq-candidate-settings'),
+    ]);
+    if (!listR.ok || !setR.ok) throw new Error('HTTP error');
+    _candidatesData = await listR.json();
+    _candidateSettings = await setR.json();
+    renderCandidates();
+    // ナビバーのバッジ
+    const badge = document.getElementById('candidatePendingBadge');
+    const pending = (_candidatesData.counts || {}).pending || 0;
+    if (badge) {
+      badge.hidden = pending === 0;
+      badge.textContent = pending;
+    }
+  } catch (e) {
+    sec.innerHTML = `<div class="empty-msg">読み込みエラー: ${e.message}</div>`;
+  }
+}
+
+function renderCandidates() {
+  const sec = document.getElementById('candidates-section');
+  const d = _candidatesData;
+  const s = _candidateSettings;
+  const counts = d.counts || {};
+
+  const tabBar = `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <button class="cand-filter active" data-filter="pending">未承認 (${counts.pending||0})</button>
+      <button class="cand-filter" data-filter="approved">承認済 (${counts.approved||0})</button>
+      <button class="cand-filter" data-filter="rejected">却下 (${counts.rejected||0})</button>
+      <span style="flex:1"></span>
+      <button class="save-btn" id="candDetectBtn">🔄 再検出</button>
+    </div>
+    <div id="cand-list"></div>
+  `;
+
+  const settingsHtml = `
+    <div class="settings-panel">
+      <h4>⚙ 検出のしきい値</h4>
+      <div class="row">
+        <label>最低確信度 (0-100)</label>
+        <input type="number" id="cMinConf" min="0" max="100" value="${s.min_confidence}"/>
+      </div>
+      <div class="row">
+        <label>最低 質問回数（同類）</label>
+        <input type="number" id="cMinCount" min="1" max="100" value="${s.min_asked_count}"/>
+      </div>
+      <div class="row">
+        <label>最低 ユニークユーザー数</label>
+        <input type="number" id="cMinUsers" min="1" max="100" value="${s.min_unique_users}"/>
+      </div>
+      <div class="row">
+        <label>類似質問のしきい値 (0-1)</label>
+        <input type="number" id="cSim" min="0" max="1" step="0.05" value="${s.similarity_threshold}"/>
+      </div>
+      <div class="row">
+        <label>分析対象期間（日）</label>
+        <input type="number" id="cLookback" min="1" max="365" value="${s.lookback_days}"/>
+      </div>
+
+      <h4 style="margin-top:18px;color:#dc2626">🤖 自動承認モード</h4>
+      <div class="row">
+        <label><input type="checkbox" id="cAuto" ${s.auto_approve_enabled ? 'checked':''}/> 自動承認を有効にする</label>
+        <span style="color:#6b7280;font-size:12px">※ 下記の厳しめ条件を全て満たすと、人間の承認なしで FAQ 化されます</span>
+      </div>
+      <div class="row">
+        <label>自動承認の最低確信度</label>
+        <input type="number" id="cAutoConf" min="0" max="100" value="${s.auto_approve_min_confidence}"/>
+      </div>
+      <div class="row">
+        <label>自動承認の最低 質問回数</label>
+        <input type="number" id="cAutoCount" min="1" max="100" value="${s.auto_approve_min_asked_count}"/>
+      </div>
+      <div class="row">
+        <label>自動承認の最低 ユーザー数</label>
+        <input type="number" id="cAutoUsers" min="1" max="100" value="${s.auto_approve_min_unique_users}"/>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="cStartup" ${s.auto_detect_on_startup ? 'checked':''}/> 起動時に検出バッチを実行</label>
+      </div>
+      <button class="save-btn" id="candSaveSettingsBtn">💾 設定を保存</button>
+    </div>
+  `;
+
+  sec.innerHTML = tabBar + settingsHtml;
+  // フィルタボタンのスタイル
+  document.querySelectorAll('.cand-filter').forEach(b => {
+    b.style.cssText = 'background:transparent;border:1px solid #d1d5db;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;color:#6b7280';
+  });
+  document.querySelectorAll('.cand-filter.active').forEach(b => {
+    b.style.cssText = 'background:#1a73e8;border:1px solid #1a73e8;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px';
+  });
+
+  renderCandidateList('pending');
+
+  document.querySelectorAll('.cand-filter').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('.cand-filter').forEach(x => {
+        x.classList.toggle('active', x === b);
+        x.style.cssText = x === b
+          ? 'background:#1a73e8;border:1px solid #1a73e8;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px'
+          : 'background:transparent;border:1px solid #d1d5db;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;color:#6b7280';
+      });
+      renderCandidateList(b.dataset.filter);
+    };
+  });
+
+  document.getElementById('candDetectBtn').onclick = async () => {
+    const btn = document.getElementById('candDetectBtn');
+    btn.textContent = '🔄 検出中…';
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/admin/faq-candidates/detect', {method: 'POST'});
+      const stats = await r.json();
+      alert(
+        `検出完了\\n\\n` +
+        `新規候補: ${stats.new}\\n` +
+        `自動承認: ${stats.auto_approved}\\n` +
+        `既存FAQと重複: ${stats.skipped_existing_faq}\\n` +
+        `既存候補と重複: ${stats.skipped_existing_candidate}\\n` +
+        `しきい値未満: ${stats.below_threshold}`
+      );
+      loadCandidates();
+    } finally {
+      btn.textContent = '🔄 再検出';
+      btn.disabled = false;
+    }
+  };
+
+  document.getElementById('candSaveSettingsBtn').onclick = async () => {
+    const body = {
+      min_confidence: Number(document.getElementById('cMinConf').value),
+      min_asked_count: Number(document.getElementById('cMinCount').value),
+      min_unique_users: Number(document.getElementById('cMinUsers').value),
+      similarity_threshold: Number(document.getElementById('cSim').value),
+      lookback_days: Number(document.getElementById('cLookback').value),
+      auto_approve_enabled: document.getElementById('cAuto').checked,
+      auto_approve_min_confidence: Number(document.getElementById('cAutoConf').value),
+      auto_approve_min_asked_count: Number(document.getElementById('cAutoCount').value),
+      auto_approve_min_unique_users: Number(document.getElementById('cAutoUsers').value),
+      auto_detect_on_startup: document.getElementById('cStartup').checked,
+    };
+    await fetch('/api/admin/faq-candidate-settings', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    alert('設定を保存しました');
+    loadCandidates();
+  };
+}
+
+function renderCandidateList(filter) {
+  const list = document.getElementById('cand-list');
+  const all = _candidatesData.candidates || [];
+  const items = all.filter(c => c.status === filter);
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty-msg">該当する候補はありません。「🔄 再検出」で監査ログを分析できます。</div>`;
+    return;
+  }
+  list.innerHTML = items.map(c => {
+    const escH = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const qs = c.question_examples || [];
+    const otherQs = qs.slice(1, 5);
+    const otherHtml = otherQs.length ? `<div class="cand-other-qs">同類質問: ${otherQs.map(q => escH(q)).join(' / ')}</div>` : '';
+    const period = `${(c.first_seen||'').slice(0,10)} 〜 ${(c.last_seen||'').slice(0,10)}`;
+    const actions = c.status === 'pending'
+      ? `<div class="cand-actions">
+          <button class="btn-approve" data-action="approve" data-id="${c.id}">✓ 承認して FAQ 化</button>
+          <button class="btn-edit" data-action="edit" data-id="${c.id}">✎ 編集して承認</button>
+          <button class="btn-reject" data-action="reject" data-id="${c.id}">却下</button>
+        </div>`
+      : `<div class="cand-meta" style="margin-top:8px">
+          ${c.status === 'approved' ? '✓ 承認済 ' : '✗ 却下済 '}
+          ${escH(c.reviewed_by || '')} ${(c.reviewed_at||'').slice(0,10)}
+          ${c.approved_doc_path ? `<br/><small>📄 <code>${escH(c.approved_doc_path)}</code></small>` : ''}
+        </div>`;
+    return `
+      <div class="cand-card ${c.status}">
+        <div class="cand-q">Q: ${escH(qs[0] || '（無題）')}</div>
+        <div class="cand-meta">
+          <span class="chip">確信度 ${c.confidence}%</span>
+          <span class="chip">${(c.support||{}).asked_count||0} 件聞かれた</span>
+          <span class="chip">${(c.support||{}).unique_users||0} 名のユーザー</span>
+          <span style="color:#9ca3af">${period}</span>
+        </div>
+        <div class="cand-answer">${escH(c.answer)}</div>
+        ${otherHtml}
+        ${actions}
+      </div>
+    `;
+  }).join('');
+
+  list.querySelectorAll('[data-action]').forEach(btn => {
+    btn.onclick = () => handleCandidateAction(btn.dataset.action, btn.dataset.id);
+  });
+}
+
+async function handleCandidateAction(action, cid) {
+  const cand = (_candidatesData.candidates || []).find(c => c.id === cid);
+  if (!cand) return;
+  if (action === 'approve') {
+    if (!confirm('この候補を FAQ として承認しますか？\\n承認後すぐに検索結果に反映されます。')) return;
+    await fetch(`/api/admin/faq-candidates/${cid}/approve`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({}),
+    });
+    loadCandidates();
+  } else if (action === 'reject') {
+    const note = prompt('却下理由（任意）:');
+    if (note === null) return;
+    await fetch(`/api/admin/faq-candidates/${cid}/reject`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({note: note || null}),
+    });
+    loadCandidates();
+  } else if (action === 'edit') {
+    const q = prompt('質問文を編集:', cand.question_examples[0] || '');
+    if (q === null) return;
+    const a = prompt('回答文を編集:', cand.answer || '');
+    if (a === null) return;
+    await fetch(`/api/admin/faq-candidates/${cid}/approve`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question: q, answer: a, note: '編集して承認'}),
+    });
+    loadCandidates();
+  }
+}
 
 // === 管理画面タブ切り替え ===
+const _VALID_TABS = ['ingest','analytics','impact','candidates','history','settings'];
 document.querySelectorAll('.admin-tab').forEach(tab => {
   tab.onclick = () => {
     const target = tab.dataset.tab;
@@ -2639,7 +3080,7 @@ document.querySelectorAll('.admin-tab').forEach(tab => {
 // 初期表示: URL フラグメントがあればそのタブを開く
 (() => {
   const h = (location.hash || '').replace('#', '');
-  if (h && ['ingest','analytics','history','settings'].includes(h)) {
+  if (h && _VALID_TABS.includes(h)) {
     const t = document.querySelector(`.admin-tab[data-tab="${h}"]`);
     if (t) t.click();
   }
@@ -3893,3 +4334,138 @@ a.back:hover{{text-decoration:underline}}
 @app.get("/healthz")
 async def healthz():
     return {"ok": True}
+
+
+# ===========================================================================
+# FAQ 候補化エンドポイント（管理画面の「🌱 FAQ 候補」タブから利用）
+# ===========================================================================
+
+from dataclasses import asdict as _dc_asdict  # noqa: E402
+
+
+class FaqCandidateApproveRequest(BaseModel):
+    question: str | None = None
+    answer: str | None = None
+    note: str | None = None
+
+
+class FaqCandidateRejectRequest(BaseModel):
+    note: str | None = None
+
+
+class FaqCandidateSettingsUpdate(BaseModel):
+    min_confidence: int | None = None
+    min_asked_count: int | None = None
+    min_unique_users: int | None = None
+    similarity_threshold: float | None = None
+    lookback_days: int | None = None
+    auto_approve_enabled: bool | None = None
+    auto_approve_min_confidence: int | None = None
+    auto_approve_min_asked_count: int | None = None
+    auto_approve_min_unique_users: int | None = None
+    auto_detect_on_startup: bool | None = None
+
+
+@app.get("/api/admin/faq-candidates")
+async def api_faq_candidates_list(
+    status: str | None = None,
+    user: dict = Depends(require_user),
+):
+    items = faq_candidates.list_all(status=status)
+    return {
+        "candidates": [_dc_asdict(c) for c in items],
+        "counts": faq_candidates.count_by_status(),
+    }
+
+
+@app.post("/api/admin/faq-candidates/detect")
+async def api_faq_candidates_detect(user: dict = Depends(require_user)):
+    stats = faq_candidates.detect()
+    audit.record("faq_candidate_detect", user=user["email"], **stats)
+    return stats
+
+
+@app.post("/api/admin/faq-candidates/{cid}/approve")
+async def api_faq_candidates_approve(
+    cid: str,
+    payload: FaqCandidateApproveRequest,
+    user: dict = Depends(require_user),
+):
+    try:
+        c = faq_candidates.approve(
+            cid,
+            reviewer=user["email"],
+            question=payload.question,
+            answer=payload.answer,
+            note=payload.note,
+        )
+    except KeyError:
+        raise HTTPException(status_code=404, detail="候補が見つかりません")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    audit.record(
+        "faq_candidate_approve",
+        user=user["email"],
+        candidate_id=cid,
+        doc_path=c.approved_doc_path,
+    )
+    return _dc_asdict(c)
+
+
+@app.post("/api/admin/faq-candidates/{cid}/reject")
+async def api_faq_candidates_reject(
+    cid: str,
+    payload: FaqCandidateRejectRequest,
+    user: dict = Depends(require_user),
+):
+    try:
+        c = faq_candidates.reject(cid, reviewer=user["email"], note=payload.note)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="候補が見つかりません")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    audit.record("faq_candidate_reject", user=user["email"], candidate_id=cid)
+    return _dc_asdict(c)
+
+
+@app.get("/api/admin/faq-candidate-settings")
+async def api_faq_candidate_settings_get(user: dict = Depends(require_user)):
+    return _dc_asdict(faq_candidate_settings.load())
+
+
+@app.put("/api/admin/faq-candidate-settings")
+async def api_faq_candidate_settings_put(
+    payload: FaqCandidateSettingsUpdate,
+    user: dict = Depends(require_user),
+):
+    updates = {k: v for k, v in payload.dict().items() if v is not None}
+    s = faq_candidate_settings.update(**updates)
+    audit.record("faq_candidate_settings_update", user=user["email"], **updates)
+    return _dc_asdict(s)
+
+
+# ===========================================================================
+# 工数削減レポート（管理画面の「📈 削減効果」タブから利用）
+# ===========================================================================
+
+
+class ImpactSettingsUpdate(BaseModel):
+    minutes_saved_per_answered_query: int | None = None
+    minutes_saved_per_faq_shared: int | None = None
+    hourly_rate_yen: int | None = None
+
+
+@app.get("/api/admin/impact")
+async def api_impact(days: int = 365, user: dict = Depends(require_user)):
+    return impact.compute(days=days)
+
+
+@app.put("/api/admin/impact-settings")
+async def api_impact_settings_put(
+    payload: ImpactSettingsUpdate,
+    user: dict = Depends(require_user),
+):
+    updates = {k: v for k, v in payload.dict().items() if v is not None}
+    s = impact.update_settings(**updates)
+    audit.record("impact_settings_update", user=user["email"], **updates)
+    return _dc_asdict(s)
