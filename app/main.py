@@ -1565,15 +1565,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans',san
 .modal-header h2 span{color:#1a73e8}
 .modal-body{padding:28px}
 /* バージョンバッジ */
-.version-badge{{display:inline-block;background:#e5e7eb;color:#6b7280;
+.version-badge{display:inline-block;background:#e5e7eb;color:#6b7280;
                 font-size:10px;font-weight:500;padding:1px 7px;border-radius:10px;
-                vertical-align:middle;margin-left:6px;letter-spacing:.02em}}
+                vertical-align:middle;margin-left:6px;letter-spacing:.02em}
 /* 共有(ユーザー提供)出典の枠スタイル */
-.src.shared{{background:#fef3c7;border-left:3px solid #f59e0b;padding-left:8px;
-              margin-left:-8px}}
-.src-shared-tag{{display:inline-block;background:#fbbf24;color:#78350f;
+.src.shared{background:#fef3c7;border-left:3px solid #f59e0b;padding-left:8px;
+              margin-left:-8px}
+.src-shared-tag{display:inline-block;background:#fbbf24;color:#78350f;
                   padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600;
-                  margin-left:6px}}
+                  margin-left:6px}
 /* 管理画面タブ */
 .admin-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:5px;background:#f3f4f6;
             border-radius:12px;margin-bottom:28px}
