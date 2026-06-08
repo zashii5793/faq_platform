@@ -1,15 +1,17 @@
 # Inquira — A株式会社 オンプレ導入パッケージ
 
-> A社の社内サーバーに Inquira を1コマンドで設置するための一式。
-> Docker は使わず、Python venv + systemd 構成。
+> A社の社内サーバー（**Windows Server**）に Inquira を 1 コマンドで設置するための一式。
+> Docker は使わず、Python venv + Windows タスクスケジューラ構成。
+> Linux サーバー (Ubuntu/RHEL) でも `install.sh` で同じ手順が回ります。
 
 ## このディレクトリの中身
 
 | ファイル | 役割 |
 |---|---|
-| `install.sh` | A社サーバーで叩く全自動セットアップスクリプト |
+| `install.ps1` | **Windows サーバー用** PowerShell インストーラ（A社用はこれ） |
+| `install.sh` | Linux サーバー用 (Ubuntu/RHEL 等) インストーラ |
 | `.env.template` | 設定テンプレ（インストール直前に実値を埋める） |
-| `inquira.service` | systemd の起動ユニット |
+| `inquira.service` | Linux 用 systemd の起動ユニット |
 | `README.md` | この案内 |
 
 ## インストール側（提供側）の作業手順
@@ -54,7 +56,25 @@ tar czf inquira-a_company.tar.gz \
 scp inquira-a_company.tar.gz a-admin@a-server:/tmp/
 ```
 
-### 4. A社サーバーで実行（root 権限で）
+### 4. A社サーバーで実行
+
+#### 🪟 Windows Server の場合（A社はこちら）
+
+事前に Python 3.11 をインストール（https://www.python.org/downloads/ 、
+[Add python.exe to PATH] にチェック必須）。
+
+ZIP を解凍してから、**PowerShell を「管理者として実行」** で：
+
+```powershell
+cd C:\path\to\faq_platform\tenants\a_company
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\install.ps1
+```
+
+完了すると Windows タスクスケジューラに `Inquira` タスクが登録され、
+サーバー起動時に自動で立ち上がるようになります。
+
+#### 🐧 Linux Server の場合
 
 ```bash
 ssh a-admin@a-server
@@ -114,6 +134,23 @@ A社管理者には以下を送付：
 
 ## 運用コマンド
 
+### 🪟 Windows
+
+```powershell
+# 状態確認
+Get-ScheduledTask -TaskName Inquira
+Invoke-WebRequest http://127.0.0.1:8000/healthz
+
+# 再起動
+Stop-ScheduledTask -TaskName Inquira
+Start-ScheduledTask -TaskName Inquira
+
+# 手動起動 (デバッグ時)
+C:\Inquira\start_inquira.bat
+```
+
+### 🐧 Linux
+
 ```bash
 systemctl status inquira         # 状態確認
 systemctl restart inquira        # 再起動
@@ -125,5 +162,8 @@ sudo -u inquira /opt/inquira/.venv/bin/python -m pytest -q   # テスト実行
 
 A社の IT 部門に伝えるバックアップ対象：
 
-- `/opt/inquira/data/` 配下まるごと（ナレッジ・監査ログ・FAQ 候補・フィードバックスコア）
-- `/opt/inquira/.env`（再構築用、ただし機密なので暗号化保管）
+- **Windows**: `C:\Inquira\data\` 配下まるごと + `C:\Inquira\.env`
+- **Linux**: `/opt/inquira/data/` 配下まるごと + `/opt/inquira/.env`
+
+`data/` にナレッジ・監査ログ・FAQ 候補・フィードバックスコアが入ります。
+`.env` は再構築用ですが、機密を含むので暗号化して保管してください。

@@ -78,9 +78,11 @@ sudo -u "$SERVICE_USER" "$PYTHON_BIN" -m venv "$APP_DIR/.venv"
 sudo -u "$SERVICE_USER" "$APP_DIR/.venv/bin/pip" install --quiet --upgrade pip
 sudo -u "$SERVICE_USER" "$APP_DIR/.venv/bin/pip" install --quiet -e "$APP_DIR"
 
-echo "==> 4/7  .env 配置 (SESSION_SECRET をランダム生成)"
+echo "==> 4/7  .env 配置 (SESSION_SECRET をランダム生成 + パス置換)"
 SESSION_SECRET="$(openssl rand -hex 32)"
-sed "s|__GENERATED_BY_INSTALL_SH__|$SESSION_SECRET|" "$SCRIPT_DIR/.env" > "$APP_DIR/.env"
+sed -e "s|__GENERATED_BY_INSTALL_SH__|$SESSION_SECRET|" \
+    -e "s|__APP_DIR__|$APP_DIR|g" \
+    "$SCRIPT_DIR/.env" > "$APP_DIR/.env"
 chmod 600 "$APP_DIR/.env"
 chown "$SERVICE_USER:$SERVICE_USER" "$APP_DIR/.env"
 
