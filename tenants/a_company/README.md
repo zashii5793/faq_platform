@@ -29,14 +29,17 @@ cp .env.template .env
 #   GOOGLE_REDIRECT_URI      ← https://faq.a-corp.jp/auth/callback (A社の公開 URL に合わせる)
 ```
 
-A社の管理者 Gmail は既に埋め済み：
-- `admin1_redacted@gmail.com`
-- `admin2_redacted@gmail.com`
-- `admin3_redacted@gmail.com`
+A社の管理者 Gmail は**リポジトリには書きません**。`.env` を作る時に、
+ローカル管理しているメモ（Slack DM や 1Password 等）から `ALLOWED_EMAILS=`
+にカンマ区切りで貼り付けてください。
 
 > ⚠ A社の **一般社員にも開放する場合**は `ALLOWED_DOMAIN=` 行に
 > A社の Gmail Workspace ドメイン（例: `a-corp.jp`）を追記してください。
-> 空のままだと、上の3名のみアクセス可。
+> 空のままだと、`ALLOWED_EMAILS` に列挙した人のみアクセス可。
+
+> ⚠ **完成した `.env` はリポジトリにコミットしないでください** (`.gitignore` 済み)。
+> 機密情報 (API キー / 管理者メール) を含むため、A社サーバーへ運搬する時のみ
+> 一時的にローカルに置きます。
 
 ### 2. Google Cloud Console で リダイレクト URI を追加
 

@@ -5,6 +5,8 @@ __pycache__/
 venv/
 .env
 .env.local
+# テナント別の実値 .env (機密)。リポジトリに含めるのは .env.template のみ。
+tenants/*/.env
 *.log
 data/index.json
 data/audit/
