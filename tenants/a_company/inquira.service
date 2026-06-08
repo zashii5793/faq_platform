@@ -1,0 +1,24 @@
+[Unit]
+Description=Inquira FAQ Platform (A株式会社 オンプレ)
+After=network.target
+
+[Service]
+Type=simple
+User=inquira
+Group=inquira
+WorkingDirectory=/opt/inquira
+EnvironmentFile=/opt/inquira/.env
+ExecStart=/opt/inquira/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=5
+# 標準出力・標準エラーを journald に
+StandardOutput=journal
+StandardError=journal
+# 軽い保護 (機密ファイルへのアクセスを app プロセスに制限)
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
