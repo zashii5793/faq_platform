@@ -72,12 +72,48 @@ C:\Temp\inquira-a_company\
 
 ## Step 2. インストールスクリプト実行 (5 分)
 
-**PowerShell を「管理者として実行」** で起動して、以下を実行：
+### 2-A. データ保存先の事前確認 (ネットワーク共有を使う場合)
+
+ナレッジ・監査ログ等を **ネットワーク共有 (UNC パス)** に保存する運用にすると、
+PC を変えても共有のデータを引き継げます。事前に共有へアクセスできるか確認してください：
+
+```powershell
+# 共有パス (実値は別途お伝えします。<DATA_SHARE> 部分を置き換えてください)
+$share = "<DATA_SHARE>"
+
+# エクスプローラーで開いて読み書きできるか確認
+explorer $share
+
+# PowerShell からの存在確認
+Test-Path $share
+
+# 接続資格情報を永続化 (毎回ログオン時に再認証されない用)
+net use $share /persistent:yes
+```
+
+`Test-Path` が `True` を返し、エクスプローラーでファイルを作成・削除できれば OK。
+`False` や権限エラーが出る場合は A社IT部門に共有の権限付与を依頼してください。
+
+### 2-B. インストール本体
+
+PowerShell（**管理者権限不要**）を起動して、以下を実行：
 
 ```powershell
 cd C:\Temp\inquira-a_company\tenants\a_company
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+# データ保存先に共有パスを指定して実行 (<DATA_SHARE> は実値で置き換え)
+.\install.ps1 -DataDir "<DATA_SHARE>"
+```
+
+> アプリ本体（Python venv とソース）は `%USERPROFILE%\Inquira\` に入り、
+> **ナレッジ・監査ログ等の永続データだけがネットワーク共有に保存**されます。
+
+ローカル保存（簡易テスト）でよければ `-DataDir` 引数を省略：
+
+```powershell
 .\install.ps1
+# → データは %USERPROFILE%\Inquira\data\ に保存
 ```
 
 スクリプトが自動でやること：
@@ -255,8 +291,19 @@ iisreset
 
 A社の通常バックアップに以下を追加してください：
 
-- `C:\Inquira\data\` 配下まるごと（ナレッジ・監査ログ・FAQ 候補・フィードバック）
-- `C:\Inquira\.env`（再構築用、ただし機密なので暗号化保管）
+- **データ保存先**: インストール時に指定したパス配下まるごと
+  - ネットワーク共有を使った場合 (推奨): `-DataDir` で指定した UNC 共有
+  - ローカル保存の場合: `%USERPROFILE%\Inquira\data\` 配下
+- **設定ファイル**: `%USERPROFILE%\Inquira\.env`（再構築用、機密含むため暗号化保管）
+
+データ保存先には以下が入っています：
+- `faq_master/` — 取り込み済みナレッジの整形版
+- `audit/` — 質問履歴・操作ログ
+- `raw/` — アップロードされた原本ファイル
+- `feedback_scores.json` — フィードバックスコア
+- `faq_candidates.json` — 自動 FAQ 候補
+- `org_settings.json` — 組織情報のオーバーライド
+- `index.json` — 検索インデックス（自動再生成可能）
 
 ---
 

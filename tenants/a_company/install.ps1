@@ -18,12 +18,21 @@
 #   インストール先を変えたい場合:
 #       .\install.ps1 -AppDir "D:\Inquira"
 #
+#   データ保存先をネットワーク共有 (UNC) にしたい場合:
+#       .\install.ps1 -DataDir "\\<fileserver>\<share>\<path>"
+#
+#   両方指定する場合:
+#       .\install.ps1 -AppDir "C:\Users\you\Inquira" -DataDir "\\<fileserver>\<share>\<path>"
+#
 # 事前に同階層の .env ファイルを編集して
 #   ANTHROPIC_API_KEY / GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REDIRECT_URI
 # を実値で埋めてください (リポジトリには実値を入れない運用)。
 
 param(
-    [string]$AppDir = (Join-Path $env:USERPROFILE "Inquira")
+    [string]$AppDir = (Join-Path $env:USERPROFILE "Inquira"),
+    # データ保存先。UNC 指定可: -DataDir "\\<fileserver>\<share>\<path>"
+    # 空ならローカル ($AppDir\data) を使う
+    [string]$DataDir = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -61,7 +70,38 @@ if ($envContent -match "__FILL_FROM_PROVIDER_SECRETS__") {
     exit 1
 }
 
+# データ保存先を決定 (UNC か ローカルか)
+if (-not $DataDir) {
+    $DataDir = Join-Path $AppDir "data"
+}
+$isUnc = $DataDir.StartsWith("\\")
+
 Write-Host "    インストール先: $AppDir"
+Write-Host "    データ保存先:   $DataDir $(if ($isUnc) { '(UNC ネットワーク共有)' } else { '(ローカル)' })"
+
+# UNC の場合は事前にアクセス可能か確認 (権限なし or 共有未マウントだとここで失敗)
+if ($isUnc) {
+    Write-Host "    UNC アクセス確認中..."
+    try {
+        if (-not (Test-Path $DataDir -ErrorAction Stop)) {
+            New-Item -ItemType Directory -Path $DataDir -Force -ErrorAction Stop | Out-Null
+        }
+        # 書き込み権限確認 (テストファイル作成→削除)
+        $testFile = Join-Path $DataDir ".inquira_write_test"
+        Set-Content -Path $testFile -Value "ok" -ErrorAction Stop
+        Remove-Item $testFile -Force -ErrorAction Stop
+        Write-Host "    UNC アクセス OK (読み書き可)" -ForegroundColor Green
+    } catch {
+        Write-Host "[X] UNC パス $DataDir にアクセスできません:" -ForegroundColor Red
+        Write-Host "    $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "    確認事項:"
+        Write-Host "    - エクスプローラーで $DataDir を開けるか"
+        Write-Host "    - 書き込み権限があるか (共有フォルダの権限設定)"
+        Write-Host "    - 接続資格情報がキャッシュ済みか (net use で確認)"
+        exit 1
+    }
+}
 
 # === 1. アプリ配置 ===
 Write-Host "==> 1/5  アプリ配置"
@@ -80,9 +120,9 @@ if ($LASTEXITCODE -gt 7) {
     exit 1
 }
 
-$dataDir = Join-Path $AppDir "data"
-if (-not (Test-Path $dataDir)) {
-    New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
+# データ保存先のディレクトリを確保 (ローカルの場合のみ。UNC は上で作成済み)
+if (-not $isUnc -and -not (Test-Path $DataDir)) {
+    New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
 }
 
 # === 2. Python venv 作成 + 依存インストール ===
@@ -100,11 +140,17 @@ Write-Host "==> 3/5  .env 配置"
 $bytes = New-Object byte[] 32
 [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
 $sessionSecret = ($bytes | ForEach-Object { "{0:x2}" -f $_ }) -join ""
+
+# パスを Python が扱いやすい forward-slash 形式に変換
+# (Windows でも pathlib.Path は forward-slash を受け付ける。UNC も同じ要領で動く)
 $appDirForward = $AppDir.Replace("\", "/")
+$dataDirForward = $DataDir.Replace("\", "/")
+
 $envContent = $envContent `
     -replace "__GENERATED_BY_INSTALL_SH__", $sessionSecret `
     -replace "__GENERATED_BY_INSTALL_PS1__", $sessionSecret `
-    -replace "__APP_DIR__", $appDirForward
+    -replace "__APP_DIR__", $appDirForward `
+    -replace "__DATA_DIR__", $dataDirForward
 Set-Content -Path (Join-Path $AppDir ".env") -Value $envContent -Encoding UTF8 -NoNewline
 
 # === 4. 起動バッチ + スタートアップ ショートカット ===
@@ -155,6 +201,14 @@ if ($ok) {
         foreach ($ip in $ips) {
             Write-Host "    社内 LAN から:          http://${ip}:8000/"
         }
+    }
+    Write-Host ""
+    Write-Host "▼ データ保存先"
+    Write-Host "    $DataDir"
+    if ($isUnc) {
+        Write-Host "    ※ UNC ネットワーク共有を使用しています。"
+        Write-Host "      接続資格情報がキャッシュされていないと起動時にアクセスエラーになります。"
+        Write-Host "      ログオン後すぐエクスプローラーで上記パスを一度開くか、net use で永続化してください。"
     }
     Write-Host ""
     Write-Host "▼ 自動起動"
