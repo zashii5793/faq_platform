@@ -1,4 +1,4 @@
-# A株式会社 Windows サーバー向け Inquira インストールスクリプト (非管理者版)
+﻿# A株式会社 Windows サーバー向け Inquira インストールスクリプト (非管理者版)
 #
 # 管理者権限なしで動くように:
 #   - インストール先: %USERPROFILE%\Inquira (デフォルト)
