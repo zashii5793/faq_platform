@@ -1,343 +1,332 @@
-# Inquira インストール手順 — A株式会社 IT 部門向け
+# Inquira 導入手順 — A株式会社 全工程ガイド
 
-> 想定読者: A社サーバー管理者・IT 部門ご担当者様
-> 所要時間: **30 分〜1 時間** (Python 未導入時は +10 分)
-> 対象 OS: Windows Server 2019 / 2022 (Linux 用手順は末尾に併記)
-
----
-
-## 全体像
-
-```
-   社員のPC                       A社 Windows サーバー
-   ┌──────────────┐              ┌─────────────────────────────────┐
-   │ ブラウザ      │              │  ┌────────────┐                  │
-   │              │   HTTPS      │  │ IIS         │ ローカル転送      │
-   │ faq.a-corp.jp├─────────────►│  │ (リバプロ)   ├──► localhost:8000│
-   │              │              │  └────────────┘    │             │
-   └──────────────┘              │                    ▼             │
-                                 │              ┌─────────────┐     │
-                                 │              │ Inquira     │     │
-                                 │              │ (Python)    │     │
-                                 │              └─────────────┘     │
-                                 │   起動: Windows タスクスケジューラ │
-                                 └─────────────────────────────────┘
-```
-
-このパッケージで構築するのは右側（A社サーバー内）。
-左側のブラウザから到達できるようにするため、IIS のリバースプロキシ設定も最後に行います。
+> 想定読者: A社 IT 部門ご担当者様 / 提供側オペレーター
+> 想定環境: Windows Server 2019 / 2022（Linux も末尾に併記）
+> 所要時間: 提供側 15 分 + A社作業 30 分〜1 時間
 
 ---
 
-## 事前準備（A社IT部門にお願いする項目）
+## 全体像 — 誰が何をやるか
 
-| # | 項目 | 確認方法 |
-|---|---|---|
-| 1 | Python 3.11 以上がインストール済み | PowerShell で `py -3.11 --version` |
-| 2 | 管理者権限の PowerShell が使える | スタートメニュー → PowerShell を右クリック →「管理者として実行」 |
-| 3 | IIS がインストール済み | サーバーマネージャーで「Web サーバー (IIS)」役割を確認 |
-| 4 | IIS の「URL Rewrite」モジュール | https://www.iis.net/downloads/microsoft/url-rewrite |
-| 5 | IIS の「ARR (Application Request Routing)」モジュール | https://www.iis.net/downloads/microsoft/application-request-routing |
-| 6 | サーバーの SSL 証明書 (`faq.a-corp.jp` 用) | 既存社内 CA でも Let's Encrypt でも可 |
-| 7 | DNS で `faq.a-corp.jp` → サーバー IP に向ける | 社内 DNS の管理画面 |
-
-> ⚠ 4 と 5 が未インストールでも Inquira 自体は起動できますが、社員からアクセスできるのは IIS 経由になるので、Step 5 までに入れておいてください。
-
-> Python 3.11 が無い場合: https://www.python.org/downloads/ から
-> Python 3.11 をダウンロード → インストーラで **`Add python.exe to PATH` に必ずチェック** → 完了後 PowerShell を起動し直して `py -3.11 --version` で確認。
+```
+[提供側]           [A社 IT 部門]              [A社 管理者]            [A社 社員]
+   │
+   ① OAuth 設定 ──────────────────────────────────────────────►
+       (Console で                                              認証OK
+        A社管理者の
+        Gmail を登録)
+   │
+   ② API キー入り
+      .env をお渡し ──► ③ Python インストール
+                       ④ GitHub から DL
+                       ⑤ install.ps1 実行
+                                │
+                       ⑥ 動作確認 (localhost) ──► ⑦ ブラウザで
+                                                      アクセス
+                                                  ⑧ Google ログイン
+                                                  ⑨ ナレッジ投入
+                                                        │
+                                                  ⑩ 社員に URL ─────► ⑪ 利用開始
+                                                      告知
+```
 
 ---
 
-## Step 1. ZIP を受け取って解凍 (5 分)
+## Part 1. 提供側（自分）の事前準備（15 分）
 
-弊社 (Inquira 提供側) から ZIP ファイルを受領 → サーバーの任意の場所に解凍。
+> ⚠ A社 IT 部門の作業を始める **前** に必ず完了させること。
+> これを忘れると、A社の管理者が Google ログイン時に「アクセスがブロックされました」エラーになります。
 
+### 1-1. Google Cloud Console で「テストユーザー」を登録（5 分）
+
+OAuth 同意画面が **テストモード** の状態だと、登録済みの Gmail だけがログインできます。
+A社の管理者 4 名の Gmail を、テストユーザーとして登録します。
+
+1. https://console.cloud.google.com/apis/credentials/consent を開く
+2. 該当のプロジェクトを選択
+3. ページ下部の **「テスト ユーザー」** セクションまでスクロール
+4. **「ADD USERS」** ボタンを押す
+5. A社管理者の Gmail アドレスを 1 行ずつ入力（最大 100 名まで）
+6. **「保存」**
+
+> 💡 本番展開で「テストユーザー登録」を毎回やりたくない場合は、OAuth 同意画面を「**本番**」モードに切り替えてください（Google 審査あり）。
+
+### 1-2. OAuth クライアントに Redirect URI を追加（5 分）
+
+A社のアクセス URL に対応するコールバック先を OAuth クライアントに登録します。
+
+1. https://console.cloud.google.com/apis/credentials を開く
+2. 該当の OAuth 2.0 クライアント ID をクリック
+3. **「承認済みのリダイレクト URI」** セクションで **「URI を追加」**
+4. 以下を追加：
+   - `http://localhost:8000/auth/callback`（A社サーバー上でローカルテスト用）
+   - （将来公開する場合）`https://faq.a-corp.jp/auth/callback`
+5. **「保存」**
+
+### 1-3. A社用 `.env` を準備（5 分）
+
+以下の 5 項目を実値で埋めた `.env` を作り、A社 IT 部門にお渡しします（メール本文 or ZIP 添付など）。
+
+```env
+ANTHROPIC_API_KEY=sk-ant-xxxxx                        # 自分のキー
+GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com     # 自分の OAuth クライアント
+GOOGLE_CLIENT_SECRET=xxxxx                            # 同上
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/callback   # まずは localhost で
+ALLOWED_EMAILS=admin1@gmail.com,admin2@gmail.com,...  # A社管理者 (Part 1-1 と同じ)
 ```
-C:\Temp\inquira-a_company\
-    ├ app\
-    ├ scripts\
-    ├ pyproject.toml
-    └ tenants\
-       └ a_company\
-          ├ install.ps1
-          ├ start_inquira.bat
-          ├ inquira.service
-          ├ .env             ← 弊社が実値を埋めた状態でお渡し済
-          └ README.md         ← このファイル
-```
 
-`.env` には Anthropic API キー等の機密情報が含まれます。**配布後はこの ZIP の取り扱いに注意してください**（USB から削除、暗号化保管、等）。
+> ⚠ この `.env` は **メール本文には貼らず、暗号化 ZIP 添付** か別ルートで渡してください。
+> API キーが含まれます。
 
 ---
 
-## Step 2. インストールスクリプト実行 (5 分)
+## Part 2. A社 IT 部門の作業（インストール、30 分〜1 時間）
 
-### 2-A. データ保存先の事前確認 (ネットワーク共有を使う場合)
+### 2-1. Python 3.11 をインストール（10 分）
 
-ナレッジ・監査ログ等を **ネットワーク共有 (UNC パス)** に保存する運用にすると、
-PC を変えても共有のデータを引き継げます。事前に共有へアクセスできるか確認してください：
+PowerShell で確認：
 
 ```powershell
-# 共有パス (実値は別途お伝えします。<DATA_SHARE> 部分を置き換えてください)
-$share = "<DATA_SHARE>"
+py --version
+```
 
+`Python 3.11.x` 以上が出れば次へ。出なければインストール：
+
+#### A. python.org からインストーラを取得（管理者権限不要）
+
+```powershell
+$url = "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe"
+Invoke-WebRequest -Uri $url -OutFile "$env:USERPROFILE\Downloads\python-3.11.9.exe" -UseBasicParsing
+& "$env:USERPROFILE\Downloads\python-3.11.9.exe"
+```
+
+インストーラ画面：
+1. ⚠ 下の **「Add python.exe to PATH」にチェック**
+2. **「Customize installation」** を押す
+3. オプション画面 →「Next」
+4. Advanced Options 画面で：
+   - **「Install Python for all users」のチェックを外す**（管理者権限不要にする）
+   - 「Add Python to environment variables」にチェック
+5. 「Install」
+
+#### インストール後
+
+PowerShell を一度閉じて開き直して、確認：
+
+```powershell
+py --version
+# → Python 3.11.9
+```
+
+### 2-2. ネットワーク共有へのアクセス確認（5 分）
+
+データ保存先の共有フォルダにアクセスできるか確認：
+
+```powershell
 # エクスプローラーで開いて読み書きできるか確認
-explorer $share
+explorer "<DATA_SHARE>"
+# ↑ <DATA_SHARE> は提供側からお伝えする共有フォルダパス（\\で始まる UNC パス）
 
-# PowerShell からの存在確認
-Test-Path $share
+# PowerShell から存在確認
+Test-Path "<DATA_SHARE>"
 
-# 接続資格情報を永続化 (毎回ログオン時に再認証されない用)
-net use $share /persistent:yes
+# 接続資格情報の永続化（毎回ログオン時に認証不要にする）
+net use "<DATA_SHARE>" /persistent:yes
 ```
 
-`Test-Path` が `True` を返し、エクスプローラーでファイルを作成・削除できれば OK。
-`False` や権限エラーが出る場合は A社IT部門に共有の権限付与を依頼してください。
+`Test-Path` が `True` を返し、エクスプローラーでファイル作成/削除できれば OK。
 
-### 2-B. インストール本体
-
-PowerShell（**管理者権限不要**）を起動して、以下を実行：
+### 2-3. GitHub からソースをダウンロード（3 分）
 
 ```powershell
-cd C:\Temp\inquira-a_company\tenants\a_company
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+# 作業ディレクトリ作成
+mkdir C:\Temp\inquira -Force | Out-Null
+cd C:\Temp\inquira
 
-# データ保存先に共有パスを指定して実行 (<DATA_SHARE> は実値で置き換え)
+# GitHub から ZIP ダウンロード
+$url = "https://github.com/zashii5793/faq_platform/archive/refs/heads/claude/add-roadmap-docs-RmQNp.zip"
+Invoke-WebRequest -Uri $url -OutFile faq_platform.zip -UseBasicParsing
+
+# 解凍
+Expand-Archive -Path .\faq_platform.zip -DestinationPath . -Force
+
+# tenants/a_company に移動
+cd .\faq_platform-claude-add-roadmap-docs-RmQNp\tenants\a_company
+dir
+```
+
+`install.ps1` `.env.template` `README.md` が見えれば OK。
+
+### 2-4. `.env` を配置（2 分）
+
+提供側からお渡しした `.env`（Part 1-3 で作成）を、このフォルダに配置してください。
+
+メモ帳で内容確認：
+
+```powershell
+notepad .env
+```
+
+5 項目（API キー、OAuth、Redirect URI、ALLOWED_EMAILS）が実値で埋まっていることを確認。
+
+### 2-5. インストール実行（5 分）
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\install.ps1 -DataDir "<DATA_SHARE>"
 ```
 
-> アプリ本体（Python venv とソース）は `%USERPROFILE%\Inquira\` に入り、
-> **ナレッジ・監査ログ等の永続データだけがネットワーク共有に保存**されます。
+`✅ Inquira 起動完了` が出れば成功です。表示される URL を控えておきます：
 
-ローカル保存（簡易テスト）でよければ `-DataDir` 引数を省略：
-
-```powershell
-.\install.ps1
-# → データは %USERPROFILE%\Inquira\data\ に保存
+```
+このPCから (ローカル):  http://localhost:8000/
+社内 LAN から:          http://<IPアドレス>:8000/
 ```
 
-スクリプトが自動でやること：
-
-| Step | 内容 |
-|------|------|
-| 1/6 | Python 3.11+ を検出 |
-| 2/6 | `C:\Inquira\` にソースをコピー |
-| 3/6 | Python venv 作成 + 依存パッケージインストール（数分） |
-| 4/6 | `.env` を `C:\Inquira\.env` に配置（SESSION_SECRET をランダム生成） |
-| 5/6 | Windows タスクスケジューラに `Inquira` タスクを登録（サーバー起動時に自動起動） |
-| 6/6 | http://127.0.0.1:8000/healthz でヘルスチェック |
-
-最後に `✅ Inquira 起動完了` と出れば成功です。
-
----
-
-## Step 3. ローカル動作確認 (2 分)
-
-サーバー上で同じ PowerShell から：
+### 2-6. 動作確認（2 分）
 
 ```powershell
 Invoke-WebRequest http://127.0.0.1:8000/healthz
 ```
 
-`StatusCode: 200` で本文が `{"ok": true}` なら、Inquira 本体は正常に動いています。
+`StatusCode: 200` で本文が `{"ok": true}` なら正常稼働。
 
-ブラウザがあれば `http://127.0.0.1:8000/` を開いて、Google ログイン画面が出ることも確認できます。
-
----
-
-## Step 4. SSL 証明書を IIS にインストール (10 分)
-
-> ⚠ A社で標準的に使っている SSL 配布方法がある場合はそちらに従ってください。
-> 以下は一般的な手順です。
-
-1. IIS マネージャー → サーバー名選択 → 中央ペインの「サーバー証明書」をダブルクリック
-2. 右側の「証明書の要求の作成」もしくは「インポート」で `faq.a-corp.jp` 用証明書を登録
-3. IIS マネージャー → 左ペインの「サイト」 → 既定の Web サイト or 新規 Web サイトに対し、右側「バインド」 →「追加」 → 種類: `https`, ホスト名: `faq.a-corp.jp`, 証明書: 上で登録したもの
+ブラウザで `http://localhost:8000/` を開いて、Google ログイン画面が表示されれば OK。
 
 ---
 
-## Step 5. IIS のリバースプロキシ設定 (10 分) ← ここが Step 5
+## Part 3. A社 管理者の作業（ナレッジ投入、20 分）
 
-「社員のブラウザからの `https://faq.a-corp.jp/` を、サーバー内部の `http://localhost:8000/` に転送する」 設定です。
+### 3-1. ブラウザで管理画面にアクセス
 
-### 5-1. IIS で新しいサイトを作る
+A社サーバー上のブラウザで以下の URL を開きます：
 
-1. IIS マネージャー → 左ペイン「サイト」を右クリック → **「Web サイトの追加」**
-2. 以下を入力：
-   - サイト名: `Inquira`
-   - 物理パス: `C:\Inquira\iis_site` (空でOK。下記で `web.config` を置く)
-   - バインド: 種類 `https`, ホスト名 `faq.a-corp.jp`, ポート `443`, SSL 証明書: Step 4 のもの
-3. 「OK」
-
-### 5-2. リバプロ設定ファイルを置く
-
-`C:\Inquira\iis_site` フォルダを作成し、その中に **`web.config`** を作成して以下を貼り付け：
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-  <system.webServer>
-    <rewrite>
-      <rules>
-        <rule name="ReverseProxyToInquira" stopProcessing="true">
-          <match url="(.*)" />
-          <action type="Rewrite" url="http://127.0.0.1:8000/{R:1}" />
-          <serverVariables>
-            <set name="HTTP_X_FORWARDED_PROTO" value="https" />
-            <set name="HTTP_X_FORWARDED_HOST" value="{HTTP_HOST}" />
-          </serverVariables>
-        </rule>
-      </rules>
-    </rewrite>
-    <!-- 大きめアップロード許可 (社内マニュアル PDF 等) -->
-    <security>
-      <requestFiltering>
-        <requestLimits maxAllowedContentLength="1073741824" />
-      </requestFiltering>
-    </security>
-  </system.webServer>
-</configuration>
+```
+http://localhost:8000/admin/upload
 ```
 
-### 5-3. ARR のプロキシ機能を ON にする
+社内 LAN の別 PC から開く場合は、A社 IT 部門にサーバーの IP を聞いて：
 
-1. IIS マネージャー → 一番上のサーバー名（A社サーバー名）を選択
-2. 中央ペインの **「Application Request Routing キャッシュ」** をダブルクリック
-3. 右側の **「Server Proxy Settings...」** をクリック
-4. **「Enable proxy」** にチェックを入れて「Apply」
-
-### 5-4. 反映
-
-IIS マネージャーで `Inquira` サイトを右クリック → 「再起動」、もしくは PowerShell で：
-
-```powershell
-iisreset
 ```
+http://<サーバーのIPアドレス>:8000/admin/upload
+```
+
+### 3-2. Google ログイン
+
+[Google でログイン] ボタンを押し、**事前にテストユーザー登録された Gmail**（提供側が Part 1-1 で登録した4名のいずれか）でログインしてください。
+
+> ⚠ 「アクセスがブロックされました」と出る場合：
+> - そのアカウントが Part 1-1 のテストユーザー登録に含まれていない可能性
+> - 提供側に追加登録を依頼してください
+
+### 3-3. ナレッジ投入
+
+「📁 ファイル取り込み」タブで、社内マニュアル・FAQ・規程をドラッグ&ドロップ → 「取り込み確定」。
+
+推奨投入順：
+1. 人事・労務（休暇 / 経費 / 勤怠）
+2. IT / 情シス（VPN / PC / SaaS）
+3. 業務マニュアル
+
+### 3-4. 社員に URL を告知
+
+ナレッジ投入が完了したら、社員に以下を共有：
+
+- 利用 URL: `http://<サーバーのIPアドレス>:8000/`
+- 利用ガイド PDF: `docs/a_company_user_quickstart.pdf`（提供側からお渡し済）
 
 ---
 
-## Step 6. 外部から動作確認 (5 分)
+## Part 4. A社 社員の利用開始
 
-社員の PC（または別端末）のブラウザで開く：
+社員は `http://<サーバーのIPアドレス>:8000/` を開いて、会社の Gmail でログイン → 質問。
 
-```
-https://faq.a-corp.jp/
-```
-
-- Google ログイン画面が表示される
-- 弊社からお伝えした **管理者 Gmail のいずれか** でログインできる
-
-これで完了です 🎉
-
-ログインした管理者は `https://faq.a-corp.jp/admin/upload` を開いて、マニュアル・規程・FAQ などの資料をドラッグ&ドロップで投入できます。
+⚠ **デフォルト設定では、Part 1-1 でテストユーザー登録された Gmail のみログイン可** です。
+全社員に開放したい場合は、提供側に「ALLOWED_DOMAIN に A社ドメインを追加」を依頼してください。
 
 ---
 
 ## 困ったとき (よくあるトラブル)
 
-### Python 3.11 が無いと言われる
+### 「アクセスがブロックされました」（Google ログイン時）
 
-PowerShell を再起動して `py -3.11 --version` を確認。出ない場合は https://www.python.org/downloads/ から再インストール（**`Add to PATH` チェック必須**）。
+最も多いトラブル。原因：
+- そのアカウントが OAuth テストユーザーに登録されていない → Part 1-1 で追加
+- Redirect URI が登録されていない → Part 1-2 で追加
 
-### `install.ps1` が「実行できません」とエラー
+### `Python 3.11+ が見つかりません`
 
-PowerShell を **「管理者として実行」** で起動し直す。それでも出る場合は：
+Python 未インストール、またはインストール時に「Add to PATH」を忘れた → Part 2-1 再実行。
+
+### 文字化けする（`縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ` 等）
+
+install.ps1 が UTF-8 BOM 付きでない可能性。GitHub から再ダウンロードしてやり直し（Part 2-3）。
+
+### `Test-Path` が False / `net use` で「ネットワーク名が見つかりません」
+
+共有フォルダへのアクセス権がない、もしくは共有名/パスが間違っている。A社 IT 部門の社内インフラ担当に確認。
+
+### `healthcheck が通らない`
+
+`%USERPROFILE%\Inquira\start_inquira.bat` をエクスプローラーから直接ダブルクリック → コンソールに出るエラーを確認。
+よくあるのは `.env` の API キー綴りミスや SESSION_SECRET 未生成。
+
+### スクリプト実行が拒否される（PowerShell）
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
-
-を `install.ps1` の前に実行。
-
-### `http://127.0.0.1:8000/healthz` が応答しない
-
-サーバー上で `C:\Inquira\start_inquira.bat` を**直接ダブルクリック**して、コンソールにエラーが出ていないか確認。よくある原因：
-- `.env` の Anthropic API キーが壊れている
-- ポート 8000 が他のアプリで使用中
-
-### IIS でアクセスすると「502 Bad Gateway」
-
-- ARR の `Enable proxy` がオフ → Step 5-3 を再確認
-- Inquira 本体が止まっている → タスクスケジューラで `Inquira` タスクを「実行」
-- Windows Firewall が `localhost:8000` を遮断 → 普通は localhost 同士なので関係ないですが、念のため確認
-
-### IIS でアクセスすると「Google ログインで認可エラー」
-
-`https://faq.a-corp.jp/auth/callback` がリダイレクト URI として Google Cloud Console 側に登録されていない可能性。弊社にご連絡ください（こちらで OAuth 設定を追加します）。
+を毎回先に叩く。これは「このターミナル限定で許可」する設定です。
 
 ---
 
-## 運用コマンド (Windows)
+## 運用コマンド（A社 IT 部門用）
 
 ```powershell
 # 状態確認
-Get-ScheduledTask -TaskName Inquira
 Invoke-WebRequest http://127.0.0.1:8000/healthz
 
-# 再起動
-Stop-ScheduledTask -TaskName Inquira
-Start-ScheduledTask -TaskName Inquira
+# 手動再起動
+Get-Process python | Where-Object { $_.MainWindowTitle -like '*uvicorn*' } | Stop-Process
+& "$env:USERPROFILE\Inquira\start_inquira.bat"
 
-# 手動起動 (デバッグ時)
-C:\Inquira\start_inquira.bat
-
-# IIS 再起動
-iisreset
+# ログ確認 (手動起動した時のコンソール出力で見る)
+& "$env:USERPROFILE\Inquira\start_inquira.bat"
+# (バックグラウンドではなくフォアグラウンドで起動し、エラーをその場で確認できる)
 ```
 
 ---
 
 ## バックアップ対象
 
-A社の通常バックアップに以下を追加してください：
+- データ保存先（`-DataDir` で指定した UNC 共有）配下まるごと
+- `%USERPROFILE%\Inquira\.env`（再構築用、暗号化保管）
 
-- **データ保存先**: インストール時に指定したパス配下まるごと
-  - ネットワーク共有を使った場合 (推奨): `-DataDir` で指定した UNC 共有
-  - ローカル保存の場合: `%USERPROFILE%\Inquira\data\` 配下
-- **設定ファイル**: `%USERPROFILE%\Inquira\.env`（再構築用、機密含むため暗号化保管）
-
-データ保存先には以下が入っています：
-- `faq_master/` — 取り込み済みナレッジの整形版
-- `audit/` — 質問履歴・操作ログ
-- `raw/` — アップロードされた原本ファイル
+データ保存先の中身：
+- `faq_master/` — 取り込み済みナレッジ
+- `audit/` — 質問履歴
+- `raw/` — アップロード原本
 - `feedback_scores.json` — フィードバックスコア
 - `faq_candidates.json` — 自動 FAQ 候補
-- `org_settings.json` — 組織情報のオーバーライド
-- `index.json` — 検索インデックス（自動再生成可能）
+- `org_settings.json` — 組織情報
+- `index.json` — 検索インデックス（自動再生成可）
 
 ---
 
 ## サポート窓口
 
-不明点・トラブル時は弊社サポート（個別 Slack / メールでご案内済み）までご連絡ください。
+導入時の不明点は提供側（弊社）まで。Slack / メール経由でご案内済みの連絡先へ。
 
 ---
 
 ## (参考) Linux サーバーの場合
 
-Ubuntu / Debian / RHEL / Rocky / AlmaLinux の場合は `install.ps1` ではなく `install.sh` を使います：
+`install.ps1` ではなく `install.sh` を使い、systemd で自動起動。リバースプロキシは nginx：
 
 ```bash
 sudo ./install.sh
-# → /opt/inquira/ に配置、systemd で自動起動、journalctl -u inquira -f でログ確認
+sudo systemctl status inquira
+sudo journalctl -u inquira -f
 ```
 
-リバースプロキシは nginx 設定例：
-
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name faq.a-corp.jp;
-    ssl_certificate     /etc/ssl/certs/faq.a-corp.jp.crt;
-    ssl_certificate_key /etc/ssl/private/faq.a-corp.jp.key;
-    client_max_body_size 1024M;
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
+nginx 設定例は別途お問い合わせください。
