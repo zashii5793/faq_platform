@@ -6,6 +6,60 @@
 
 ---
 
+## 🚨 最初に読む: 詰まったらこれを確認するチェックリスト
+
+何か変だな？と思ったら、まず以下を順番に確認してください。**8 割の問題はここで解決します**。
+
+### A. 今、自分はどのマシンにいる？
+
+```powershell
+hostname              # ← ホスト名
+whoami                # ← ユーザー名
+ipconfig | findstr IPv4   # ← IP アドレス
+```
+
+期待していたマシンと一致しているか？ リモートデスクトップ多段だと、よく違うマシンで作業している。
+特に `Test-NetConnection` の `SourceAddress` で、**今いるマシンの IP が判明**することがある。
+
+### B. 今、PowerShell? CMD?
+
+プロンプトを見る：
+- `PS C:\>` → **PowerShell**
+- `C:\>` → **CMD**
+
+私が出すコマンドの多くは PowerShell 用。CMD だと動かないものが多い。
+CMD から PowerShell へは、`powershell` と打てば中に入れる。
+
+### C. Inquira 本体はどこにある？
+
+```powershell
+where.exe /R C:\ start_inquira.bat
+```
+
+これで C ドライブ全体から検索。見つかったパスが Inquira のインストール先。
+
+### D. Python は入ってる？
+
+```powershell
+py --version
+```
+
+`Python 3.11.x` 以上が返らないと install.ps1 が動かない。
+
+### E. Inquira は今動いてる？
+
+```powershell
+# サーバー上で
+Get-Process python
+
+# 外から (どのマシンでも)
+Test-NetConnection inquira.<社内ドメイン> -Port 8000
+```
+
+`TcpTestSucceeded : True` が返れば動いてる。
+
+---
+
 ## はじめに — この資料の使い方
 
 実際の作業で「ん？」となった瞬間を 1 つずつ解説しています。
@@ -605,6 +659,172 @@ Get-Process python | Stop-Process -ErrorAction SilentlyContinue
 **初心者向け補足**:
 - これは多くのサーバーアプリ共通の挙動。「設定変更 → 再起動」がセット。
 - 例外: Nginx や Apache は `reload` で部分的に再読み込みできるが、Inquira は再起動が必要。
+
+---
+
+## 9. 「実は別マシンで作業してた」系の罠（**最重要**）
+
+A社運用フェーズで一番時間を取られたカテゴリ。
+リモートデスクトップ多段や VM の入れ子で、**自分がどこにいるか見失う**問題。
+
+### 詰まり 9-1: 違うマシンで作業していた
+
+**症状**: 「サーバーに入って install.ps1 を実行したのに、別の日に確認したらフォルダがない」
+
+**実際に起きたこと**:
+- DNS 設定のために `mstsc /v:<DNS_SERVER_IP>` で DNS サーバーにログインした
+- その RDP セッションが**残ったまま**、別の作業を続けた
+- 後から「`<INQUIRA_SERVER_IP>` (A社サーバー本体) で作業してたつもり」 → 実は `<DNS_SERVER_IP>` (DNS サーバー) で作業していた
+- 当然、Python も Inquira もそのマシンにはない
+
+**なぜ起きるか**: リモートデスクトップ画面のタイトルバーは小さくて見にくく、複数開いていると区別がつきにくい。一度ログインすると、そのまま色んな作業をしてしまう。
+
+**解決**: 怪しいと思ったら、即座に確認：
+
+```powershell
+hostname             # ← ホスト名
+ipconfig | findstr IPv4   # ← 自分の IP
+```
+
+A社サーバー → ホスト名 + IP `<INQUIRA_SERVER_IP>`
+DNS サーバー → ホスト名 `AD-SERVER...` + IP `<DNS_SERVER_IP>`
+
+**決定打**: `Test-NetConnection` を打つと、出力に `SourceAddress` が含まれる。これが「**今このコマンドを打ってる自分の IP**」。
+
+```powershell
+Test-NetConnection google.com -Port 443
+# SourceAddress を見れば、自分がどのマシンにいるか即判明
+```
+
+**次回の予防**:
+- 各マシンにログインしたら、最初に `hostname` を打って確認
+- リモートデスクトップのウィンドウタイトルにホスト名を入れる
+- マシン構成表 (Section 8-6) を手元に置く
+
+---
+
+### 詰まり 9-2: Inquira アプリ本体が見つからなくなる
+
+**症状**: 過去に install.ps1 を実行して動かしたはずなのに、`start_inquira.bat` も `.venv\` もない。`audit/` と `data/` だけは残ってる。
+
+**なぜ起きるか**: 
+- 過去の install を別マシン / 別ユーザーで実行していた
+- そのマシン上の `%USERPROFILE%\Inquira\` にアプリ本体があった
+- でもデータ保存先は UNC 共有を指定していたので、データだけはネットワーク共有に残った
+- アプリ本体のあったマシンに、もうログインできなくなっている / 入り直しても見つけられない
+
+**解決**: 諦めて install.ps1 を再実行する。データ（`audit/` `data/` `faq_master/` 等）は UNC 共有に残っているので、新しい Inquira を立ち上げれば**過去のデータを引き継いで動く**。
+
+```powershell
+# ローカルに展開し直して install
+robocopy "\\<UNC>\faq_platform-..." "C:\Temp\inquira" /E
+copy "\\<UNC>\.env" "C:\Temp\inquira\tenants\<slug>\.env"
+cd C:\Temp\inquira\tenants\<slug>
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\install.ps1 -DataDir "\\<UNC>"
+```
+
+**次回の予防**:
+- install.ps1 実行時の **正確な状況をメモ** に残す:
+  - どのマシンで実行したか（hostname / IP）
+  - どのユーザーで実行したか（whoami）
+  - 何時に実行したか
+  - 完了メッセージの内容
+- 上記を `\\<UNC>\install_log.txt` のように UNC 共有に残しておくと、後で見返せる
+
+---
+
+### 詰まり 9-3: ZIP を解凍した = インストール完了、ではない
+
+**症状**: 「解凍したのに `start_inquira.bat` がない」
+
+**なぜ起きるか**: GitHub から落とした ZIP には**ソースコードだけ**が入っている。実行するためには：
+1. ZIP を解凍（= ソースコードを置く）
+2. **install.ps1 を実行**（= venv 作成、依存パッケージ、`.env` 配置、`start_inquira.bat` 生成、起動）
+
+この 2 ステップ目を忘れると、ファイルが揃わない。
+
+**解決**: 解凍した後、必ず install.ps1 を実行する。
+
+**初心者向け補足**:
+- 多くのアプリは「インストーラを実行する」のが当たり前。Inquira は GitHub から落とした生のソースを `install.ps1` というスクリプトで本番運用環境に展開する仕組み。
+- 「ZIP を展開する」と「アプリをインストールする」は別の作業。
+
+---
+
+### 詰まり 9-4: 自分が今いる場所が変わったことに気付かない
+
+**症状**: PowerShell で作業していたはずなのに、いつの間にか CMD に切り替わってる。コマンドが効かない。
+
+**実際に起きたこと**:
+- A社サーバーに RDP でログイン → 元々の CMD ウィンドウだった
+- そこから `powershell` で PowerShell に入った
+- 何度か作業した後、`exit` で PowerShell を抜けて CMD に戻ったことに気付いていない
+- PowerShell コマンドを打ってエラー
+
+**解決**: プロンプトを必ず確認する習慣をつける：
+
+| プロンプト | シェル |
+|---|---|
+| `PS C:\Users\foo>` | PowerShell |
+| `C:\Users\foo>` | CMD |
+
+CMD だったら `powershell` と打って入り直す。
+
+---
+
+### 詰まり 9-5: `Test-NetConnection` の SourceAddress で「自分のIP」が判明する裏技
+
+これは 9-1 でも触れたが、**詰まった時の最強の診断ツール**なので独立項目に。
+
+```powershell
+Test-NetConnection google.com -Port 443
+```
+
+出力に含まれる `SourceAddress` が、**このコマンドを打っているマシンの IP**。
+
+```
+ComputerName     : google.com
+RemoteAddress    : 142.250.196.142
+RemotePort       : 443
+InterfaceAlias   : イーサネット
+SourceAddress    : <DNS_SERVER_IP>    ← ★これが「自分のIP」★
+TcpTestSucceeded : True
+```
+
+「あれ、なんで上手くいかないんだ？」と思ったら、まず `Test-NetConnection` で `SourceAddress` を確認。期待していた IP と違っていたら、別のマシンで作業している。
+
+---
+
+### 詰まり 9-6: 「動いてる」のに「動いていない」と勘違い
+
+**症状**: `start_inquira.bat` が見つからない、Python もない、`.env` の場所も分からない。万事休すかと思った。
+
+**実際に起きたこと**: `Test-NetConnection inquira.<社内ドメイン> -Port 8000` が `True` を返した。**Inquira はちゃんと動いていた**。別のマシンか過去のセッションで動いていた Inquira がまだ稼働中。
+
+**解決**: トラブル時、最初に**「そもそも Inquira は動いてるか？」** を確認する：
+
+```powershell
+# 1. ポート到達確認 (どこからでも可)
+Test-NetConnection inquira.<社内ドメイン> -Port 8000
+
+# 2. ヘルスチェック (HTTP応答確認)
+Invoke-WebRequest http://inquira.<社内ドメイン>:8000/healthz -UseBasicParsing
+```
+
+両方 OK なら、Inquira は動いている。サーバーをいじり始める前に**まず動作確認**。
+
+**教訓**: **「動いていない」と決めつけて修復作業を始める前に、本当に動いていないかを確認する**。動いてるものを止めてしまったらもったいない。
+
+---
+
+### 詰まり 9-7: 過去のデータが UNC に残っていてラッキー
+
+**気づき**: install.ps1 で `-DataDir` に UNC 共有を指定していたおかげで、アプリ本体が消失しても**データだけは残っていた**。
+
+`audit/`（ログ）、`data/`（雑データ）、`faq_master/`（投入済みナレッジ）、`faq_candidates.json`（FAQ 候補）等が UNC に保持されていれば、アプリを再インストールしても**過去のデータをそのまま引き継げる**。
+
+**設計の教訓**: 「アプリ本体 = ローカル / データ = UNC 共有」の分離は、引き継ぎ・復旧の観点でも有効。次回の導入時もこのパターンを推奨。
 
 ---
 
