@@ -72,7 +72,7 @@ ANTHROPIC_API_KEY=sk-ant-xxxxx                        # 自分のキー
 GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com     # 自分の OAuth クライアント
 GOOGLE_CLIENT_SECRET=xxxxx                            # 同上
 GOOGLE_REDIRECT_URI=http://localhost:8000/auth/callback   # まずは localhost で
-ALLOWED_EMAILS=admin1@gmail.com,admin2@gmail.com,...  # A社管理者 (Part 1-1 と同じ)
+ALLOWED_EMAILS=<管理者1の Gmail>,<管理者2の Gmail>,...  # A社管理者 (Part 1-1 と同じ)
 ```
 
 > ⚠ この `.env` は **メール本文には貼らず、暗号化 ZIP 添付** か別ルートで渡してください。
