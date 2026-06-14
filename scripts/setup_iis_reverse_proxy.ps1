@@ -1,4 +1,4 @@
-# Inquira IIS リバースプロキシ 自動セットアップ スクリプト
+﻿# Inquira IIS リバースプロキシ 自動セットアップ スクリプト
 #
 # このスクリプトは Inquira を https://inquira.<社内ドメイン>/ で公開するため、
 # Windows Server / Windows 10/11 上で IIS リバースプロキシを自動セットアップします。
