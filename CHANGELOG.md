@@ -5,6 +5,23 @@ Inquira のリリースノート。すべての変更点を時系列順に記録
 このプロジェクトは [Semantic Versioning](https://semver.org/lang/ja/) と
 [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に従う。
 
+- 提供側のリリース手順: [`docs/release_guide.md`](docs/release_guide.md)
+- 顧客側の更新手順: [`scripts/update_inquira_README.md`](scripts/update_inquira_README.md)
+
+---
+
+## [Unreleased]
+
+### Added — リリース運用基盤
+- 🚀 **顧客側ワンコマンド更新スクリプト** `scripts/update_inquira.ps1` 追加
+  - GitHub からタグ/ブランチを取得 → コード入れ替え → 自動ヘルスチェック → 失敗時は自動ロールバック
+  - `.env` / `.venv` / データ保存先 (UNC 共有) は触らない
+  - `-DryRun` でリリース前検証可能
+  - 操作ログ: `%USERPROFILE%\Inquira_Update.log`
+- 📋 **リリース運用ガイド** `docs/release_guide.md` 追加
+  - SemVer 規約、リリースフロー、Breaking change 時の特別対応、ロールバック方針
+- 📖 **アップデート利用者ガイド** `scripts/update_inquira_README.md` 追加 (顧客 IT 部門向け)
+
 ---
 
 ## [0.8.0] - 2026-06-02
