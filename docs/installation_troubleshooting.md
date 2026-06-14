@@ -601,7 +601,7 @@ VM の中で `mstsc` を起動 → 「オプションの表示」→「ローカ
 # IP からホスト名を逆引き
 nslookup <DNS_SERVER_IP>
 
-# 結果例: "AD-SERVER-EXAMPLE.<AD_DOMAIN_NETBIOS>" → AD サーバーだとわかる
+# 結果例: "AD-SERVER<YEAR>.<AD_DOMAIN_NETBIOS>" → AD サーバーだとわかる
 ```
 
 ホスト名にヒントが入ってる：

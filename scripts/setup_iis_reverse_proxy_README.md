@@ -181,7 +181,7 @@ DNS の A レコードが **Inquira サーバーと別マシンの IP** を指�
 
 ```powershell
 # 解決される IP を確認
-Resolve-DnsName inquira.example.local
+Resolve-DnsName <INQUIRA_HOST>.<CUSTOMER_DOMAIN>
 # → Inquira サーバーの実 IP と一致しているか?
 
 # 一致していなければ AD サーバーで修正

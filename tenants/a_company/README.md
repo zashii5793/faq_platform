@@ -6,15 +6,18 @@
 
 ---
 
-## ✅ 本番稼働状態 (2026-06-14 時点)
+## ✅ 本番稼働状態
 
 | 項目 | 値 |
 |---|---|
-| 公開 URL | **https://inquira.example.local/** |
+| 公開 URL | `https://<INQUIRA_HOST>.<CUSTOMER_DOMAIN>/` |
 | 構成 | Windows Server + IIS リバプロ + Inquira (uvicorn) |
-| 認証 | Google OAuth (管理者 4 名ホワイトリスト) |
-| データ保存先 | `\\fileserver\share\システム\inquira_share\` |
-| 詳細レポート | [`docs/a_company_deployment_report.md`](../../docs/a_company_deployment_report.md) |
+| 認証 | Google OAuth (管理者ホワイトリスト方式) |
+| データ保存先 | `<UNC_SHARE_PATH>` |
+| 詳細レポート | [`docs/a_company_deployment_report.md`](../../docs/a_company_deployment_report.md) (テンプレート) |
+
+> 顧客固有値 (`<INQUIRA_HOST>`, `<CUSTOMER_DOMAIN>`, `<UNC_SHARE_PATH>` 等) は **このリポジトリに絶対にコミットしない**。
+> 実値は `.private/` 配下で管理してください。
 
 導入時の試行錯誤と教訓は [`docs/deployment_lessons_learned.md`](../../docs/deployment_lessons_learned.md) を参照。
 
@@ -212,25 +215,26 @@ Invoke-WebRequest http://127.0.0.1:8000/healthz
 ## Part 2.5. HTTPS 化（IIS リバースプロキシ、20 分）
 
 > Part 2 までで `http://localhost:8000/` で動作確認できたら、HTTPS 化して社員に開放します。
+> 以下の `<CUSTOMER_DOMAIN>` / `<INQUIRA_HOST>` / `<INQUIRA_SERVER_IP>` 等は実値に置換して使ってください。
 
 ### 2.5-1. 社内 DNS に A レコード登録（AD 管理者へ依頼）
 
-A社の **AD-SERVER-EXAMPLE** にて、以下を実行してもらいます。
+AD サーバーにて、以下を実行してもらいます。
 
 ```powershell
 # Inquira を動かしているサーバーの IP を確認 (Inquira サーバー上で実行)
 ipconfig | findstr IPv4
-# → 例: 10.0.0.10 を控える
+# → 出力された IP を控える (= <INQUIRA_SERVER_IP>)
 
 # AD サーバー上で A レコード作成
-Add-DnsServerResourceRecordA -ZoneName "example.local" -Name "inquira" -IPv4Address "10.0.0.10"
+Add-DnsServerResourceRecordA -ZoneName "<CUSTOMER_DOMAIN>" -Name "<INQUIRA_HOST>" -IPv4Address "<INQUIRA_SERVER_IP>"
 ```
 
 ⚠ **重要**: `IPv4Address` は **Inquira サーバーの IP** を指定 (AD サーバーの IP ではない)。間違えるとブラウザから到達できません。
 
 確認:
 ```powershell
-Resolve-DnsName inquira.example.local
+Resolve-DnsName <INQUIRA_HOST>.<CUSTOMER_DOMAIN>
 # → IPAddress が Inquira サーバーの IP と一致すれば OK
 ```
 
@@ -246,7 +250,7 @@ mkdir C:\Temp -Force | Out-Null
 )
 cd C:\Temp
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\setup_iis_reverse_proxy.ps1 -Hostname "inquira.example.local"
+.\setup_iis_reverse_proxy.ps1 -Hostname "<INQUIRA_HOST>.<CUSTOMER_DOMAIN>"
 ```
 
 スクリプトが以下を全部自動でやります:
@@ -269,7 +273,7 @@ notepad "$env:USERPROFILE\Inquira\.env"
 ```
 
 ```env
-GOOGLE_REDIRECT_URI=https://inquira.example.local/auth/callback
+GOOGLE_REDIRECT_URI=https://<INQUIRA_HOST>.<CUSTOMER_DOMAIN>/auth/callback
 ```
 
 ### 2.5-4. Google Cloud Console にリダイレクト URI 追加
@@ -277,7 +281,7 @@ GOOGLE_REDIRECT_URI=https://inquira.example.local/auth/callback
 OAuth 2.0 クライアント → 承認済みリダイレクト URI に以下を追加:
 
 ```
-https://inquira.example.local/auth/callback
+https://<INQUIRA_HOST>.<CUSTOMER_DOMAIN>/auth/callback
 ```
 
 → 保存。5〜10 分待つ (Google 側の伝搬時間)。
@@ -296,15 +300,15 @@ Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
 Invoke-WebRequest http://127.0.0.1:8000/healthz -UseBasicParsing
 
 # HTTPS 経由で応答するか
-curl.exe -ks https://inquira.example.local/healthz
+curl.exe -ks https://<INQUIRA_HOST>.<CUSTOMER_DOMAIN>/healthz
 # → {"ok":true}
 
 # OAuth リダイレクト先が正しいか (重要)
-curl.exe -ksi https://inquira.example.local/auth/login | Select-String "Location"
+curl.exe -ksi https://<INQUIRA_HOST>.<CUSTOMER_DOMAIN>/auth/login | Select-String "Location"
 # → Location: https://accounts.google.com/o/oauth2/v2/auth?... が出れば正常
 ```
 
-最後にブラウザで `https://inquira.example.local/` を開き、Google ログインから管理画面に入れたら完了。
+最後にブラウザで `https://<INQUIRA_HOST>.<CUSTOMER_DOMAIN>/` を開き、Google ログインから管理画面に入れたら完了。
 
 ---
 
@@ -312,10 +316,10 @@ curl.exe -ksi https://inquira.example.local/auth/login | Select-String "Location
 
 ### 3-1. ブラウザで管理画面にアクセス
 
-A社サーバー上 (もしくは社内 LAN の PC) のブラウザで:
+顧客サーバー上 (もしくは社内 LAN の PC) のブラウザで:
 
 ```
-https://inquira.example.local/admin/upload
+https://<INQUIRA_HOST>.<CUSTOMER_DOMAIN>/admin/upload
 ```
 
 (HTTPS 化前は `http://localhost:8000/admin/upload` でも可)
@@ -343,14 +347,14 @@ https://inquira.example.local/admin/upload
 
 ナレッジ投入が完了したら、社員に以下を共有：
 
-- 利用 URL: **`https://inquira.example.local/`**
+- 利用 URL: `https://<INQUIRA_HOST>.<CUSTOMER_DOMAIN>/`
 - 利用ガイド PDF: `docs/a_company_user_quickstart.pdf`（提供側からお渡し済）
 
 ---
 
 ## Part 4. A社 社員の利用開始
 
-社員は **`https://inquira.example.local/`** を開いて、会社の Gmail でログイン → 質問。
+社員は `https://<INQUIRA_HOST>.<CUSTOMER_DOMAIN>/` を開いて、会社の Gmail でログイン → 質問。
 
 ⚠ **デフォルト設定では、Part 1-1 でテストユーザー登録された Gmail のみログイン可** です。
 全社員に開放したい場合は、提供側に「ALLOWED_DOMAIN に A社ドメインを追加」を依頼してください。
@@ -389,25 +393,25 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 を毎回先に叩く。これは「このターミナル限定で許可」する設定です。
 
-### `https://inquira.example.local/` がブラウザでタイムアウトする
+### HTTPS URL がブラウザでタイムアウトする
 
 DNS A レコードが Inquira サーバーと別マシンの IP を指している可能性。
 
 ```powershell
 # 解決される IP を確認
-Resolve-DnsName inquira.example.local
+Resolve-DnsName <INQUIRA_HOST>.<CUSTOMER_DOMAIN>
 
 # Inquira サーバーの実 IP と比較
 ipconfig | findstr IPv4
 
 # 違っていたら AD サーバーで修正
 # (AD サーバー上で実行)
-Remove-DnsServerResourceRecord -ZoneName "example.local" -Name "inquira" -RRType A -Force
-Add-DnsServerResourceRecordA -ZoneName "example.local" -Name "inquira" -IPv4Address "<Inquira サーバーの実 IP>"
+Remove-DnsServerResourceRecord -ZoneName "<CUSTOMER_DOMAIN>" -Name "<INQUIRA_HOST>" -RRType A -Force
+Add-DnsServerResourceRecordA -ZoneName "<CUSTOMER_DOMAIN>" -Name "<INQUIRA_HOST>" -IPv4Address "<INQUIRA_SERVER_IP>"
 
 # Inquira サーバーで再確認
 ipconfig /flushdns
-Resolve-DnsName inquira.example.local
+Resolve-DnsName <INQUIRA_HOST>.<CUSTOMER_DOMAIN>
 ```
 
 ### Google ログイン押下後に `{"detail":"Not Found"}` が出る
@@ -428,7 +432,7 @@ iisreset
 
 確認:
 ```powershell
-curl.exe -ksi https://inquira.example.local/auth/login | Select-String "Location"
+curl.exe -ksi https://<INQUIRA_HOST>.<CUSTOMER_DOMAIN>/auth/login | Select-String "Location"
 # → Location: https://accounts.google.com/... が出れば正常
 ```
 

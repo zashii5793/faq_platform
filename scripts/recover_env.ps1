@@ -18,9 +18,9 @@
 #   4. .env を UTF-8 BOM 無しで書き出し
 
 param(
-    [string]$EnvPath = "%USERPROFILE%\Inquira\.env",
+    [string]$EnvPath = "$env:USERPROFILE\Inquira\.env",
     [string]$Hostname = "inquira.example.local",
-    [string]$DataShare = "//fileserver/share/システム/inquira_share"
+    [string]$DataShare = "\\fileserver\share\inquira"
 )
 
 # 既存 .env のバックアップ
