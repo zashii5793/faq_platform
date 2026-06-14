@@ -5,9 +5,9 @@
 
 ---
 
-## ハマリポイント TOP 10（A社で実際に発生）
+## ハマリポイント TOP 13（A社で実際に発生）
 
-| # | 症状 | 原因 | 防ぐためのヒアリング |
+| # | 症状 | 原因 | 防ぐためのヒアリング / 対策 |
 |---|---|---|---|
 | 1 | Docker 前提で進めていたが Docker 不可と途中で判明 | 顧客環境の事前確認不足 | 「Docker 使えますか？」 |
 | 2 | Windows Server を Linux 用 install.sh で進めようとした | OS 確認不足 | 「OS は何ですか？」 |
@@ -19,6 +19,9 @@
 | 8 | DNS 設定権限がない（Inquira 担当者 ≠ AD 管理者） | 権限分離の見落とし | 「DNS 設定は誰が触れますか？」 |
 | 9 | リポジトリに顧客固有値（メール・サーバーパス）を書いてしまった | 提供側ミス | プレースホルダ運用 + コミット前 grep |
 | 10 | Mac → Windows サーバーへ ZIP を直接渡せない（RDP） | 転送経路の確認不足 | GitHub からダウンロード方式を最初から案内 |
+| 11 | `Invoke-WebRequest -OutFile` で BOM が剥がれて PS スクリプトが文字化け | PowerShell 5.1 の `Invoke-WebRequest` の挙動 | DL は `(New-Object System.Net.WebClient).DownloadFile(...)` を使う |
+| 12 | DNS A レコードを **AD サーバー自身の IP** で登録してしまい接続不能 | Inquira サーバーと DNS サーバーが別マシンであることの見落とし | A レコード作成時に `nslookup <ホスト名>` で確認 + **Inquira サーバーの実 IP** を控えて作業 |
+| 13 | OAuth で Google ログイン画面に飛ばず、自分のホストの `/o/oauth2/v2/auth` に 404 する | IIS ARR の `reverseRewriteHostInResponseHeaders=true` が **Location ヘッダの `accounts.google.com` を自分のホストに書き換える** | `setup_iis_reverse_proxy.ps1` が自動で `false` に設定済み (v2 以降)。手動セットアップ時は `appcmd set config -section:system.webServer/proxy /reverseRewriteHostInResponseHeaders:"False"` |
 
 ---
 
@@ -217,3 +220,7 @@ git diff --cached | grep -iE 'gmail|@.*\.(jp|com)|\\\\|株式会社|file[0-9]+|1
 - [ ] `tenants/<slug>/` の生成を `add_tenant.sh` から `add_tenant.ps1` も用意（Windows 提供側オペ用）
 - [ ] 配布 ZIP の自動生成スクリプト（`build_customer_package.py`）
 - [ ] ヘルスチェック確認スクリプト（OAuth まで通るかを自動診断）
+- [x] `setup_iis_reverse_proxy.ps1` に ARR Location 書き換え無効化を組み込み (#13 対策)
+- [ ] `setup_iis_reverse_proxy.ps1` の Step 10 (動作確認) に **OAuth リダイレクト先の Location ヘッダ検証** を追加 (`Location: https://accounts.google.com/...` になっているか)
+- [ ] DNS A レコード作成時の対話確認 (「Inquira サーバーの IP は ◯◯ で正しいですか?」) を AD_REQUEST.md に明記
+- [ ] AD サーバー上で実行する DNS 登録 PowerShell スクリプト雛形 (`Add-DnsServerResourceRecordA`) を `scripts/` に追加

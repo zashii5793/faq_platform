@@ -438,6 +438,14 @@ $appcmd = "$env:windir\System32\inetsrv\appcmd.exe"
 & $appcmd set config -section:system.webServer/proxy /enabled:"True" /commit:apphost | Out-Null
 Write-Log "    ARR プロキシ有効化" "OK"
 
+# OAuth など外部 IdP へのリダイレクトを壊さないため、
+# Location ヘッダのホスト名書き換え (既定 True) を無効化する。
+# これを忘れると Google OAuth リダイレクト時に
+# https://accounts.google.com/... が https://<自分のホスト>/... に
+# 書き換わってログインが 404 で落ちる。
+& $appcmd set config -section:system.webServer/proxy /reverseRewriteHostInResponseHeaders:"False" /commit:apphost | Out-Null
+Write-Log "    Location ヘッダ書き換え無効化 (OAuth 互換)" "OK"
+
 & $appcmd set config -section:system.webServer/rewrite/allowedServerVariables /+"[name='HTTP_X_FORWARDED_PROTO']" /commit:apphost 2>$null | Out-Null
 & $appcmd set config -section:system.webServer/rewrite/allowedServerVariables /+"[name='HTTP_X_FORWARDED_HOST']" /commit:apphost 2>$null | Out-Null
 Write-Log "    allowedServerVariables 設定完了" "OK"

@@ -6,6 +6,20 @@
 
 ---
 
+## ✅ 本番稼働状態 (2026-06-14 時点)
+
+| 項目 | 値 |
+|---|---|
+| 公開 URL | **https://inquira.example.local/** |
+| 構成 | Windows Server + IIS リバプロ + Inquira (uvicorn) |
+| 認証 | Google OAuth (管理者 4 名ホワイトリスト) |
+| データ保存先 | `\\fileserver\share\システム\inquira_share\` |
+| 詳細レポート | [`docs/a_company_deployment_report.md`](../../docs/a_company_deployment_report.md) |
+
+導入時の試行錯誤と教訓は [`docs/deployment_lessons_learned.md`](../../docs/deployment_lessons_learned.md) を参照。
+
+---
+
 ## 全体像 — 誰が何をやるか
 
 ```
@@ -195,21 +209,118 @@ Invoke-WebRequest http://127.0.0.1:8000/healthz
 
 ---
 
+## Part 2.5. HTTPS 化（IIS リバースプロキシ、20 分）
+
+> Part 2 までで `http://localhost:8000/` で動作確認できたら、HTTPS 化して社員に開放します。
+
+### 2.5-1. 社内 DNS に A レコード登録（AD 管理者へ依頼）
+
+A社の **AD-SERVER-EXAMPLE** にて、以下を実行してもらいます。
+
+```powershell
+# Inquira を動かしているサーバーの IP を確認 (Inquira サーバー上で実行)
+ipconfig | findstr IPv4
+# → 例: 10.0.0.10 を控える
+
+# AD サーバー上で A レコード作成
+Add-DnsServerResourceRecordA -ZoneName "example.local" -Name "inquira" -IPv4Address "10.0.0.10"
+```
+
+⚠ **重要**: `IPv4Address` は **Inquira サーバーの IP** を指定 (AD サーバーの IP ではない)。間違えるとブラウザから到達できません。
+
+確認:
+```powershell
+Resolve-DnsName inquira.example.local
+# → IPAddress が Inquira サーバーの IP と一致すれば OK
+```
+
+### 2.5-2. IIS リバプロ自動セットアップ実行
+
+Inquira サーバー上の **管理者 PowerShell** で:
+
+```powershell
+mkdir C:\Temp -Force | Out-Null
+(New-Object System.Net.WebClient).DownloadFile(
+  "https://raw.githubusercontent.com/zashii5793/faq_platform/claude/add-roadmap-docs-RmQNp/scripts/setup_iis_reverse_proxy.ps1",
+  "C:\Temp\setup_iis_reverse_proxy.ps1"
+)
+cd C:\Temp
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\setup_iis_reverse_proxy.ps1 -Hostname "inquira.example.local"
+```
+
+スクリプトが以下を全部自動でやります:
+
+1. IIS 役割インストール
+2. URL Rewrite / ARR モジュール (winget 経由)
+3. 自己署名 SSL 証明書発行 (有効期限 5 年)
+4. IIS サイト「Inquira」作成 (80/443 バインド)
+5. リバプロ設定 (`http://127.0.0.1:8000` への転送)
+6. **ARR の Location 書き換え無効化** (OAuth 互換)
+7. iisreset
+8. 動作確認
+
+詳細は [`scripts/setup_iis_reverse_proxy_README.md`](../../scripts/setup_iis_reverse_proxy_README.md)。
+
+### 2.5-3. `.env` の REDIRECT_URI を HTTPS に変更
+
+```powershell
+notepad "$env:USERPROFILE\Inquira\.env"
+```
+
+```env
+GOOGLE_REDIRECT_URI=https://inquira.example.local/auth/callback
+```
+
+### 2.5-4. Google Cloud Console にリダイレクト URI 追加
+
+OAuth 2.0 クライアント → 承認済みリダイレクト URI に以下を追加:
+
+```
+https://inquira.example.local/auth/callback
+```
+
+→ 保存。5〜10 分待つ (Google 側の伝搬時間)。
+
+### 2.5-5. Inquira 再起動
+
+```powershell
+Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
+& "$env:USERPROFILE\Inquira\start_inquira.bat"
+```
+
+### 2.5-6. 動作確認
+
+```powershell
+# バックエンドが応答するか
+Invoke-WebRequest http://127.0.0.1:8000/healthz -UseBasicParsing
+
+# HTTPS 経由で応答するか
+curl.exe -ks https://inquira.example.local/healthz
+# → {"ok":true}
+
+# OAuth リダイレクト先が正しいか (重要)
+curl.exe -ksi https://inquira.example.local/auth/login | Select-String "Location"
+# → Location: https://accounts.google.com/o/oauth2/v2/auth?... が出れば正常
+```
+
+最後にブラウザで `https://inquira.example.local/` を開き、Google ログインから管理画面に入れたら完了。
+
+---
+
 ## Part 3. A社 管理者の作業（ナレッジ投入、20 分）
 
 ### 3-1. ブラウザで管理画面にアクセス
 
-A社サーバー上のブラウザで以下の URL を開きます：
+A社サーバー上 (もしくは社内 LAN の PC) のブラウザで:
 
 ```
-http://localhost:8000/admin/upload
+https://inquira.example.local/admin/upload
 ```
 
-社内 LAN の別 PC から開く場合は、A社 IT 部門にサーバーの IP を聞いて：
+(HTTPS 化前は `http://localhost:8000/admin/upload` でも可)
 
-```
-http://<サーバーのIPアドレス>:8000/admin/upload
-```
+⚠ 自己署名証明書のため、初回アクセス時にブラウザの警告が出ます。「詳細設定」→「アクセスする」で進めてください。AD のグループポリシーで証明書を社員 PC に配布すれば、警告は出なくなります。
 
 ### 3-2. Google ログイン
 
@@ -232,14 +343,14 @@ http://<サーバーのIPアドレス>:8000/admin/upload
 
 ナレッジ投入が完了したら、社員に以下を共有：
 
-- 利用 URL: `http://<サーバーのIPアドレス>:8000/`
+- 利用 URL: **`https://inquira.example.local/`**
 - 利用ガイド PDF: `docs/a_company_user_quickstart.pdf`（提供側からお渡し済）
 
 ---
 
 ## Part 4. A社 社員の利用開始
 
-社員は `http://<サーバーのIPアドレス>:8000/` を開いて、会社の Gmail でログイン → 質問。
+社員は **`https://inquira.example.local/`** を開いて、会社の Gmail でログイン → 質問。
 
 ⚠ **デフォルト設定では、Part 1-1 でテストユーザー登録された Gmail のみログイン可** です。
 全社員に開放したい場合は、提供側に「ALLOWED_DOMAIN に A社ドメインを追加」を依頼してください。
@@ -277,6 +388,67 @@ install.ps1 が UTF-8 BOM 付きでない可能性。GitHub から再ダウン�
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 を毎回先に叩く。これは「このターミナル限定で許可」する設定です。
+
+### `https://inquira.example.local/` がブラウザでタイムアウトする
+
+DNS A レコードが Inquira サーバーと別マシンの IP を指している可能性。
+
+```powershell
+# 解決される IP を確認
+Resolve-DnsName inquira.example.local
+
+# Inquira サーバーの実 IP と比較
+ipconfig | findstr IPv4
+
+# 違っていたら AD サーバーで修正
+# (AD サーバー上で実行)
+Remove-DnsServerResourceRecord -ZoneName "example.local" -Name "inquira" -RRType A -Force
+Add-DnsServerResourceRecordA -ZoneName "example.local" -Name "inquira" -IPv4Address "<Inquira サーバーの実 IP>"
+
+# Inquira サーバーで再確認
+ipconfig /flushdns
+Resolve-DnsName inquira.example.local
+```
+
+### Google ログイン押下後に `{"detail":"Not Found"}` が出る
+
+IIS ARR の Location ヘッダ書き換えが `accounts.google.com` を自ホストに書き換えてしまっています。
+
+```powershell
+# 現在値の確認
+Get-WebConfigurationProperty -PSPath "MACHINE/WEBROOT/APPHOST" `
+    -Filter "system.webServer/proxy" -Name "reverseRewriteHostInResponseHeaders"
+
+# False に変更
+Set-WebConfigurationProperty -PSPath "MACHINE/WEBROOT/APPHOST" `
+    -Filter "system.webServer/proxy" -Name "reverseRewriteHostInResponseHeaders" -Value $false
+
+iisreset
+```
+
+確認:
+```powershell
+curl.exe -ksi https://inquira.example.local/auth/login | Select-String "Location"
+# → Location: https://accounts.google.com/... が出れば正常
+```
+
+最新の `setup_iis_reverse_proxy.ps1` (v2 以降) は自動で `false` に設定済みです。
+
+### `.env` が文字化けで起動できない
+
+文字コード変換コマンドを 2 回かけてしまったケース。対話入力で再生成:
+
+```powershell
+(New-Object System.Net.WebClient).DownloadFile(
+  "https://raw.githubusercontent.com/zashii5793/faq_platform/claude/add-roadmap-docs-RmQNp/scripts/recover_env.ps1",
+  "C:\Temp\recover_env.ps1"
+)
+cd C:\Temp
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\recover_env.ps1
+```
+
+対話で 4 項目入力すれば、UTF-8 BOM 無しで正しい `.env` が生成されます。
 
 ---
 

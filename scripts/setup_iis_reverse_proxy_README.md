@@ -15,6 +15,8 @@ A社サーバーで Inquira を `https://inquira.example.local/` で公開でき
 5. IIS で「Inquira」サイト作成（HTTP 80 + HTTPS 443）
 6. `web.config` 配置（リバプロ設定）
 7. ARR の Enable Proxy
+   - **ARR の Location ヘッダ書き換え (`reverseRewriteHostInResponseHeaders`) を `false` に**
+     → これを忘れると Google OAuth リダイレクト時に `Location: https://accounts.google.com/...` が `Location: https://<自ホスト>/...` に書き換わり、ログインが 404 で落ちます (A社で実発生)。v2 以降は自動対応済み。
 8. iisreset
 9. 動作確認
 
@@ -172,6 +174,44 @@ https://inquira.example.local/
   & "$env:USERPROFILE\Inquira\start_inquira.bat"
   ```
   で Inquira を起動してから、ブラウザで `https://inquira.example.local/` を試してください。
+
+### ブラウザで HTTPS にアクセスするとタイムアウトする
+
+DNS の A レコードが **Inquira サーバーと別マシンの IP** を指している可能性があります。
+
+```powershell
+# 解決される IP を確認
+Resolve-DnsName inquira.example.local
+# → Inquira サーバーの実 IP と一致しているか?
+
+# 一致していなければ AD サーバーで修正
+Remove-DnsServerResourceRecord -ZoneName "<ドメイン>" -Name "<ホスト>" -RRType A -Force
+Add-DnsServerResourceRecordA -ZoneName "<ドメイン>" -Name "<ホスト>" -IPv4Address "<正しい IP>"
+```
+
+### Google ログイン押下後に `{"detail":"Not Found"}` が出る
+
+ARR の Location ヘッダ書き換えにより `accounts.google.com` が自ホストに書き換わっています。
+v2 以降のスクリプトは自動修正済みですが、手動で確認/修正する場合:
+
+```powershell
+# 現在値の確認
+Get-WebConfigurationProperty -PSPath "MACHINE/WEBROOT/APPHOST" `
+    -Filter "system.webServer/proxy" -Name "reverseRewriteHostInResponseHeaders"
+
+# 修正 (False に)
+Set-WebConfigurationProperty -PSPath "MACHINE/WEBROOT/APPHOST" `
+    -Filter "system.webServer/proxy" -Name "reverseRewriteHostInResponseHeaders" -Value $false
+
+iisreset
+```
+
+確認:
+
+```powershell
+curl.exe -ksi https://inquira.example.local/auth/login | Select-String "Location"
+# → Location: https://accounts.google.com/... が出れば正常
+```
 
 ---
 
