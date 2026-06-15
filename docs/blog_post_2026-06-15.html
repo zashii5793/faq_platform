@@ -2,17 +2,20 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>オンプレ社内 AI を本番リリースするまでに踏んだ7つの地雷 — インフラ初心者の生存記録</title>
+<title>社内向け AI プラットフォーム Inquira のオンプレミス導入記 — システム構成とインフラ設定の解説</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root {
-    --fg: #1a1a1a;
-    --muted: #666;
+    --fg: #1f2937;
+    --muted: #6b7280;
     --bg: #fafafa;
     --accent: #2563eb;
+    --accent-soft: #eff6ff;
     --code-bg: #f1f5f9;
-    --danger: #dc2626;
-    --ok: #16a34a;
+    --note: #b45309;
+    --note-bg: #fffbeb;
+    --ok: #15803d;
+    --ok-bg: #f0fdf4;
     --border: #e5e7eb;
   }
   * { box-sizing: border-box; }
@@ -22,7 +25,7 @@
     color: var(--fg);
     background: var(--bg);
     margin: 0;
-    line-height: 1.8;
+    line-height: 1.85;
     font-size: 16px;
   }
   article {
@@ -32,15 +35,15 @@
     background: #fff;
   }
   header.hero {
-    margin-bottom: 40px;
+    margin-bottom: 32px;
     padding-bottom: 24px;
     border-bottom: 2px solid var(--border);
   }
   h1 {
-    font-size: 1.9em;
-    line-height: 1.35;
-    margin: 0 0 12px;
-    letter-spacing: -0.01em;
+    font-size: 1.7em;
+    line-height: 1.4;
+    margin: 0 0 14px;
+    letter-spacing: -0.005em;
   }
   .meta {
     color: var(--muted);
@@ -48,26 +51,30 @@
     margin: 0;
   }
   .lead {
-    font-size: 1.05em;
-    background: #fffbe8;
-    border-left: 4px solid #f59e0b;
-    padding: 16px 20px;
+    font-size: 1.02em;
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 18px 22px;
     margin: 32px 0;
     border-radius: 4px;
   }
   h2 {
-    font-size: 1.35em;
-    margin: 48px 0 14px;
-    padding-left: 12px;
-    border-left: 6px solid var(--accent);
+    font-size: 1.3em;
+    margin: 56px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
   }
   h3 {
-    font-size: 1.05em;
-    margin: 24px 0 8px;
+    font-size: 1.08em;
+    margin: 32px 0 10px;
     color: var(--accent);
   }
+  h4 {
+    font-size: 1.0em;
+    margin: 20px 0 6px;
+  }
   p { margin: 14px 0; }
-  ul { padding-left: 20px; }
+  ul, ol { padding-left: 22px; }
   li { margin: 6px 0; }
   code {
     font-family: "SF Mono", Consolas, "Courier New", monospace;
@@ -83,32 +90,32 @@
     border-radius: 6px;
     overflow-x: auto;
     font-size: 0.85em;
-    line-height: 1.55;
+    line-height: 1.6;
+    margin: 16px 0;
   }
   pre code { background: transparent; color: inherit; padding: 0; }
-  .trap {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-left: 6px solid var(--danger);
-    padding: 16px 20px;
+  .glossary {
+    background: var(--note-bg);
+    border: 1px solid #fde68a;
+    border-left: 4px solid var(--note);
+    padding: 14px 18px;
     margin: 16px 0;
     border-radius: 4px;
+    font-size: 0.95em;
   }
-  .fix {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-left: 6px solid var(--ok);
-    padding: 16px 20px;
-    margin: 16px 0;
-    border-radius: 4px;
-  }
-  .label {
-    display: inline-block;
+  .glossary .term {
     font-weight: bold;
+    color: var(--note);
     margin-right: 6px;
   }
-  .trap .label { color: var(--danger); }
-  .fix .label { color: var(--ok); }
+  .summary-box {
+    background: var(--ok-bg);
+    border: 1px solid #bbf7d0;
+    border-left: 4px solid var(--ok);
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 4px;
+  }
   table {
     border-collapse: collapse;
     width: 100%;
@@ -119,28 +126,30 @@
     padding: 10px 12px;
     border: 1px solid var(--border);
     text-align: left;
+    vertical-align: top;
   }
-  th { background: #f8fafc; }
-  blockquote {
-    margin: 16px 0;
-    padding: 10px 16px;
-    border-left: 4px solid var(--muted);
-    color: var(--muted);
-    font-style: italic;
-  }
-  hr {
-    border: 0;
-    border-top: 1px solid var(--border);
-    margin: 40px 0;
-  }
+  th { background: #f8fafc; font-weight: 600; }
   .toc {
     background: #f8fafc;
     padding: 16px 20px;
     border-radius: 6px;
-    margin: 32px 0;
+    margin: 24px 0 40px;
+    border: 1px solid var(--border);
   }
+  .toc strong { display: block; margin-bottom: 6px; }
   .toc ol { padding-left: 24px; margin: 8px 0; }
   .toc li { margin: 4px 0; }
+  .ascii {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    border-radius: 6px;
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 0.82em;
+    line-height: 1.4;
+    overflow-x: auto;
+    white-space: pre;
+  }
   footer {
     margin-top: 56px;
     padding-top: 24px;
@@ -154,206 +163,289 @@
 <article>
 
 <header class="hero">
-  <h1>オンプレ社内 AI を本番リリースするまでに踏んだ7つの地雷 — インフラ初心者の生存記録</h1>
+  <h1>社内向け AI プラットフォーム Inquira のオンプレミス導入記 — システム構成とインフラ設定の解説</h1>
   <p class="meta">2026-06-15 / Inquira 開発チーム</p>
 </header>
 
 <p class="lead">
-社内 FAQ AI「Inquira」を、ある顧客のオンプレ Windows サーバーに導入しました。30 分で終わるはずだったのに、結果的に 3 日ハマりました。<br>
-本記事は「アプリ屋がインフラに殴られた記録」です。同じことをやろうとしている人が、私と同じ罠を踏まないように、踏んだ地雷を時系列で全部書きます。
+本記事は、社内向け FAQ AI プラットフォーム「Inquira」を、お客様の社内サーバーへ導入した際の記録です。クラウドではなくオンプレミス環境への導入では、ネットワーク、認証、HTTPS など、複数のインフラ知識が必要になります。同じような環境への導入を検討されている方や、インフラを学び始めたばかりの方の参考になるよう、導入手順と、その過程で得られた学びをまとめました。
 </p>
 
 <div class="toc">
-<strong>目次</strong>
+  <strong>目次</strong>
+  <ol>
+    <li>Inquira のサービス内容の概要</li>
+    <li>システム構成</li>
+    <li>導入の流れ</li>
+    <li>導入時のインフラ設定</li>
+    <li>導入時に直面した課題と対処</li>
+    <li>振り返り</li>
+  </ol>
+</div>
+
+<h2>1. Inquira のサービス内容の概要</h2>
+
+<p>
+Inquira (インクワイラ) は、社内のマニュアル、規程、過去の FAQ などを AI が読み取り、社員からの質問に自然な日本語で回答する社内ヘルプデスク向けのプラットフォームです。Anthropic 社の大規模言語モデル「Claude」を利用し、RAG (Retrieval-Augmented Generation) と呼ばれる手法で、自社のナレッジに根ざした回答を返す仕組みになっています。
+</p>
+
+<div class="glossary">
+  <span class="term">RAG とは?</span>
+  AI に質問する際、関連する社内ドキュメントを事前に検索して文脈として渡すことで、汎用 AI でも自社の事情に詳しい回答を得られるようにする手法です。AI を再学習させる必要がなく、ドキュメントを更新するだけで AI の知識も更新できる点が特長です。
+</div>
+
+<h3>主な機能</h3>
+<ul>
+  <li>質問への自動回答 (PDF、Word、Excel、PowerPoint 等から取り込んだ情報を参照)</li>
+  <li>管理者によるナレッジの一括取り込みと管理</li>
+  <li>Google アカウントによる認証 (許可リスト方式)</li>
+  <li>すべての質問・回答の監査ログ記録</li>
+  <li>業務インパクトの可視化 (削減工数の試算機能)</li>
+</ul>
+
+<h2>2. システム構成</h2>
+
+<p>
+今回の構成は、お客様の社内 Windows Server に Inquira を直接インストールし、社員の方が社内 LAN 経由でアクセスする形としました。全体像は次のようになります。
+</p>
+
+<div class="ascii">[社員 PC]
+   │ HTTPS リクエスト
+   ▼
+[社内 DNS サーバー] (名前解決)
+   │ inquira.example.local → 10.0.0.10
+   ▼
+[Inquira サーバー: 10.0.0.10]
+   ├─ IIS (Web サーバー)
+   │    └─ リバースプロキシで内部の Inquira 本体へ転送
+   ├─ Inquira 本体 (Python アプリケーション)
+   │    └─ Claude API / Google OAuth と通信
+   └─ 社内ファイルサーバー上のデータ保存先</div>
+
+<h3>各コンポーネントの役割</h3>
+
+<h4>社員 PC (ブラウザ)</h4>
+<p>
+社員の方が Microsoft Edge や Chrome などのブラウザから Inquira にアクセスする入り口となります。
+</p>
+
+<h4>DNS サーバー</h4>
+<div class="glossary">
+  <span class="term">DNS とは?</span>
+  「<code>inquira.example.local</code>」のような人間が読める名前 (ドメイン名) を、コンピューターが通信に使う IP アドレス (例: <code>10.0.0.10</code>) に変換する仕組みです。インターネット上の DNS が <code>google.com</code> を解決するのと同じことを、社内ネットワーク内で行うものを「社内 DNS」と呼びます。今回はお客様の Active Directory サーバーが DNS の役割を兼ねていました。
+</div>
+
+<h4>Web サーバー (IIS)</h4>
+<div class="glossary">
+  <span class="term">IIS とは?</span>
+  Internet Information Services の略で、Windows Server に標準で含まれる Web サーバーソフトウェアです。Linux 系の Apache や Nginx に相当します。今回は IIS を「リバースプロキシ」として利用しました。
+</div>
+
+<div class="glossary">
+  <span class="term">リバースプロキシとは?</span>
+  ブラウザからのリクエストを一旦 Web サーバーが受け取り、社内ネットワークの内側にある実際のアプリケーションへ転送する仕組みです。利点として (1) HTTPS の処理を Web サーバー側で一括して扱える、(2) アプリケーション本体を外部に直接公開しないためセキュリティが向上する、(3) 将来的にアプリケーションを複数台に分散しやすい、などがあります。
+</div>
+
+<h4>Inquira 本体</h4>
+<p>
+Python 製のアプリケーションで、FastAPI というフレームワーク上に構築されています。実際の業務ロジック (質問の受付、ナレッジの検索、Claude API への問い合わせ、回答の生成) を担います。
+</p>
+
+<h4>データ保存先</h4>
+<p>
+取り込まれたナレッジ、質問履歴の監査ログ、各種設定ファイルを保管します。お客様の既存のバックアップ運用に乗せるため、社内ファイルサーバーの共有フォルダを保存先に指定しました。
+</p>
+
+<h4>Google OAuth (認証)</h4>
+<p>
+社員の方は個人の Google アカウントでログインします。事前に許可リスト (ALLOWED_EMAILS) に登録されたメールアドレスのみアクセスを許可する方式としました。
+</p>
+
+<h2>3. 導入の流れ</h2>
+
+<h3>3.1 構成の選定</h3>
+<p>
+当初は、クラウド型のホスティングサービス (Render) でのデプロイを検討しました。Dockerfile を用意すれば数分で HTTPS 付きの URL が利用可能になり、開発者にとって最も簡便な方法です。
+</p>
+<p>
+ご相談の中で、お客様より「社内のマニュアルを管理可能な範囲外に置くことは難しい」とのご意向が示されたため、データを社内に閉じたオンプレミス構成への変更を行いました。社内サーバーへの直接インストール方式を採用し、データはお客様のファイルサーバーに保存する設計となりました。
+</p>
+
+<h3>3.2 インストール手順の整備</h3>
+<p>
+お客様の IT 部門のご担当者様が、最小限の手順で導入を進められるよう、PowerShell スクリプト (<code>install.ps1</code>) を用意しました。スクリプトが行う処理は以下の通りです。
+</p>
 <ol>
-  <li>何を作っていたか</li>
-  <li>なぜオンプレ? — クラウドではダメだった理由</li>
-  <li>罠①: PowerShell が日本語スクリプトを化けさせる</li>
-  <li>罠②: Google OAuth は IP アドレスを拒否する</li>
-  <li>罠③: HTTPS じゃないと Cookie が不安定</li>
-  <li>罠④: IIS リバプロを自動構築する</li>
-  <li>罠⑤: DNS A レコードが別マシンを指していた</li>
-  <li>罠⑥: IIS の ARR が <code>accounts.google.com</code> を書き換える</li>
-  <li>リリース基盤を整える</li>
-  <li>全体の学び</li>
+  <li>Python 3.11 以上が利用可能かを確認</li>
+  <li>アプリケーション一式の配置</li>
+  <li>Python 仮想環境 (venv) の作成と、必要なライブラリのインストール</li>
+  <li>環境変数ファイル (<code>.env</code>) の生成と、安全な乱数による署名鍵の発行</li>
+  <li>サーバー起動時に自動でアプリケーションが立ち上がる設定</li>
 </ol>
-</div>
-
-<h2>1. 何を作っていたか</h2>
 <p>
-Inquira は、社内マニュアル・規程・FAQ を AI が読んで質問に答えてくれるアプリです。Python (FastAPI) + Claude API + Google OAuth 認証で動きます。今回はそれを <strong>クラウドではなく顧客の社内サーバー (Windows Server) に直接インストール</strong>する案件でした。
+インストール先はユーザープロファイル配下 (<code>%USERPROFILE%\Inquira</code>) に統一しています。これにより管理者権限を持たないアカウントでも導入を進められるようにしました。
 </p>
 
-<h2>2. なぜオンプレ? — クラウドではダメだった理由</h2>
+<h2>4. 導入時のインフラ設定</h2>
+
+<h3>4.1 社内 DNS への登録</h3>
 <p>
-当初は Render という PaaS にデプロイする予定でした。Dockerfile を push すれば 5 分で HTTPS 付き公開 URL が手に入る、開発者の天国です。
-</p>
-<p>
-しかし顧客から一言: <strong>「社内のマニュアルを Anthropic 以外に出すリスクは取れない」</strong>。これでクラウドは即死。Windows Server へのオンプレ導入に方針転換しました。ここから地雷原です。
+オンプレミス構成では、社員の方がブラウザに入力する URL を、社内 DNS に登録する必要があります。Active Directory が稼働している環境では、DNS Manager または PowerShell から A レコード (ホスト名と IP アドレスの対応) を追加します。
 </p>
 
-<h2>3. 罠①: PowerShell が日本語スクリプトを化けさせる</h2>
-<div class="trap">
-<span class="label">症状</span> 配布した <code>install.ps1</code> を実行したら「<code>'式の終わりの ')' が存在しません</code>」というパースエラー。コメント文の日本語が文字化けして見える。
-</div>
-<p>
-原因は文字コードでした。Windows PowerShell 5.1 は <strong>BOM の無い UTF-8 を Shift-JIS と勘違いする</strong>クセがあります。Mac で書いた UTF-8 BOM 無しの .ps1 を Windows に送ると壊れる。
-</p>
-<div class="fix">
-<span class="label">対策</span> スクリプトには必ず <strong>UTF-8 BOM</strong> を付けて配布する。バイナリ先頭の <code>EF BB BF</code> 3 バイトを足すだけ。
-</div>
-<p>
-さらに罠の中の罠。<code>Invoke-WebRequest -OutFile</code> で GitHub から DL すると、サーバー側に BOM があってもクライアント側で剥がされる。これに気付かず半日溶かしました。
-</p>
-<pre><code># BOM が保たれるダウンロード方法
-(New-Object System.Net.WebClient).DownloadFile($url, $dest)</code></pre>
-
-<h2>4. 罠②: Google OAuth は IP アドレスを拒否する</h2>
-<p>
-社内 LAN の IP (例: <code>http://192.168.x.x:8000/</code>) で Inquira を公開して、Google ログインを試したら<strong>「アクセスがブロックされました」</strong>。
-</p>
-<div class="trap">
-<span class="label">原因</span> Google の OAuth はリダイレクト URI に <code>http://&lt;IPアドレス&gt;/auth/callback</code> を許してくれない。FQDN (例: <code>inquira.example.local</code>) が必要。
-</div>
-<div class="fix">
-<span class="label">対策</span> 社内 DNS で A レコードを作る。AD サーバー上で:
 <pre><code>Add-DnsServerResourceRecordA `
   -ZoneName "example.local" `
   -Name "inquira" `
   -IPv4Address "10.0.0.10"</code></pre>
-</div>
+
 <p>
-クラウドなら勝手に振られる FQDN を、オンプレでは自分で社内 DNS に書きに行く必要がある。これ、知らないとそもそも詰みます。
+ここで指定する <code>IPv4Address</code> には、<strong>Inquira が実際に動作しているサーバーの IP アドレス</strong>を入力します。AD サーバーと Inquira サーバーが別マシンの場合、IP を取り違えやすいため、対象サーバー上で <code>ipconfig</code> コマンドにより事前確認することを推奨します。
 </p>
 
-<h2>5. 罠③: HTTPS じゃないと Cookie が不安定</h2>
+<h3>4.2 IIS によるリバースプロキシ構成</h3>
 <p>
-FQDN を割り当てて HTTP で公開。Google ログインまでは進むのに、リダイレクト後に「State mismatch」のエラー。
+HTTPS 通信を実現するため、IIS を用いたリバースプロキシ構成を採用しました。手順は以下の通りです。
 </p>
-<div class="trap">
-<span class="label">原因</span> 最近のブラウザは Cookie の <code>SameSite=Lax</code> 仕様が厳しくなっていて、HTTP のクロスサイト遷移 (Google → 自社) で OAuth 状態 Cookie が消える。Edge では特に顕著。
-</div>
-<div class="fix">
-<span class="label">対策</span> 諦めて HTTPS 化。社内環境なので Let's Encrypt は使えず、<strong>IIS で自己署名証明書を発行 → リバースプロキシでバックエンド (uvicorn) に転送</strong>、という構成にしました。
-</div>
 
-<h2>6. 罠④: IIS リバプロを自動構築する</h2>
-<p>
-IIS は手作業だと 30 ステップくらいあるので、PowerShell スクリプトで自動化しました。URL Rewrite + ARR の 2 モジュールを使って、80 → 443 リダイレクト、443 → 127.0.0.1:8000 へリバプロ、自己署名証明書を作って信頼ストアに登録、までを一発実行。
-</p>
-<div class="trap">
-<span class="label">小罠</span> Microsoft が <code>download.microsoft.com</code> を自動アクセスから 403 ブロックしている時期があり、MSI を <code>curl</code> で取りに行くと死ぬ。
-</div>
-<div class="fix">
-<span class="label">対策</span> 3 段フォールバック設計: 既存インストール検知 → <code>winget install Microsoft.IIS.URLRewrite</code> → 手動 MSI 配置。
-</div>
+<ol>
+  <li>IIS の役割をインストール</li>
+  <li>URL Rewrite モジュールをインストール (URL の書き換えを担う拡張機能)</li>
+  <li>ARR (Application Request Routing) モジュールをインストール (リバースプロキシ機能を提供する拡張機能)</li>
+  <li>自己署名 SSL 証明書を発行 (社内利用のため認証局を経由しない方式)</li>
+  <li>IIS サイトを作成し、HTTPS (443 番ポート) のバインドを追加</li>
+  <li><code>web.config</code> にリバースプロキシのルールを記述</li>
+  <li>ARR のプロキシ機能を有効化</li>
+</ol>
 
-<h2>7. 罠⑤: DNS A レコードが別マシンを指していた</h2>
 <p>
-HTTPS で立てた。ブラウザでアクセス → <strong>タイムアウト</strong>。
+これらをまとめて 1 コマンドで実行する PowerShell スクリプト (<code>setup_iis_reverse_proxy.ps1</code>) を作成しました。次回以降のお客様の導入時にも、同じスクリプトで再現可能な状態にしてあります。
 </p>
-<p>
-切り分けたら、社内サーバー上で <code>Test-NetConnection inquira.example.local -Port 443</code> が TCP 拒否。<code>nslookup</code> は解決できる。でも繋がらない。
-</p>
-<div class="trap">
-<span class="label">原因</span> AD 管理者に DNS を依頼したら、A レコードを <strong>AD サーバー自身の IP (10.0.0.20)</strong> で登録してしまっていた。Inquira が動いている本物のサーバーは <strong>10.0.0.10</strong>。「Inquira サーバー」と「DNS サーバー」が別マシンだという当たり前のことを伝えそびれた。
-</div>
-<div class="fix">
-<span class="label">対策</span> 依頼書テンプレに「Inquira が動くマシンの IP を実機で <code>ipconfig</code> 確認」のステップを明記。AD 管理者と Inquira 担当者が別の場合の典型事故です。
-</div>
 
-<h2>8. 罠⑥: IIS の ARR が <code>accounts.google.com</code> を書き換える</h2>
+<h3>4.3 Google OAuth の設定</h3>
 <p>
-ここまでで HTTPS は通った。本物の「Google でログイン」ボタンを押す。表示は <code>{"detail":"Not Found"}</code>。
-</p>
-<p>
-ブラウザのアドレスバーをよく見ると <code>https://inquira.example.local/o/oauth2/v2/auth?...</code>。本来は <code>https://<strong>accounts.google.com</strong>/o/oauth2/v2/auth?...</code> に飛ぶはず。どこかでホスト名が書き換わっている。
-</p>
-<p>
-切り分け。バックエンドに直接 curl すると正しく <code>Location: https://accounts.google.com/...</code> を返す。IIS 経由だと <code>Location: https://inquira.example.local/...</code>。<strong>IIS が外部 URL を自ホストに書き換えている</strong>。
-</p>
-<div class="trap">
-<span class="label">原因</span> ARR の既定値 <code>reverseRewriteHostInResponseHeaders=true</code> が、レスポンスの Location ヘッダを「自ホスト化」する仕様。社内アプリのプロキシでは便利だが、<strong>OAuth みたいに外部 IdP にリダイレクトするアプリでは致命傷</strong>。
-</div>
-<div class="fix">
-<span class="label">対策</span>
-<pre><code>appcmd set config `
-  -section:system.webServer/proxy `
-  /reverseRewriteHostInResponseHeaders:"False"
-iisreset</code></pre>
-これで <code>accounts.google.com</code> がそのまま返るようになり、ログインフローが完走。<strong>地雷を踏んだら、必ずセットアップスクリプト本体に修正を組み込んで再発防止</strong>です。
-</div>
-
-<h2>9. リリース基盤を整える</h2>
-<p>
-動いた瞬間「次のバージョンどうやって届けるか」が次の問題に。社員 20 人が毎日使ってる本番に、コードだけ上書きしたい。ダウンタイムは 1 分以内。
-</p>
-<p>
-作ったのは <code>scripts/update_inquira.ps1</code> という 1 コマンド更新スクリプト。
+Google Cloud Console で OAuth クライアントを作成し、次の項目を設定します。
 </p>
 <ul>
-  <li>GitHub からタグ指定で ZIP を取得</li>
-  <li>現在のコードを <code>Inquira_backups/&lt;timestamp&gt;-v&lt;旧版&gt;/</code> に退避</li>
-  <li><code>.env</code> / <code>.venv</code> / データ保存先は触らない</li>
-  <li>新コードに入れ替え → <code>pip install -e .</code> → 再起動</li>
-  <li>30 秒以内に <code>/healthz</code> が 200 を返さなければ<strong>自動ロールバック</strong></li>
+  <li>承認済みリダイレクト URI に <code>https://inquira.example.local/auth/callback</code> を登録</li>
+  <li>テストユーザーに、ログインを許可する社員の方の Gmail アドレスを登録</li>
 </ul>
 <p>
-顧客 IT 部門には「メール 1 通 + コマンド 1 行」で更新が届きます。SemVer + タグ運用 + CHANGELOG.md とセットで、エンタープライズソフトらしい運用が完成。
+なお、Google の OAuth は IP アドレスを含むリダイレクト URI を許容しません。社内 DNS で FQDN (完全修飾ドメイン名) を割り当てておくことが、認証機能を利用する上での事前条件となります。
 </p>
 
-<h2>10. 全体の学び</h2>
+<h2>5. 導入時に直面した課題と対処</h2>
 
-<h3>① インフラを知らないアプリ屋は今すぐ知る</h3>
 <p>
-DNS / TLS / リバースプロキシ / ファイアウォール / OS の文字コード。クラウドが全部隠してくれるけど、オンプレに出た瞬間にこれら全部が殴ってきます。最低限の動作原理は知っておきましょう。
+導入の過程で、いくつかの技術的な課題に直面しました。同じ構成を検討される方の参考のため、特に学びの多かった 4 点を共有します。
 </p>
 
-<h3>② 失敗ログを残す = 次回はハマらない</h3>
+<h3>5.1 PowerShell スクリプトの文字コードに関する課題</h3>
 <p>
-今回の 7 つの罠は、それぞれ「初めて見た時は 1〜半日溶かした」案件です。記録に残せば、次の顧客導入では各々 1 分で解決できる。<strong>学習を文化資産化するか、毎回個人芸で乗り切るかで、3 社目で差が出ます</strong>。
-</p>
-
-<h3>③ 自動化スクリプトに「修正」を組み込む</h3>
-<p>
-ARR の罠 (罠⑥) のように、手動で 1 回直したら、必ずスクリプトに恒久対策を埋め込む。「直すこと」と「同じ間違いを次の人 (自分含む) がしないようにすること」はセット。
-</p>
-
-<h3>④ 顧客情報は絶対にリポジトリに入れない</h3>
-<p>
-今回、一度 Public リポジトリに顧客のドメイン名・サーバー IP・証明書 Thumbprint を含むレポートをコミットしてしまうミスがありました。すぐ気付いて <code>git filter-repo</code> で履歴ごと sanitize → force-push しましたが、こういう事故は秒で起きます。
+配布した <code>.ps1</code> ファイルの日本語コメントが文字化けし、PowerShell の構文解析エラーが発生しました。
 </p>
 <p>
-予防: コミット前の <code>git diff --cached | grep</code>、テンプレ化 (<code>&lt;CUSTOMER_DOMAIN&gt;</code> プレースホルダ)、実値は <code>.private/</code> 配下で扱う、を徹底。
+原因は、Windows PowerShell 5.1 が、BOM (バイトオーダーマーク) のない UTF-8 ファイルを Shift-JIS と解釈する仕様にありました。Mac で作成した UTF-8 (BOM なし) のスクリプトを Windows に送ると、この問題が発生する可能性があります。
 </p>
 
-<hr>
+<div class="glossary">
+  <span class="term">BOM とは?</span>
+  ファイルの先頭に置かれる「このファイルの文字コードは UTF-8 ですよ」という目印 (3 バイトの特殊な印) です。多くのテキストエディタは、保存時に BOM を付けるか付けないかを選択できます。
+</div>
 
-<h2>使った道具まとめ (初心者向け)</h2>
-<table>
-  <tr><th>道具</th><th>役割</th><th>初学者キーワード</th></tr>
-  <tr><td>PowerShell 5.1</td><td>Windows 自動化</td><td>UTF-8 BOM, Set-ExecutionPolicy</td></tr>
-  <tr><td>IIS</td><td>Windows 標準の Web サーバー</td><td>サイト, バインド</td></tr>
-  <tr><td>URL Rewrite + ARR</td><td>IIS のリバプロ拡張</td><td>web.config の rewrite rule</td></tr>
-  <tr><td>Active Directory DNS</td><td>社内の名前解決</td><td>A レコード, ゾーン</td></tr>
-  <tr><td>Google OAuth</td><td>認証</td><td>Authorized Redirect URIs</td></tr>
-  <tr><td>git filter-repo</td><td>履歴からの情報削除</td><td>force-push の作法</td></tr>
-</table>
+<div class="summary-box">
+  <strong>対処</strong>: 配布する PowerShell スクリプトには必ず UTF-8 BOM を付与する運用に統一しました。あわせて、GitHub からのダウンロード時に BOM が失われる事象も確認されたため、<code>(New-Object System.Net.WebClient).DownloadFile(...)</code> による取得方法をお客様向け手順書に記載しています。
+</div>
 
-<h2>もし同じ構成をやるなら</h2>
-<ol>
-  <li>顧客に「サーバー OS / 管理者権限 / Docker 可否 / 既存 DNS 権限」を最初に確認</li>
-  <li>Inquira サーバーの実 IP を控える (これが次工程全部の起点)</li>
-  <li>社内 DNS に A レコード登録 (Inquira サーバーの IP を指定、間違えると罠⑤)</li>
-  <li>IIS リバプロ用スクリプトで HTTPS 化 (内部で ARR の <code>reverseRewriteHostInResponseHeaders=false</code> を必ず設定)</li>
-  <li>Google Cloud Console で OAuth テストユーザー登録 + リダイレクト URI 追加</li>
-  <li><code>curl.exe -ksi https://&lt;FQDN&gt;/auth/login | grep Location</code> で <code>accounts.google.com</code> が返るのを確認してからブラウザテスト</li>
-</ol>
+<h3>5.2 HTTP 通信下での OAuth 認証 Cookie の不安定さ</h3>
+<p>
+HTTP のままで運用しようとしたところ、Google ログインから戻ってきた後に、認証状態を確認するための Cookie が失われ、エラーが発生しました。
+</p>
+<p>
+近年のブラウザは、Cookie の <code>SameSite</code> 属性 (サイト間でのリクエスト時に Cookie を送るかを制御する設定) の扱いが厳格化されています。HTTP のクロスサイト遷移時には Cookie が保持されにくい傾向があり、OAuth のように外部サービスを経由する認証フローでは、HTTPS 化がほぼ必須となります。
+</p>
+
+<div class="summary-box">
+  <strong>対処</strong>: HTTPS 化を進めることとし、IIS リバースプロキシと自己署名証明書による HTTPS 構成 (前述 4.2) を採用しました。
+</div>
+
+<h3>5.3 DNS A レコードの設定値の取り違え</h3>
+<p>
+HTTPS でアクセスを試みたところ、ブラウザがタイムアウトする事象が発生しました。確認したところ、社内 DNS の A レコードが AD サーバー自身の IP を指していて、Inquira が動作しているサーバーの IP には向いていない状態でした。
+</p>
+<p>
+今回の環境では、DNS を管理されている AD 管理者の方と、Inquira を導入する担当者の方が別の方でした。「Inquira サーバー」と「DNS サーバー」が別のマシンであることが、依頼の際に明確に伝わっていなかったことが直接の原因です。
+</p>
+
+<div class="summary-box">
+  <strong>対処</strong>: DNS 設定依頼書のテンプレートに「対象サーバー上で <code>ipconfig</code> により IP を確認する」ステップを追記しました。同様の構成を持つお客様への導入時にも、本ステップを必ず実施するよう運用に組み込んでいます。
+</div>
+
+<h3>5.4 ARR の Location ヘッダー書き換えによる OAuth フローへの影響</h3>
+<p>
+HTTPS の疎通は確認できましたが、Google ログインボタンを押下すると <code>{"detail":"Not Found"}</code> が表示される事象が発生しました。
+</p>
+<p>
+ブラウザの URL バーを確認したところ、本来 <code>https://accounts.google.com/o/oauth2/v2/auth?...</code> に遷移すべきところが、<code>https://inquira.example.local/o/oauth2/v2/auth?...</code> に書き換わっていました。<code>curl</code> による切り分けの結果、Inquira 本体は正しく <code>accounts.google.com</code> を返しており、IIS を経由する段階でホスト名が書き換わっていることが判明しました。
+</p>
+<p>
+原因は、ARR の <code>reverseRewriteHostInResponseHeaders</code> という設定でした。この設定は既定で有効になっており、レスポンスの Location ヘッダー (ブラウザに次の遷移先を指示するヘッダー) を、自ホスト名に書き換える動作をします。社内アプリ同士を連携させる用途では便利な機能ですが、OAuth のように外部のサービスへリダイレクトするケースでは、外部 URL まで書き換えてしまうため、認証フローが正常に動作しなくなります。
+</p>
+
+<div class="summary-box">
+  <strong>対処</strong>: 本機能を無効化する設定を、IIS セットアップスクリプト内に組み込みました。次回以降のお客様の導入時には、同じ事象を未然に防げる状態となっています。
+<pre><code>appcmd set config `
+  -section:system.webServer/proxy `
+  /reverseRewriteHostInResponseHeaders:"False"</code></pre>
+</div>
+
+<h2>6. 振り返り</h2>
+
+<h3>6.1 リリース運用の整備</h3>
+<p>
+本番稼働後の継続的なバージョンアップを見据え、お客様側で 1 コマンドにより実行可能な更新スクリプト (<code>update_inquira.ps1</code>) を整備しました。スクリプトは、現在のコードのバックアップ、新バージョンへの入れ替え、起動後のヘルスチェック、失敗時の自動ロールバックまでを 1 連の流れで実施します。
+</p>
+<p>
+あわせて、Semantic Versioning に基づくバージョン管理ルール、<code>CHANGELOG.md</code> での変更履歴管理、タグによるリリース指定の仕組みを整え、エンタープライズソフトウェアとして必要なリリース運用基盤を構築しました。
+</p>
+
+<h3>6.2 ドキュメントの整備</h3>
+<p>
+試行錯誤の過程で得られた知見は、社内のナレッジとして以下に整理しました。
+</p>
+<ul>
+  <li>導入時の事前ヒアリングシート (お客様の環境確認用)</li>
+  <li>過去に発生した課題と対策の一覧</li>
+  <li>リリース運用のガイドライン</li>
+  <li>顧客向け導入手順書のテンプレート</li>
+</ul>
+<p>
+これにより、次のお客様の導入時には、同じ課題を未然に防げる体制が整いました。
+</p>
+
+<h3>6.3 顧客情報の取り扱いに関する反省</h3>
+<p>
+社内向け資料の作成過程で、お客様の社内ドメイン名、サーバー IP、証明書情報などを含むファイルを Public リポジトリにコミットしてしまうミスがありました。
+</p>
+<p>
+発覚後、直ちに該当情報をプレースホルダーに置換し、git の履歴自体を書き換える対応 (<code>git filter-repo</code> によるトークン置換 + <code>force-push</code>) を行いました。再発防止のため、コミット前の検査スクリプトの導入、ドキュメントのテンプレート化の徹底、実値を含むファイルを <code>.private/</code> 配下で管理する運用ルールを定めています。
+</p>
+
+<h3>6.4 全体を通じた学び</h3>
+<ul>
+  <li>クラウドサービスが多くのインフラ要素を抽象化してくれる時代でも、オンプレミス案件では DNS、TLS、リバースプロキシ、ブラウザのセキュリティモデルなどの基礎知識が必須となります</li>
+  <li>一度発見した課題は、必ずスクリプトやドキュメントに反映し、次の導入時には自然に回避できる状態にすることが重要です</li>
+  <li>顧客情報の取り扱いは、技術以前のガバナンス課題として、最優先で運用ルールを定める必要があります</li>
+</ul>
+
+<h2>まとめ</h2>
+<p>
+Inquira のオンプレミス導入を通じて、システム構成全体の設計から、DNS、リバースプロキシ、OAuth 認証まで、多くのインフラ要素について実践的な知見が得られました。本記事が、社内向け AI システムの導入や、Windows Server 上でのアプリケーション運用を検討されている方の参考になれば幸いです。
+</p>
 
 <footer>
 <p>
-この記事は実際の顧客導入経験を一般化したものです。固有名詞・IP・ドメインは全て例示値です。<br>
-Inquira についてのお問い合わせは別途窓口まで。
+本記事中に登場する固有名詞、IP アドレス、ドメイン名は、すべて例示用の架空のものです。実際の導入事例を一般化したうえで記述しています。<br>
+Inquira についてのお問い合わせは別途窓口までお願いいたします。
 </p>
 </footer>
 
