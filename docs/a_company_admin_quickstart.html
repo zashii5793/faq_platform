@@ -1,306 +1,448 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><title>Inquira クイックスタート — A社 管理者向け</title>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Inquira 管理者操作マニュアル</title>
 <style>
-@page {
-  size: A4;
-  margin: 14mm 14mm 14mm 14mm;
-}
+@page { size: A4; margin: 14mm; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: "IPAPGothic", "IPAGothic", "Hiragino Sans", sans-serif;
-  color: #1f2937; font-size: 10pt; line-height: 1.55;
+  font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+  color: #1f2937;
+  font-size: 10.5pt;
+  line-height: 1.7;
+  background: #fafafa;
 }
-
-/* ===== ヘッダー ===== */
-.header {
+.container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #fff;
+}
+.hero {
   background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
   color: #fff;
-  padding: 14px 18px;
+  padding: 22px 24px;
   border-radius: 10px;
-  margin-bottom: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  margin-bottom: 24px;
 }
-.header .left .eyebrow {
+.hero .eyebrow {
   font-size: 9pt;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   opacity: 0.85;
+  margin-bottom: 4px;
 }
-.header .left h1 {
-  font-size: 18pt;
+.hero h1 {
+  font-size: 20pt;
   font-weight: 700;
   letter-spacing: -0.01em;
-  margin-top: 2px;
+  margin: 0 0 8px;
 }
-.header .right {
-  text-align: right;
-  font-size: 8.5pt;
-  opacity: 0.92;
-  line-height: 1.5;
+.hero p {
+  font-size: 10pt;
+  opacity: 0.95;
 }
-
-/* ===== サブヘッダー ===== */
 .lead {
   background: #ecfdf5;
   border-left: 4px solid #14b8a6;
-  padding: 9px 12px;
-  font-size: 9.5pt;
+  padding: 12px 16px;
   border-radius: 0 6px 6px 0;
-  margin-bottom: 14px;
+  margin-bottom: 24px;
+  font-size: 10pt;
 }
 .lead b { color: #0f766e; }
 
-/* ===== ステップ ===== */
-.steps {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 14px;
+h2 {
+  font-size: 14pt;
+  color: #0f766e;
+  margin: 32px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #14b8a6;
 }
-.step {
+h3 {
+  font-size: 12pt;
+  color: #0f766e;
+  margin: 20px 0 8px;
+}
+h4 {
+  font-size: 10.5pt;
+  margin: 16px 0 6px;
+  color: #1f2937;
+}
+p { margin: 8px 0; }
+ul, ol { padding-left: 22px; margin: 8px 0; }
+li { margin: 4px 0; }
+code {
+  background: #f0fdfa;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: "SF Mono", Consolas, monospace;
+  font-size: 9.5pt;
+}
+.tab-card {
   background: #fff;
   border: 1.5px solid #99f6e4;
-  border-radius: 10px;
-  padding: 12px 12px 14px;
-  position: relative;
-}
-.step .num {
-  position: absolute;
-  top: -10px;
-  left: 12px;
-  background: #14b8a6;
-  color: #fff;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  text-align: center;
-  font-size: 11pt;
-  font-weight: 700;
-  line-height: 24px;
-}
-.step h3 {
-  font-size: 11pt;
-  color: #0f766e;
-  margin: 6px 0 6px;
-  font-weight: 700;
-}
-.step .body {
-  font-size: 9pt;
-  color: #374151;
-}
-.step .body code {
-  background: #f0fdfa;
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-size: 8.5pt;
-  word-break: break-all;
-}
-.step .visual {
-  background: #f0fdfa;
-  border: 1.5px dashed #5eead4;
+  border-left: 5px solid #14b8a6;
   border-radius: 8px;
-  padding: 14px 6px;
-  text-align: center;
-  margin: 8px 0;
-  font-size: 8.5pt;
-  color: #0f766e;
+  padding: 16px 20px;
+  margin: 20px 0;
 }
-.step .visual .icon {
-  font-size: 22pt;
-  display: block;
-  margin-bottom: 4px;
-}
-
-/* ===== 何ができる ===== */
-.benefits {
-  background: #f9fafb;
-  border-radius: 10px;
-  padding: 10px 14px;
-  margin-bottom: 12px;
-}
-.benefits h2 {
-  font-size: 10pt;
-  color: #0f766e;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.benefits ul {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 16px;
-  list-style: none;
-  font-size: 9pt;
-}
-.benefits ul li::before {
-  content: "✓ ";
-  color: #14b8a6;
+.tab-card .tab-label {
+  font-size: 11pt;
   font-weight: 700;
-}
-
-/* ===== ファイル形式 ===== */
-.formats {
-  margin-bottom: 12px;
-}
-.formats h2 {
-  font-size: 10pt;
   color: #0f766e;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
   margin-bottom: 6px;
 }
-.formats .chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+.tab-card .what {
+  font-size: 9.5pt;
+  color: #6b7280;
+  margin-bottom: 10px;
 }
-.formats .chip {
-  background: #ecfdf5;
-  color: #0f766e;
-  border: 1px solid #99f6e4;
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 8.5pt;
-  font-weight: 600;
+.tab-card .features {
+  margin-top: 8px;
 }
-
-/* ===== ルーチン ===== */
+.tab-card .features li {
+  margin: 6px 0;
+}
 .routine {
   background: #fffbeb;
   border-left: 4px solid #f59e0b;
+  padding: 14px 18px;
   border-radius: 0 6px 6px 0;
-  padding: 9px 12px;
-  font-size: 9pt;
-  margin-bottom: 12px;
+  margin: 24px 0;
 }
-.routine h2 {
-  font-size: 9pt;
-  color: #92400e;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
+.routine h3 {
+  color: #b45309;
+  margin-top: 0;
 }
-.routine .row {
+.tip {
+  background: #eff6ff;
+  border-left: 4px solid #2563eb;
+  padding: 12px 16px;
+  border-radius: 0 6px 6px 0;
+  margin: 16px 0;
+  font-size: 9.5pt;
+}
+.tip b { color: #1e40af; }
+.formats {
   display: flex;
-  gap: 10px;
-  margin-top: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
 }
-.routine .row span {
+.chip {
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  color: #0f766e;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 9pt;
+  font-weight: 600;
+}
+.step-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 12px 0;
+}
+.step-num {
+  background: #14b8a6;
+  color: #fff;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  text-align: center;
+  font-weight: 700;
+  line-height: 28px;
+  flex-shrink: 0;
+}
+.step-body {
   flex: 1;
+  font-size: 10pt;
 }
-.routine .row b { color: #78350f; }
-
-/* ===== フッター ===== */
 .footer {
+  margin-top: 40px;
+  padding-top: 16px;
   border-top: 1px solid #e5e7eb;
-  padding-top: 8px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 8.5pt;
+  font-size: 9pt;
   color: #6b7280;
+  text-align: center;
 }
-.footer .left b { color: #0f766e; }
+.footer b { color: #0f766e; }
 </style>
 </head>
 <body>
+<div class="container">
 
-<div class="header">
-  <div class="left">
-    <div class="eyebrow">QUICK START GUIDE</div>
-    <h1>Inquira 管理者ご案内</h1>
-  </div>
-  <div class="right">
-    宛先: <b>A株式会社 ご担当者様</b><br/>
-    所要時間: <b>30 分 〜 1 時間</b><br/>
-    対象 URL: <b>https://faq-a.inquira.app/</b>
-  </div>
+<div class="hero">
+  <div class="eyebrow">ADMIN OPERATION MANUAL</div>
+  <h1>Inquira 管理者操作マニュアル</h1>
+  <p>社内向け AI ヘルプデスクの導入後、管理者の方が使う全機能を解説します。</p>
 </div>
 
 <div class="lead">
-  本サービスは <b>SaaS 提供</b> のため、サーバー構築・API キー発行・認証設定は<b>すべて弊社側で完了済み</b>です。<br/>
-  御社にお願いするのは、既存マニュアル・FAQ のアップロードと社内告知のみ。<b>その日から使い始められます。</b>
+  本マニュアルは <b>Inquira を社内に導入した後、管理者として日常的に運用される方</b> を対象としています。<br/>
+  ナレッジの取り込みから、社員からの質問の分析、FAQ の継続改善、削減効果の確認まで、<b>管理画面で使える機能を 1 つずつ</b> 順を追って説明します。
 </div>
 
-<div class="steps">
+<h2>1. 管理画面へのアクセス</h2>
 
-  <div class="step">
-    <div class="num">1</div>
-    <h3>ログイン</h3>
-    <div class="visual">
-      <span class="icon">🔐</span>
-      Google でログイン
-    </div>
-    <div class="body">
-      <code>https://faq-a.inquira.app/admin/upload</code> にアクセスし、御社の Google アカウントでログインしてください。
-      管理者として登録済みのメールアドレスのみ管理画面が開きます。
-    </div>
+<div class="step-row">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    社内に共有された Inquira の URL を開きます (例: <code>https://inquira.example.local/admin/upload</code>)。<br/>
+    ※ サービス URL はご利用環境により異なります。
   </div>
-
-  <div class="step">
-    <div class="num">2</div>
-    <h3>マニュアルを投入</h3>
-    <div class="visual">
-      <span class="icon">📁</span>
-      ドラッグ＆ドロップ
-    </div>
-    <div class="body">
-      「📁 ファイル取り込み」タブにマニュアル・FAQ・規程類をドラッグ。
-      PII（個人情報）は自動検出・マスキングされます。
-      推奨は <b>人事 → 情シス → 業務マニュアル</b> の順。
-    </div>
-  </div>
-
-  <div class="step">
-    <div class="num">3</div>
-    <h3>確定 → 社内告知</h3>
-    <div class="visual">
-      <span class="icon">🚀</span>
-      取り込み確定
-    </div>
-    <div class="body">
-      画面下部の「取り込み確定」を押すと検索インデックスに反映され、即時利用可能になります。
-      最後に <code>https://faq-a.inquira.app/</code> を社内に共有してください。
-    </div>
-  </div>
-
 </div>
 
-<div class="benefits">
-  <h2>📌 Inquira でできること</h2>
-  <ul>
-    <li>社内マニュアルを AI が代理で回答（出典付き）</li>
-    <li>未解決の質問は管理者に自動エスカレ</li>
-    <li>解決した会話から FAQ 候補を自動生成（🌱 タブ）</li>
-    <li>削減した工数・コストをリアルタイム可視化（📈 タブ）</li>
-  </ul>
+<div class="step-row">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    画面の「Google でログイン」ボタンを押し、<b>管理者として登録されている Google アカウント</b> でログインしてください。
+  </div>
 </div>
 
-<div class="formats">
-  <h2>📂 取り込み可能な形式</h2>
-  <div class="chips">
+<div class="step-row">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    管理画面が表示されます。画面上部には 6 つのタブがあり、それぞれ異なる目的の機能が用意されています。
+  </div>
+</div>
+
+<div class="tip">
+  <b>💡 管理者の追加</b><br/>
+  管理者を追加するには、サービス提供元へご連絡ください。アプリケーション側の許可リスト (ALLOWED_EMAILS) と、認証側 (Google Cloud Console) の両方への登録が必要です。
+</div>
+
+<h2>2. 機能一覧 (画面上部の 6 つのタブ)</h2>
+
+<p>
+管理画面の上部には次のタブが並んでいます。それぞれの役割は以下の通りです。
+</p>
+
+<ul>
+  <li><b>📁 ファイル取り込み</b> — マニュアルや FAQ を Inquira に学習させる</li>
+  <li><b>📊 利用状況</b> — どれくらい使われているか、どんな質問が多いかを把握する</li>
+  <li><b>📈 削減効果</b> — 工数・コストの削減効果を数値で確認する</li>
+  <li><b>🌱 FAQ 候補</b> — AI が見つけた「FAQ にすべき質問」を承認・編集する</li>
+  <li><b>🔍 履歴・要望</b> — 全質問の履歴と、社員からの追加リクエストを確認する</li>
+  <li><b>⚙ 設定・出力</b> — 組織情報の編集と、データの出力 (CSV エクスポート)</li>
+</ul>
+
+<p>以降、各タブで何ができるかを詳しく説明します。</p>
+
+<h2>3. 各タブの使い方</h2>
+
+<!-- ===== タブ1: ファイル取り込み ===== -->
+<div class="tab-card">
+  <div class="tab-label">📁 ファイル取り込み</div>
+  <div class="what">社内のマニュアル・規程・FAQ を Inquira に学習させ、AI が回答に使えるようにする画面です。</div>
+
+  <h4>使い方</h4>
+  <ol>
+    <li>ファイルを画面中央の枠にドラッグ＆ドロップ (または「ファイルを選択」)</li>
+    <li>自動で内容を解析し、個人情報 (氏名・電話番号・メールアドレス等) の候補が表示されます</li>
+    <li>マスキング (黒塗り) するかどうかを選択</li>
+    <li>「取り込み確定」を押すと、検索インデックスに反映され、すぐに利用可能になります</li>
+  </ol>
+
+  <h4>対応ファイル形式</h4>
+  <div class="formats">
     <span class="chip">PDF</span>
     <span class="chip">Excel (.xlsx)</span>
     <span class="chip">PowerPoint (.pptx)</span>
-    <span class="chip">Word 由来テキスト</span>
+    <span class="chip">Word (.docx 由来テキスト)</span>
     <span class="chip">CSV</span>
     <span class="chip">Markdown</span>
     <span class="chip">テキスト (.txt)</span>
     <span class="chip">JSON</span>
   </div>
+
+  <h4>こんなときに便利</h4>
+  <ul>
+    <li>新しい社内マニュアルが発行された (毎月の追加投入)</li>
+    <li>規程改定があった (古いファイルを削除して新しいものに差し替え)</li>
+    <li>過去の FAQ ドキュメントをまとめて取り込みたい</li>
+  </ul>
+</div>
+
+<!-- ===== タブ2: 利用状況 ===== -->
+<div class="tab-card">
+  <div class="tab-label">📊 利用状況</div>
+  <div class="what">Inquira がどれくらい使われているか、どんな質問が来ているかを可視化する画面です。</div>
+
+  <h4>確認できる情報</h4>
+  <ul>
+    <li>日別・週別の質問数の推移</li>
+    <li>回答率 (AI が答えられた質問の割合)</li>
+    <li>よく質問されるテーマ (上位 10 件)</li>
+    <li>回答不能だった質問の一覧 (ナレッジ追加検討の判断材料)</li>
+  </ul>
+
+  <h4>こんなときに見る</h4>
+  <ul>
+    <li>導入直後、社員に使われているかの確認</li>
+    <li>月次の利用報告</li>
+    <li>「答えられない質問」が多いテーマを特定し、ナレッジ追加を計画する</li>
+  </ul>
+</div>
+
+<!-- ===== タブ3: 削減効果 ===== -->
+<div class="tab-card">
+  <div class="tab-label">📈 削減効果</div>
+  <div class="what">Inquira の導入によって削減できた時間・人件費を数値で表示する画面です。経営層への報告に活用できます。</div>
+
+  <h4>計算ロジック</h4>
+  <ul>
+    <li>1 質問あたりの想定対応時間 (既定値: 10 分) と、社員 1 時間あたりの人件費 (既定値: 3,000 円) から算出</li>
+    <li>これらの数値は「⚙ 設定・出力」タブから組織の実態に合わせて調整可能</li>
+  </ul>
+
+  <h4>表示される指標</h4>
+  <ul>
+    <li>累計削減時間 (時間)</li>
+    <li>累計削減コスト (円)</li>
+    <li>月別の推移グラフ</li>
+    <li>前月比の成長率</li>
+  </ul>
+
+  <h4>こんなときに見る</h4>
+  <ul>
+    <li>月次の経営報告で「導入効果」を示したい</li>
+    <li>稟議書や予算申請の資料に成果として記載したい</li>
+  </ul>
+</div>
+
+<!-- ===== タブ4: FAQ 候補 ===== -->
+<div class="tab-card">
+  <div class="tab-label">🌱 FAQ 候補</div>
+  <div class="what">AI が過去の質問履歴を分析し、「これは FAQ にすべき」と判断した質問のリストを表示します。</div>
+
+  <h4>仕組み</h4>
+  <ul>
+    <li>同じテーマの質問が複数回繰り返された場合、AI がまとめて「FAQ 候補」に格上げ</li>
+    <li>未承認の候補があると、タブのバッジ (右上の赤い数字) で通知</li>
+  </ul>
+
+  <h4>運用フロー</h4>
+  <ol>
+    <li>タブを開き、リスト化された候補を確認</li>
+    <li>各候補について <b>「承認」「編集して承認」「却下」</b> のいずれかを選択
+      <ul>
+        <li><b>承認</b>: そのまま FAQ ナレッジに追加</li>
+        <li><b>編集して承認</b>: 回答文を整えてから追加</li>
+        <li><b>却下</b>: ナレッジには追加せず候補から外す</li>
+      </ul>
+    </li>
+    <li>承認した FAQ は即座にインデックスに反映され、次の質問から利用されます</li>
+  </ol>
+
+  <h4>自動承認モード</h4>
+  <p>
+    一定の信頼度を超えた候補を、レビュー無しで自動的にナレッジに追加する設定も可能です。「⚙ 設定・出力」タブから、信頼度のしきい値、必要な質問繰り返し回数、自動承認の ON/OFF を調整できます。
+  </p>
+</div>
+
+<!-- ===== タブ5: 履歴・要望 ===== -->
+<div class="tab-card">
+  <div class="tab-label">🔍 履歴・要望</div>
+  <div class="what">社員から実際に投げられた全質問の履歴と、明示的に送られた「FAQ 追加リクエスト」を確認できる画面です。</div>
+
+  <h4>確認できる情報</h4>
+  <ul>
+    <li>質問日時、ユーザー、質問内容、回答内容、参照したナレッジ</li>
+    <li>各回答への 👍 / 👎 フィードバックと、改善コメント</li>
+    <li>社員から送信された「FAQ 追加リクエスト」の一覧</li>
+  </ul>
+
+  <h4>こんなときに使う</h4>
+  <ul>
+    <li>👎 評価がついた回答を確認し、ナレッジを修正する</li>
+    <li>「FAQ 追加リクエスト」に対応し、必要な情報をナレッジに追加する</li>
+    <li>個別の質問について「いつ・誰が・何を聞いたか」を監査する</li>
+  </ul>
+</div>
+
+<!-- ===== タブ6: 設定・出力 ===== -->
+<div class="tab-card">
+  <div class="tab-label">⚙ 設定・出力</div>
+  <div class="what">組織情報の編集、AI の振る舞いの調整、データのエクスポートを行う画面です。</div>
+
+  <h4>組織設定</h4>
+  <ul>
+    <li>サービス名 (画面上部の表示名)</li>
+    <li>組織名 (回答時の文脈に利用)</li>
+    <li>AI アシスタントの役割 (例: 社内ヘルプデスク / 営業サポート)</li>
+  </ul>
+
+  <h4>削減効果の計算パラメータ</h4>
+  <ul>
+    <li>1 質問あたりの想定対応時間 (分)</li>
+    <li>社員 1 時間あたりの人件費 (円)</li>
+  </ul>
+
+  <h4>FAQ 候補検出のしきい値</h4>
+  <ul>
+    <li>類似質問とみなす最小回数</li>
+    <li>類似度のしきい値</li>
+    <li>自動承認の ON/OFF</li>
+  </ul>
+
+  <h4>ストレージパス</h4>
+  <ul>
+    <li>ナレッジ・原本ファイルの保存先フォルダを設定 (アプリ再起動が必要)</li>
+  </ul>
+
+  <h4>データの出力</h4>
+  <ul>
+    <li>質問履歴を CSV でエクスポート</li>
+    <li>フィードバック一覧を CSV でエクスポート</li>
+    <li>FAQ 候補を CSV でエクスポート</li>
+  </ul>
+</div>
+
+<h2>4. おすすめの運用サイクル</h2>
+
+<div class="routine">
+  <h3>📅 毎週 15 分</h3>
+  <ul>
+    <li><b>🌱 FAQ 候補</b> タブ — AI が見つけた候補をレビュー、承認 / 編集 / 却下</li>
+    <li><b>🔍 履歴・要望</b> タブ — 👎 評価がついた回答を確認、必要に応じてナレッジ修正</li>
+  </ul>
 </div>
 
 <div class="routine">
-  <h2>📅 導入後の運用（管理者の所要時間）</h2>
-  <div class="row">
-    <span><b>毎週 15分</b>: 「🌱 FAQ 候補」タブで、AI が見つけた候補質問を承認 / 編集 / 却下</span>
-    <span><b>毎月 5分</b>: 「📈 削減効果」タブで削減時間・コストを確認 → 経営層に共有</span>
-  </div>
+  <h3>📅 毎月 30 分</h3>
+  <ul>
+    <li><b>📊 利用状況</b> タブ — 月次の利用傾向を把握</li>
+    <li><b>📈 削減効果</b> タブ — 削減時間・コストを確認し、経営層に共有</li>
+    <li>新しい社内マニュアルがあれば <b>📁 ファイル取り込み</b> タブから追加</li>
+  </ul>
 </div>
+
+<div class="routine">
+  <h3>📅 必要に応じて</h3>
+  <ul>
+    <li>規程改定時は古いファイルを削除して新しいものに差し替え</li>
+    <li>「FAQ 追加リクエスト」が来たらナレッジに反映</li>
+    <li>新しい社員が増えたら、利用ガイドを共有</li>
+  </ul>
+</div>
+
+<h2>5. お問い合わせ</h2>
+
+<p>
+本マニュアルに記載のない機能や、運用上のご相談は、<b>サービス提供元</b>までお問い合わせください。
+</p>
+
+<p>
+バージョンアップ情報や新機能の追加情報は、画面右上のバージョン番号 (例: <code>v0.8.0</code>) をクリックすると変更履歴 (CHANGELOG) として確認できます。
+</p>
 
 <div class="footer">
-  <div class="left"><b>Inquira</b> ご担当 ／ サポート窓口</div>
-  <div class="right">不明点は弊社サポートまで（個別 Slack / メールご案内済み）</div>
+  <b>Inquira 管理者操作マニュアル</b> — 社内ヘルプデスクを支える AI プラットフォーム
 </div>
 
-</body></html>
+</div>
+</body>
+</html>
