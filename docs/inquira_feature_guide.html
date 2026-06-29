@@ -2,381 +2,392 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>Inquira 機能ガイド</title>
+<title>Inquira 機能ガイド・操作マニュアル</title>
 <style>
 @page { size: A4; margin: 12mm; }
+@page { @bottom-center {
+  content: "Inquira 機能ガイド  -  " counter(page) " / " counter(pages);
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, "IPAPGothic", "IPAGothic", sans-serif;
+  font-size: 8pt; color: #9ca3af;
+} }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", YuGothic, Meiryo, "IPAPGothic", "IPAGothic", sans-serif;
-  color: #1f2937;
-  font-size: 10.5pt;
-  line-height: 1.75;
-  background: #fff;
-  letter-spacing: 0.01em;
+  color: #1f2937; font-size: 10pt; line-height: 1.8; background: #fff; letter-spacing: 0.01em;
 }
-.container { max-width: 820px; margin: 0 auto; padding: 0 8px; }
-
-/* ===== ヒーロー ===== */
-.hero {
-  background: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%);
-  color: #fff;
-  padding: 36px 32px;
-  border-radius: 12px;
-  margin-bottom: 32px;
-  text-align: center;
-}
-.hero .eyebrow { font-size: 9pt; letter-spacing: 0.3em; opacity: 0.9; margin-bottom: 10px; }
-.hero h1 { font-size: 26pt; font-weight: 700; margin-bottom: 12px; letter-spacing: 0.02em; }
-.hero .tagline { font-size: 12pt; opacity: 0.96; line-height: 1.6; }
-
-/* ===== セクション見出し ===== */
-.section-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 40px 0 18px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #0f766e;
-}
-.section-head .badge {
-  background: #0f766e;
-  color: #fff;
-  font-size: 9pt;
-  font-weight: 700;
-  padding: 3px 12px;
-  border-radius: 20px;
-  letter-spacing: 0.05em;
-}
-.section-head h2 { font-size: 15pt; color: #0f766e; font-weight: 700; }
-
-/* ===== 課題ボックス ===== */
-.problem {
-  background: #fef2f2;
-  border-left: 4px solid #dc2626;
-  border-radius: 0 8px 8px 0;
-  padding: 18px 22px;
-  margin: 16px 0;
-}
-.problem .q { font-size: 11pt; color: #991b1b; margin: 4px 0; font-weight: 600; }
-
-/* ===== 機能カード ===== */
-.feature {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  overflow: hidden;
-  margin: 24px 0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  page-break-inside: avoid;
-}
-.feature-header {
-  background: #f0fdfa;
-  padding: 14px 20px;
-  border-bottom: 1px solid #d1fae5;
-}
-.feature-header .ftag {
-  display: inline-block;
-  font-size: 8pt;
-  font-weight: 700;
-  color: #0f766e;
-  background: #ccfbf1;
-  padding: 2px 10px;
-  border-radius: 12px;
-  margin-bottom: 6px;
-  letter-spacing: 0.05em;
-}
-.feature-header h3 { font-size: 13pt; color: #0f766e; font-weight: 700; }
-.feature-body { padding: 18px 22px; }
-.feature-body .lead { font-size: 10.5pt; color: #374151; margin-bottom: 12px; }
-.feature-body ul { padding-left: 20px; margin: 8px 0; }
-.feature-body li { margin: 5px 0; }
-.feature-body li b { color: #0f766e; }
-
-.shot {
-  width: 100%;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin: 14px 0 4px;
-  display: block;
-}
-.shot-caption {
-  font-size: 8.5pt;
-  color: #9ca3af;
-  text-align: center;
-  margin-bottom: 8px;
-}
-
-/* ===== 数字アピール ===== */
-.metrics {
-  display: flex;
-  gap: 16px;
-  margin: 20px 0;
-}
-.metric {
-  flex: 1;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 18px 12px;
-  text-align: center;
-}
-.metric .num { font-size: 22pt; font-weight: 700; color: #0ea5e9; line-height: 1.1; }
-.metric .label { font-size: 9pt; color: #6b7280; margin-top: 6px; }
-
-/* ===== 使い方ステップ ===== */
-.step {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  margin: 16px 0;
-  page-break-inside: avoid;
-}
-.step .n {
-  background: #0ea5e9;
-  color: #fff;
-  min-width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  text-align: center;
-  line-height: 36px;
-  font-weight: 700;
-  font-size: 13pt;
-  flex-shrink: 0;
-}
-.step .body { flex: 1; }
-.step .body h4 { font-size: 11.5pt; color: #1f2937; margin-bottom: 4px; }
-.step .body p { font-size: 10pt; color: #4b5563; }
-.step .body code {
-  background: #f3f4f6; padding: 1px 6px; border-radius: 3px;
+.container { max-width: 820px; margin: 0 auto; padding: 0 6px; }
+code, .mono {
   font-family: Consolas, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, "IPAPGothic", "IPAGothic", monospace;
-  font-size: 9pt;
+  background: #f3f4f6; padding: 1px 6px; border-radius: 3px; font-size: 9pt; color: #111827;
 }
-
-/* ===== 確信度バッジ凡例 ===== */
-.legend { margin: 14px 0; }
-.legend-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
-.conf {
-  font-size: 9pt; font-weight: 700; padding: 4px 12px; border-radius: 14px;
-  white-space: nowrap; min-width: 130px; text-align: center;
-}
-.conf.high { background: #d1fae5; color: #065f46; }
-.conf.mid { background: #fef3c7; color: #92400e; }
-.conf.none { background: #fee2e2; color: #991b1b; }
-.legend-row .desc { font-size: 9.5pt; color: #4b5563; }
-
-.footer {
-  margin-top: 44px; padding-top: 18px;
-  border-top: 1px solid #e5e7eb;
-  text-align: center; font-size: 9pt; color: #6b7280;
-}
-.footer b { color: #0f766e; }
-
-.callout {
-  background: #eff6ff;
-  border-left: 4px solid #0ea5e9;
-  border-radius: 0 8px 8px 0;
-  padding: 14px 20px;
-  margin: 18px 0;
-  font-size: 9.5pt;
-}
-.callout b { color: #0369a1; }
+.hero { background: linear-gradient(135deg,#0f766e 0%,#0ea5e9 100%); color:#fff; padding:34px 32px; border-radius:12px; margin-bottom:10px; text-align:center; }
+.hero .eyebrow { font-size:9pt; letter-spacing:0.3em; opacity:0.9; margin-bottom:10px; }
+.hero h1 { font-size:25pt; font-weight:700; margin-bottom:12px; }
+.hero .tagline { font-size:11pt; opacity:0.96; line-height:1.6; }
+.hero .meta { margin-top:16px; font-size:8.5pt; opacity:0.85; }
+.toc { background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:18px 24px; margin:24px 0; }
+.toc h2 { font-size:11pt; color:#0f766e; margin-bottom:10px; }
+.toc ol { padding-left:22px; }
+.toc li { margin:4px 0; font-size:9.5pt; }
+.toc .sub { color:#6b7280; font-size:9pt; }
+.section-head { display:flex; align-items:center; gap:12px; margin:38px 0 14px; padding-bottom:8px; border-bottom:2px solid #0f766e; page-break-after:avoid; }
+.section-head .badge { background:#0f766e; color:#fff; font-size:8.5pt; font-weight:700; padding:3px 12px; border-radius:20px; letter-spacing:0.05em; white-space:nowrap; }
+.section-head h2 { font-size:15pt; color:#0f766e; font-weight:700; }
+h3 { font-size:12.5pt; color:#0f766e; margin:24px 0 8px; font-weight:700; page-break-after:avoid; }
+h4 { font-size:10.5pt; color:#1f2937; margin:16px 0 6px; font-weight:700; }
+p { margin:8px 0; }
+ul, ol { padding-left:22px; margin:8px 0; }
+li { margin:5px 0; }
+b, strong { color:#0f766e; }
+.problem { background:#fef2f2; border-left:4px solid #dc2626; border-radius:0 8px 8px 0; padding:16px 22px; margin:14px 0; }
+.problem .q { font-size:10.5pt; color:#991b1b; margin:3px 0; font-weight:600; }
+.feature { border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; margin:22px 0; box-shadow:0 1px 3px rgba(0,0,0,0.05); page-break-inside:avoid; }
+.feature-header { background:#f0fdfa; padding:13px 20px; border-bottom:1px solid #d1fae5; }
+.feature-header .ftag { display:inline-block; font-size:8pt; font-weight:700; color:#0f766e; background:#ccfbf1; padding:2px 10px; border-radius:12px; margin-bottom:6px; letter-spacing:0.05em; }
+.feature-header h3 { font-size:12.5pt; color:#0f766e; margin:0; }
+.feature-body { padding:16px 22px; }
+.feature-body .lead { font-size:10pt; color:#374151; margin-bottom:10px; }
+.shot { width:100%; border:1px solid #e5e7eb; border-radius:8px; margin:12px 0 4px; display:block; }
+.shot-cap { font-size:8.5pt; color:#9ca3af; text-align:center; margin-bottom:6px; }
+table { border-collapse:collapse; width:100%; margin:12px 0; font-size:9pt; }
+th, td { border:1px solid #e5e7eb; padding:8px 11px; text-align:left; vertical-align:top; }
+th { background:#f0fdfa; color:#0f766e; font-weight:700; }
+td b { color:#0f766e; }
+.tip, .note, .warn { border-radius:0 8px 8px 0; padding:12px 18px; margin:14px 0; font-size:9.5pt; }
+.tip { background:#eff6ff; border-left:4px solid #0ea5e9; }
+.tip b { color:#0369a1; }
+.note { background:#f0fdf4; border-left:4px solid #16a34a; }
+.note b { color:#15803d; }
+.warn { background:#fffbeb; border-left:4px solid #d97706; }
+.warn b { color:#b45309; }
+.step { display:flex; gap:14px; align-items:flex-start; margin:12px 0; page-break-inside:avoid; }
+.step .n { background:#0ea5e9; color:#fff; min-width:30px; height:30px; border-radius:50%; text-align:center; line-height:30px; font-weight:700; font-size:11pt; flex-shrink:0; }
+.step .body { flex:1; }
+.step .body h4 { margin:2px 0 3px; }
+.step .body p { font-size:9.5pt; color:#4b5563; margin:2px 0; }
+.legend-row { display:flex; align-items:center; gap:12px; margin:7px 0; }
+.conf { font-size:9pt; font-weight:700; padding:4px 12px; border-radius:14px; min-width:140px; text-align:center; white-space:nowrap; }
+.conf.high { background:#d1fae5; color:#065f46; }
+.conf.mid { background:#fef3c7; color:#92400e; }
+.conf.none { background:#fee2e2; color:#991b1b; }
+.legend-row .desc { font-size:9.5pt; color:#4b5563; }
+.metrics { display:flex; gap:14px; margin:16px 0; }
+.metric { flex:1; background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:16px 10px; text-align:center; }
+.metric .num { font-size:17pt; font-weight:700; color:#0ea5e9; line-height:1.1; }
+.metric .label { font-size:8.5pt; color:#6b7280; margin-top:6px; }
+.pagebreak { page-break-before: always; }
+.footer { margin-top:40px; padding-top:18px; border-top:1px solid #e5e7eb; text-align:center; font-size:9pt; color:#6b7280; }
+.footer b { color:#0f766e; }
+.routine-grid { display:flex; gap:14px; margin:14px 0; }
+.routine { flex:1; background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:14px 16px; }
+.routine h4 { color:#b45309; margin:0 0 6px; font-size:10pt; }
+.routine ul { padding-left:18px; margin:0; }
+.routine li { font-size:9pt; margin:4px 0; }
 </style>
 </head>
 <body>
 <div class="container">
 
-<!-- ===== ヒーロー ===== -->
 <div class="hero">
   <div class="eyebrow">IN-HOUSE AI HELPDESK</div>
   <h1>Inquira 機能ガイド</h1>
   <div class="tagline">
-    社内マニュアル・規程・FAQ を AI が読み、<br/>
-    社員の質問に<b>出典付きで即答える</b>。探す時間を、なくす。
+    社内マニュアル・規程・FAQ を AI が読み、社員の質問に<b>出典付きで即答える</b>。<br/>
+    本ガイドは、全機能の使い方とコツをメニューごとに詳しく解説します。
   </div>
+  <div class="meta">対象: ご利用者・管理者の皆さま　／　画面はすべてデモ用サンプルデータ</div>
 </div>
 
-<!-- ===== 課題 ===== -->
-<div class="section-head">
-  <span class="badge">WHY</span>
-  <h2>こんな「探す時間」、ありませんか</h2>
+<div class="toc">
+  <h2>目次</h2>
+  <ol>
+    <li>Inquira とは <span class="sub">— 仕組みと特長</span></li>
+    <li>質問する（チャット画面） <span class="sub">— 質問・回答・出典・確信度</span></li>
+    <li>フィードバックと協力機能 <span class="sub">— 👍👎 / FAQ追加リクエスト / 答えの共有</span></li>
+    <li>📁 ファイル取り込み <span class="sub">— ナレッジ投入・PII マスキング・メンテナンス</span></li>
+    <li>📊 利用状況 <span class="sub">— 統計ダッシュボード</span></li>
+    <li>📈 削減効果 <span class="sub">— 工数・コストの可視化</span></li>
+    <li>🌱 FAQ 候補 <span class="sub">— AI 自動検出と承認</span></li>
+    <li>🔍 履歴・要望 <span class="sub">— 全質問検索・リクエスト管理</span></li>
+    <li>⚙ 設定・出力 <span class="sub">— カスタマイズ・CSV エクスポート</span></li>
+    <li>おすすめ運用サイクル</li>
+  </ol>
 </div>
-<div class="problem">
-  <div class="q">「経費精算の締め切りっていつだっけ?」</div>
-  <div class="q">「VPN がつながらない時の対処法、どこに書いてある?」</div>
-  <div class="q">「有給は何日前までに申請?規程のどこ?」</div>
-</div>
-<p style="margin:12px 0;">
-  毎回マニュアルを探し、人に聞き、回答を待つ — その積み重ねが、組織全体で膨大な工数になっています。
-  <b>Inquira は、その質問に AI が即座に、根拠付きで答えます。</b>
+
+<div class="section-head"><span class="badge">01</span><h2>Inquira とは</h2></div>
+<p>
+Inquira（インクワイラ）は、社内のマニュアル・規程・過去 FAQ などを AI が読み取り、社員からの質問に<b>自然な日本語で、根拠（出典）を添えて</b>回答する社内ヘルプデスク向けプラットフォームです。
 </p>
+<h4>「覚えさせる」のではなく「参照する」</h4>
+<p>
+一般的な「AI に社内資料を学習させる」方式と異なり、Inquira は <b>RAG（検索拡張生成）</b> という仕組みを採用しています。質問が来るたびに社内ナレッジの中から関連箇所だけを検索し、その文章を根拠に AI が回答します。
+</p>
+<ul>
+  <li><b>常に最新</b> — ドキュメントを差し替えれば即座に回答も更新（再学習不要）</li>
+  <li><b>根拠が追える</b> — 「どのファイルのどこを見て答えたか」が必ず示される</li>
+  <li><b>情報が外に出にくい</b> — ナレッジ全体ではなく、質問に関連する一部だけを AI に渡す設計</li>
+</ul>
+<div class="note">
+  <b>データの安全性</b> — Inquira が利用する Claude API（Anthropic 社）は、商用契約上、送信されたデータを AI モデルの学習に使用しません。社内マニュアルの原本・質問履歴・組織情報は、社内に保管されたまま運用できます。
+</div>
 
-<!-- ===== 機能 1: 質問即回答 ===== -->
-<div class="section-head">
-  <span class="badge">FEATURE</span>
-  <h2>主な機能</h2>
+<div class="section-head"><span class="badge">02</span><h2>質問する（チャット画面）</h2></div>
+<p>ログイン後のメイン画面です。画面下部の入力欄に質問を打ち込むだけで、AI が回答します。</p>
+
+<div class="feature">
+  <div class="feature-header"><span class="ftag">💬 CHAT</span><h3>基本の流れ</h3></div>
+  <div class="feature-body">
+    <div class="step"><div class="n">1</div><div class="body"><h4>質問を入力</h4><p>画面下部の入力欄に、知りたいことを日本語で入力し Enter または「送信」。</p></div></div>
+    <div class="step"><div class="n">2</div><div class="body"><h4>数秒待つ</h4><p>AI が社内ナレッジを検索 -> 関連箇所を根拠に回答を生成します。</p></div></div>
+    <div class="step"><div class="n">3</div><div class="body"><h4>回答と出典を確認</h4><p>回答の下に「確信度」と「参照ドキュメント」が表示されます。</p></div></div>
+    <img class="shot" src="./demo_qa_session.png" alt="Q&Aセッション" />
+    <div class="shot-cap">▲ 回答・確信度・参照ドキュメント・左サイドバーの分析パネル（デモデータ）</div>
+  </div>
+</div>
+
+<h3>上手な聞き方のコツ</h3>
+<table>
+  <tr><th>コツ</th><th>理由・例</th></tr>
+  <tr><td><b>短く具体的に</b></td><td>「経費精算の締め切りは？」のように 1 文で。長文より高精度</td></tr>
+  <tr><td><b>普段の言葉で</b></td><td>専門用語より、同僚に口頭で聞くような言い回しがヒットしやすい</td></tr>
+  <tr><td><b>続けて聞ける</b></td><td>前の回答を踏まえ「では、その場合は？」と追加質問できる</td></tr>
+  <tr><td><b>言い換える</b></td><td>うまく答えが出ない時は、別の表現に変えると精度が上がる</td></tr>
+</table>
+
+<h3>確信度の見方 — 不確かなら「答えない」</h3>
+<p>AI の「それっぽいが誤った回答」を防ぐため、回答の信頼度を 3 段階で色表示します。根拠が弱い時は無理に回答しません。</p>
+<div class="legend-row"><span class="conf high">確信度 83%・高い</span><span class="desc">社内ナレッジに明確な根拠あり。業務判断に利用可</span></div>
+<div class="legend-row"><span class="conf mid">確信度 69%・中程度</span><span class="desc">関連情報はあるが、出典の確認を推奨</span></div>
+<div class="legend-row"><span class="conf none">該当なし</span><span class="desc">根拠が無いので答えない。FAQ 追加リクエストを促す</span></div>
+<img class="shot" src="./screenshot_confidence.png" alt="確信度表示" />
+<div class="shot-cap">▲ 確信度バーと参照ドキュメントの関連度スコア（デモデータ）</div>
+
+<h3>参照ドキュメント（出典）の見方</h3>
+<ul>
+  <li>回答の下に <b>「📎 参照ドキュメント N件」</b> が表示される</li>
+  <li>各ファイル名の横の <b>関連度（0～1）</b> が、その資料が回答にどれだけ寄与したかを示す</li>
+  <li>ファイルをクリックすると、根拠になった<b>該当箇所の全文</b>を確認できる</li>
+</ul>
+<div class="tip"><b>💡 重要な判断のとき</b>は、回答そのものだけでなく出典ドキュメントの原文も開いて確認するのが安全です。</div>
+
+<h3>左サイドバーの見方</h3>
+<table>
+  <tr><th>セクション</th><th>内容</th></tr>
+  <tr><td><b>分析（直近）</b></td><td>質問数・回答率・平均確信度・トップトピックのミニ統計</td></tr>
+  <tr><td><b>問い合わせ履歴</b></td><td>自分が過去にした質問。クリックで再表示</td></tr>
+  <tr><td><b>ナレッジ取り込み状況</b></td><td>取り込み済み文書数・チャンク数・カバー領域タグ</td></tr>
+  <tr><td><b>ファイルを追加</b></td><td>ナレッジ取り込み画面（後述）へのショートカット</td></tr>
+</table>
+
+<div class="section-head"><span class="badge">03</span><h2>フィードバックと協力機能</h2></div>
+<p>回答品質を組織全体で育てるための機能群です。</p>
+
+<div class="feature">
+  <div class="feature-header"><span class="ftag">👍 FEEDBACK</span><h3>役に立った / 改善が必要</h3></div>
+  <div class="feature-body">
+    <p>各回答の下に <b>「👍 役に立った」「👎 改善が必要」</b> ボタンがあります。</p>
+    <table>
+      <tr><th>ボタン</th><th>使う場面</th><th>効果</th></tr>
+      <tr><td><b>👍 役に立った</b></td><td>回答が正しく役立った</td><td>同種の質問で、その回答が優先されやすくなる</td></tr>
+      <tr><td><b>👎 改善が必要</b></td><td>誤り・不十分</td><td>任意でコメント入力。管理者がナレッジ修正に活用</td></tr>
+    </table>
+    <p>👎 の後は <b>「💬 もう一度質問する」</b> で、言い換えてその場で再質問もできます。</p>
+    <div class="warn"><b>⚠ フィードバックは匿名ではありません。</b> 誰がどの回答に送ったかが記録されます。個人評価のためではなく、組織全体の回答品質改善が目的です。</div>
+  </div>
 </div>
 
 <div class="feature">
-  <div class="feature-header">
-    <span class="ftag">💬 CHAT</span>
-    <h3>1. 質問するだけ、出典付きで即回答</h3>
-  </div>
+  <div class="feature-header"><span class="ftag">📩 REQUEST</span><h3>FAQ 追加リクエスト</h3></div>
   <div class="feature-body">
-    <div class="lead">日本語で質問を入力するだけ。AI が社内ナレッジを検索し、根拠となるドキュメントを示しながら回答します。</div>
+    <p>欲しい情報が見つからなかった時に、管理者へナレッジ追加を依頼できます。</p>
     <ul>
-      <li><b>出典明示</b> — 「どのファイルの何ページを根拠にしたか」が必ず表示される</li>
-      <li><b>関連度スコア</b> — 参照した各ドキュメントの関連度を数値で確認できる</li>
-      <li><b>会話継続</b> — 前の回答を踏まえた追加質問もできる</li>
-    </ul>
-    <img class="shot" src="./demo_qa_session.png" alt="Q&Aセッション画面" />
-    <div class="shot-caption">▲ 質問に対し、参照ドキュメントと確信度を添えて回答 (画面はデモデータ)</div>
-  </div>
-</div>
-
-<!-- ===== 機能 2: 確信度 ===== -->
-<div class="feature">
-  <div class="feature-header">
-    <span class="ftag">✓ TRUST</span>
-    <h3>2. 確信度を色で表示 — 不確かな時は「答えない」</h3>
-  </div>
-  <div class="feature-body">
-    <div class="lead">AI の「それっぽいけど間違った回答」を防ぐため、回答の確信度を 3 段階で明示。根拠が弱い時は無理に答えません。</div>
-    <div class="legend">
-      <div class="legend-row">
-        <span class="conf high">確信度 83%・高い</span>
-        <span class="desc">社内ナレッジに明確な根拠あり。そのまま信頼してOK</span>
-      </div>
-      <div class="legend-row">
-        <span class="conf mid">確信度 69%・中程度</span>
-        <span class="desc">関連情報はあるが、出典を確認推奨</span>
-      </div>
-      <div class="legend-row">
-        <span class="conf none">該当なし</span>
-        <span class="desc">根拠が無いので答えない。FAQ追加リクエストを促す</span>
-      </div>
-    </div>
-    <img class="shot" src="./screenshot_confidence.png" alt="確信度表示画面" />
-    <div class="shot-caption">▲ 確信度バーと参照ドキュメントの関連度 (画面はデモデータ)</div>
-  </div>
-</div>
-
-<!-- ===== 機能 3: 統計ダッシュボード ===== -->
-<div class="feature">
-  <div class="feature-header">
-    <span class="ftag">📊 ANALYTICS</span>
-    <h3>3. 利用状況の統計分析ダッシュボード</h3>
-  </div>
-  <div class="feature-body">
-    <div class="lead">「どれだけ使われ、どんな質問が多いか」を可視化。ナレッジ改善の判断材料になります。</div>
-    <ul>
-      <li><b>質問数の推移</b> — 日別・週別のグラフ</li>
-      <li><b>回答率</b> — AI が答えられた質問の割合</li>
-      <li><b>平均確信度</b> — 回答品質の指標</li>
-      <li><b>トップトピック</b> — よく質問されるテーマ上位</li>
-      <li><b>回答できなかった質問一覧</b> — ナレッジ追加すべき領域がわかる</li>
-      <li><b>ユニークユーザー数</b> — 実利用人数の把握</li>
-    </ul>
-    <div class="callout">
-      <b>💡 改善サイクルが回る</b> — 「答えられなかった質問」を見て不足ナレッジを特定 → 取り込み → 回答率が上がる、というループを数字で回せます。
-    </div>
-  </div>
-</div>
-
-<!-- ===== 機能 4: 削減効果 ===== -->
-<div class="feature">
-  <div class="feature-header">
-    <span class="ftag">📈 IMPACT</span>
-    <h3>4. 業務削減効果を金額で可視化</h3>
-  </div>
-  <div class="feature-body">
-    <div class="lead">AI が答えた件数から、削減できた時間と人件費を自動試算。経営報告にそのまま使えます。</div>
-    <div class="metrics">
-      <div class="metric">
-        <div class="num">⏱</div>
-        <div class="label">累計削減時間<br/>(時間)</div>
-      </div>
-      <div class="metric">
-        <div class="num">¥</div>
-        <div class="label">累計削減コスト<br/>(円)</div>
-      </div>
-      <div class="metric">
-        <div class="num">📅</div>
-        <div class="label">月別推移と<br/>前月比成長率</div>
-      </div>
-    </div>
-    <p style="font-size:9.5pt;color:#4b5563;">
-      ※ 1 質問あたりの想定対応時間と人件費単価は、組織の実態に合わせて設定画面から調整できます。
-    </p>
-  </div>
-</div>
-
-<!-- ===== 機能 5: ナレッジ取り込み ===== -->
-<div class="feature">
-  <div class="feature-header">
-    <span class="ftag">📁 INGEST</span>
-    <h3>5. ドラッグ&ドロップでナレッジ取り込み — 個人情報は自動マスキング</h3>
-  </div>
-  <div class="feature-body">
-    <div class="lead">PDF・Excel・Word・PowerPoint などをドラッグするだけ。取り込み前に個人情報を自動検出してマスキングします。</div>
-    <ul>
-      <li><b>8 形式対応</b> — PDF / Excel / PowerPoint / Word / CSV / Markdown / テキスト / JSON</li>
-      <li><b>PII 自動検出</b> — 氏名・電話番号・メール・マイナンバー等を検知</li>
-      <li><b>リスク判定</b> — 「取り込み可 / 確認必要 / 非推奨」を自動で色分け</li>
-    </ul>
-    <img class="shot" src="./screenshot_upload_results.png" alt="ファイル取り込み画面" />
-    <div class="shot-caption">▲ 取り込み時に個人情報を検出し、マスキング要否を提示 (画面はデモデータ)</div>
-  </div>
-</div>
-
-<!-- ===== 機能 6: FAQ候補 ===== -->
-<div class="feature">
-  <div class="feature-header">
-    <span class="ftag">🌱 AUTO-FAQ</span>
-    <h3>6. AI が「FAQ にすべき質問」を自動検出</h3>
-  </div>
-  <div class="feature-body">
-    <div class="lead">同じテーマの質問が繰り返されると、AI が自動で「FAQ 候補」として抽出。ワンクリックでナレッジに昇格できます。</div>
-    <ul>
-      <li><b>自動クラスタリング</b> — 似た質問をまとめて検出</li>
-      <li><b>承認 / 編集 / 却下</b> — 候補をレビューしてナレッジ化</li>
-      <li><b>自動承認モード</b> — 信頼度が高い候補は自動でナレッジに追加する設定も可能</li>
+      <li>「該当なし」回答の下の <b>「FAQ追加リクエスト」</b> ボタンを押す</li>
+      <li>必要なら補足コメントを入力 -> 送信</li>
+      <li>管理者の <b>「🔍 履歴・要望」タブ</b> に届く</li>
     </ul>
   </div>
 </div>
 
-<!-- ===== 使い方 ===== -->
-<div class="section-head">
-  <span class="badge">HOW TO</span>
-  <h2>使い方 — 3 ステップ</h2>
-</div>
-
-<div class="step">
-  <div class="n">1</div>
-  <div class="body">
-    <h4>ログイン</h4>
-    <p>社内に共有された URL を開き、「Google でログイン」→ 会社の Google アカウントを選択。</p>
-  </div>
-</div>
-<div class="step">
-  <div class="n">2</div>
-  <div class="body">
-    <h4>質問する</h4>
-    <p>画面下の入力欄に、知りたいことを日本語で入力して Enter。数秒で出典付きの回答が返ります。<br/>
-    例: <code>経費精算の締め切りは?</code> <code>VPN がつながらない時は?</code></p>
-  </div>
-</div>
-<div class="step">
-  <div class="n">3</div>
-  <div class="body">
-    <h4>活用する</h4>
-    <p>回答に 👍 / 👎 でフィードバック。欲しい情報が無ければ「FAQ 追加リクエスト」。<br/>
-    管理機能では、統計分析や削減効果も確認できます。</p>
+<div class="feature">
+  <div class="feature-header"><span class="ftag">🤝 SHARE</span><h3>自分で見つけた答えを共有</h3></div>
+  <div class="feature-body">
+    <p>AI が答えられなかった質問を自分で解決できた時、その回答を他の人に共有できます。</p>
+    <ul>
+      <li>該当質問の下の <b>「💬 自分で見つけた答えを共有」</b> ボタンを押す</li>
+      <li>見つけた回答を入力（空でも送信可 = 「自分も同じ質問を持っている」というシグナルになる）</li>
+      <li>共有された回答は <b>「💬 ユーザー提供」</b> タグ付きの参考情報として、すぐ他の人の検索にヒット</li>
+      <li>管理者が確認し、適切なら正式ナレッジに昇格</li>
+    </ul>
+    <div class="note"><b>みんなで育てるナレッジ</b> — 「同じことで困っていた人」がいれば即座に役立ち、組織の暗黙知が形式知になっていきます。</div>
   </div>
 </div>
 
-<!-- ===== フッター ===== -->
+<div class="pagebreak"></div>
+<div class="section-head"><span class="badge">ADMIN</span><h2>管理機能 — 画面上部の 6 タブ</h2></div>
+<p>ナレッジ管理・分析・設定を行う管理画面です。上部に 6 つのタブがあります。</p>
+<table>
+  <tr><th>タブ</th><th>役割</th></tr>
+  <tr><td><b>📁 ファイル取り込み</b></td><td>マニュアル等を Inquira に取り込む</td></tr>
+  <tr><td><b>📊 利用状況</b></td><td>利用統計・回答率・トピック分析</td></tr>
+  <tr><td><b>📈 削減効果</b></td><td>工数・コスト削減の可視化</td></tr>
+  <tr><td><b>🌱 FAQ 候補</b></td><td>AI が見つけた FAQ 候補の承認</td></tr>
+  <tr><td><b>🔍 履歴・要望</b></td><td>全質問検索・FAQ リクエスト管理</td></tr>
+  <tr><td><b>⚙ 設定・出力</b></td><td>カスタマイズ・CSV 出力</td></tr>
+</table>
+
+<div class="section-head"><span class="badge">04</span><h2>📁 ファイル取り込み</h2></div>
+<p>社内マニュアル・規程・FAQ を Inquira に取り込み、AI が回答に使えるようにする画面です。3 ステップ構成。</p>
+
+<h3>ステップ 1 — ファイルを投入</h3>
+<ul>
+  <li>枠内に<b>ドラッグ＆ドロップ</b>、またはクリックして選択（複数可）</li>
+  <li>投入すると自動で「パース -> PII 検出 -> 推奨判定」が走る</li>
+</ul>
+<h4>対応ファイル形式（8 種）</h4>
+<p><b>PDF / Excel / PowerPoint / Word（由来テキスト）/ CSV / Markdown / テキスト（.txt）/ JSON</b></p>
+
+<h3>ステップ 2 — クレンジング結果（重要）</h3>
+<p>取り込み前に、ファイルごとに安全性を 3 段階で自動判定します。</p>
+<table>
+  <tr><th>判定</th><th>意味</th><th>操作</th></tr>
+  <tr><td><b>✅ 取り込み可</b></td><td>懸念事項なし</td><td>「取り込む」または「スキップ」</td></tr>
+  <tr><td><b>⚠ 確認必要</b></td><td>個人情報・機密マーカーを検出</td><td>「マスクして取り込む」で黒塗り取り込み</td></tr>
+  <tr><td><b>🔴 取り込み非推奨</b></td><td>マイナンバー等、法的リスク高</td><td>原則「スキップ」（強制取り込みも可）</td></tr>
+</table>
+<img class="shot" src="./screenshot_upload_results.png" alt="クレンジング結果" />
+<div class="shot-cap">▲ ファイルごとに PII 検出・リスク判定・プレビューを表示（デモデータ）</div>
+<div class="tip"><b>💡 チャンク単位の調整</b> — 1 ファイル内でも、取り込みたくない箇所（チャンク）だけ個別に除外できます。画面下部に「取り込み対象 Nチャンク」と表示されます。</div>
+
+<h3>ステップ 3 — 取り込み済み文書（メンテナンス）</h3>
+<ul>
+  <li>これまで取り込んだ文書の一覧を表示</li>
+  <li>規程改定時などは、古い文書を<b>削除</b>して新しいものに差し替え</li>
+</ul>
+
+<h3>取り込みの確定</h3>
+<p>画面下部の <b>「選択を確定して取り込む（Nチャンク）」</b> を押すと、検索インデックスに反映され、即座に回答に使われるようになります。</p>
+<div class="note"><b>推奨投入順</b> — (1) 人事・労務（休暇/経費/勤怠）-> (2) IT/情シス（VPN/PC/SaaS）-> (3) 業務マニュアル。よく聞かれる領域から入れると効果を実感しやすい。</div>
+
+<div class="section-head"><span class="badge">05</span><h2>📊 利用状況（統計ダッシュボード）</h2></div>
+<p>「どれだけ使われ、どんな質問が来ているか」を可視化し、ナレッジ改善の判断材料にします。</p>
+<h3>確認できる指標</h3>
+<table>
+  <tr><th>指標</th><th>意味・活用</th></tr>
+  <tr><td><b>質問数の推移</b></td><td>日別・週別グラフ。導入直後の浸透度や繁忙期を把握</td></tr>
+  <tr><td><b>回答率</b></td><td>AI が答えられた質問の割合。ナレッジ充実度の総合指標</td></tr>
+  <tr><td><b>平均確信度</b></td><td>回答の確からしさの平均。低い時はナレッジ拡充の余地</td></tr>
+  <tr><td><b>トップトピック</b></td><td>よく質問されるテーマ上位。注力すべき領域がわかる</td></tr>
+  <tr><td><b>ユニークユーザー数</b></td><td>実際に使っている人数</td></tr>
+  <tr><td><b>回答できなかった質問</b></td><td>ナレッジに不足している領域の一覧 -> 追加の優先順位に</td></tr>
+</table>
+<div class="tip"><b>💡 改善サイクル</b> — 「回答できなかった質問」を見て不足ナレッジを特定 -> 📁 で取り込み -> 回答率が上がる、というループを数字で回せます。月次でこのタブを確認するのがおすすめ。</div>
+
+<div class="section-head"><span class="badge">06</span><h2>📈 削減効果（工数・コストの可視化）</h2></div>
+<p>AI が答えた件数から、削減できた時間と人件費を自動試算します。経営報告・予算申請にそのまま使えます。</p>
+<div class="metrics">
+  <div class="metric"><div class="num">⏱ 時間</div><div class="label">累計削減時間<br/>（人日換算も表示）</div></div>
+  <div class="metric"><div class="num">¥ 円</div><div class="label">累計削減コスト<br/>（時給換算）</div></div>
+  <div class="metric"><div class="num">📅 推移</div><div class="label">月次の回答件数推移<br/>＋前月比</div></div>
+</div>
+<h3>計算前提（調整可能）</h3>
+<p>画面下部で、自社の運用に合わせて以下を設定できます。</p>
+<table>
+  <tr><th>項目</th><th>説明</th><th>初期値</th></tr>
+  <tr><td><b>1 質問あたり削減時間</b></td><td>「資料を探す/人に聞く」の想定時間（分）</td><td>8 分</td></tr>
+  <tr><td><b>共有回答あたり削減時間</b></td><td>ユーザー提供回答 1 件の価値（分）</td><td>20 分</td></tr>
+  <tr><td><b>時給単価</b></td><td>人件費換算の時給（円）</td><td>¥3,500</td></tr>
+</table>
+<div class="tip"><b>💡 経営報告に</b> — 「今月、AI が N件回答し、約 N時間・¥N 相当の工数を削減」と数字で示せます。前提値は自社の平均的な人件費・対応時間に合わせて調整してください。</div>
+
+<div class="section-head"><span class="badge">07</span><h2>🌱 FAQ 候補（AI 自動検出）</h2></div>
+<p>過去の質問履歴を AI が分析し、<b>「複数のユーザーが繰り返し聞いた、高確信度で回答された質問」</b>を FAQ 候補として提示します。</p>
+<h3>運用フロー</h3>
+<div class="step"><div class="n">1</div><div class="body"><h4>候補を確認</h4><p>未承認候補があるとタブに赤いバッジ（件数）が付きます。</p></div></div>
+<div class="step"><div class="n">2</div><div class="body"><h4>承認 / 編集 / 却下</h4><p><b>承認</b>＝そのまま FAQ 化、<b>編集して承認</b>＝回答文を整えてから FAQ 化、<b>却下</b>＝候補から除外。</p></div></div>
+<div class="step"><div class="n">3</div><div class="body"><h4>即反映</h4><p>承認した FAQ はすぐ検索インデックスに入り、次の質問から使われます。</p></div></div>
+
+<h3>検出のしきい値（設定可能）</h3>
+<table>
+  <tr><th>項目</th><th>説明</th></tr>
+  <tr><td><b>最小確信度</b></td><td>この確信度以上で回答された質問を候補にする</td></tr>
+  <tr><td><b>最小質問回数</b></td><td>何回以上聞かれたら候補にするか</td></tr>
+  <tr><td><b>最小ユニークユーザー数</b></td><td>何人以上が聞いたら候補にするか（特定個人の偏りを除外）</td></tr>
+  <tr><td><b>類似度しきい値</b></td><td>どれだけ似た質問をまとめるか（0～1）</td></tr>
+</table>
+<h3>自動承認モード</h3>
+<p>信頼度が特に高い候補を、人のレビュー無しで自動的にナレッジ化する設定も可能です。<b>自動承認の ON/OFF</b> と、その専用しきい値（確信度・回数・人数）を個別指定できます。</p>
+<div class="warn"><b>⚠ 自動承認は慎重に</b> — 運用初期は OFF にして手動レビューで品質を確認し、傾向が掴めてから ON にするのがおすすめです。</div>
+
+<div class="section-head"><span class="badge">08</span><h2>🔍 履歴・要望</h2></div>
+<h3>質問履歴を検索</h3>
+<p>社員から実際に投げられた全質問を検索・閲覧できます。</p>
+<table>
+  <tr><th>絞り込み</th><th>選択肢</th></tr>
+  <tr><td><b>本文検索</b></td><td>質問テキストの部分一致</td></tr>
+  <tr><td><b>回答状態</b></td><td>すべて / 回答済 / 未回答 / 参考情報</td></tr>
+  <tr><td><b>期間</b></td><td>過去 7 日 / 30 日 / 90 日</td></tr>
+</table>
+<p>各履歴では、質問日時・質問者・質問内容・回答内容・参照ドキュメント・👍👎評価まで確認できます。</p>
+<div class="tip"><b>💡 活用例</b> — 「未回答」で絞り込めば、ナレッジ不足が一目瞭然。👎 が付いた回答を見て、該当ナレッジを修正。</div>
+
+<h3>FAQ 追加リクエスト</h3>
+<p>社員から送られた「FAQ追加リクエスト」の一覧です。1 件ずつ確認し、必要なナレッジを 📁 タブから追加して対応します。</p>
+
+<div class="section-head"><span class="badge">09</span><h2>⚙ 設定・出力</h2></div>
+<h3>組織情報のカスタマイズ</h3>
+<p>変更は<b>即時反映＋次回起動時も保持</b>されます。</p>
+<table>
+  <tr><th>項目</th><th>説明・例</th></tr>
+  <tr><td><b>プロダクト名</b></td><td>チャット画面のタイトル表示（例: Inquira）</td></tr>
+  <tr><td><b>組織名</b></td><td>AI の自己紹介に使用（例: 株式会社NN）</td></tr>
+  <tr><td><b>アシスタント役割</b></td><td>AI の役割設定（例: 社内ヘルプデスク / 顧客サポート）</td></tr>
+  <tr><td><b>マスキング業界プリセット</b></td><td>PII 検出辞書（general / education / medical / finance）</td></tr>
+  <tr><td><b>FAQ 格納フォルダ</b></td><td>取り込み済みナレッジの保存先</td></tr>
+  <tr><td><b>原本ファイル格納フォルダ</b></td><td>アップロード元ファイルの保存先</td></tr>
+</table>
+<div class="warn"><b>⚠ フォルダ変更時</b>は、取り込み済みデータを新フォルダへ移してからアプリ再起動を推奨。既存ファイルは自動移動されません。</div>
+
+<h3>レポート出力（CSV / JSON）</h3>
+<p>月次の社内提出・分析用にデータを出力できます。期間（7日/30日/90日/1年）を選んで:</p>
+<table>
+  <tr><th>ボタン</th><th>内容</th></tr>
+  <tr><td><b>📊 質問履歴 CSV</b></td><td>全質問のログ</td></tr>
+  <tr><td><b>📩 FAQリクエスト CSV</b></td><td>追加依頼の一覧</td></tr>
+  <tr><td><b>👍 フィードバック CSV</b></td><td>👍👎 評価とコメント</td></tr>
+  <tr><td><b>🗂 全ログ JSON</b></td><td>すべてのイベントログ（詳細分析用）</td></tr>
+</table>
+<div class="tip"><b>💡 CSV は Excel / Numbers でそのまま開けます</b>（UTF-8 BOM 付き）。月次レポートや改善分析にどうぞ。</div>
+
+<div class="section-head"><span class="badge">10</span><h2>おすすめ運用サイクル</h2></div>
+<div class="routine-grid">
+  <div class="routine">
+    <h4>📅 毎週 15分</h4>
+    <ul>
+      <li>🌱 FAQ 候補をレビュー（承認/編集/却下）</li>
+      <li>🔍 👎 が付いた回答を確認・修正</li>
+    </ul>
+  </div>
+  <div class="routine">
+    <h4>📅 毎月 30分</h4>
+    <ul>
+      <li>📊 利用状況で傾向を把握</li>
+      <li>📈 削減効果を経営層に共有</li>
+      <li>📁 新しいマニュアルを追加</li>
+    </ul>
+  </div>
+  <div class="routine">
+    <h4>📅 随時</h4>
+    <ul>
+      <li>規程改定時は古い文書を差し替え</li>
+      <li>FAQ リクエストに対応</li>
+      <li>新メンバーに利用案内</li>
+    </ul>
+  </div>
+</div>
+
 <div class="footer">
   <b>Inquira</b> — 社内ヘルプデスクを支える AI プラットフォーム<br/>
-  本ガイドの画面はすべてデモ用サンプルデータです。
+  本ガイドの画面はすべてデモ用サンプルデータです。不明点はサービス提供元までお問い合わせください。
 </div>
 
 </div>
