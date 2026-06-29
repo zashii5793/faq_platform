@@ -132,7 +132,16 @@ Inquira（インクワイラ）は、社内のマニュアル・規程・過去 
 </div>
 
 <div class="section-head"><span class="badge">02</span><h2>質問する（チャット画面）</h2></div>
-<p>ログイン後のメイン画面です。画面下部の入力欄に質問を打ち込むだけで、AI が回答します。</p>
+
+<h3>まずはログイン</h3>
+<p>社内に共有された URL を開くと、ログイン画面が表示されます。<b>「🔐 Google でログイン」</b> を押し、会社の Google アカウントを選択してください。許可されたアカウントのみアクセスできます。</p>
+<img class="shot" src="./demo_login.png" alt="ログイン画面" style="max-width:520px;margin-left:auto;margin-right:auto;" />
+<div class="shot-cap">▲ ログイン画面（デモ表示）</div>
+
+<h3>メイン画面</h3>
+<p>ログインすると、メイン画面が表示されます。画面下部の入力欄に質問を打ち込むだけで、AI が回答します。よく使われる質問はサジェストとして自動表示されます。</p>
+<img class="shot" src="./demo_welcome.png" alt="ログイン直後の画面" />
+<div class="shot-cap">▲ ログイン直後の画面。左に分析パネル、中央に質問サジェスト（デモデータ）</div>
 
 <div class="feature">
   <div class="feature-header"><span class="ftag">💬 CHAT</span><h3>基本の流れ</h3></div>
@@ -245,6 +254,8 @@ Inquira（インクワイラ）は、社内のマニュアル・規程・過去 
 </ul>
 <h4>対応ファイル形式（8 種）</h4>
 <p><b>PDF / Excel / PowerPoint / Word（由来テキスト）/ CSV / Markdown / テキスト（.txt）/ JSON</b></p>
+<img class="shot" src="./screenshot_upload_initial.png" alt="ファイル投入の初期画面" />
+<div class="shot-cap">▲ ステップ1：ドラッグ＆ドロップでファイルを投入（デモ表示）</div>
 
 <h3>ステップ 2 — クレンジング結果（重要）</h3>
 <p>取り込み前に、ファイルごとに安全性を 3 段階で自動判定します。</p>
@@ -280,6 +291,8 @@ Inquira（インクワイラ）は、社内のマニュアル・規程・過去 
   <tr><td><b>ユニークユーザー数</b></td><td>実際に使っている人数</td></tr>
   <tr><td><b>回答できなかった質問</b></td><td>ナレッジに不足している領域の一覧 -> 追加の優先順位に</td></tr>
 </table>
+<img class="shot" src="./demo_admin_analytics.png" alt="利用状況ダッシュボード" />
+<div class="shot-cap">▲ 利用状況ダッシュボード：KPIカード・日次質問数・トップトピック・アクティブ利用者（デモデータ）</div>
 <div class="tip"><b>💡 改善サイクル</b> — 「回答できなかった質問」を見て不足ナレッジを特定 -> 📁 で取り込み -> 回答率が上がる、というループを数字で回せます。月次でこのタブを確認するのがおすすめ。</div>
 
 <div class="section-head"><span class="badge">06</span><h2>📈 削減効果（工数・コストの可視化）</h2></div>
@@ -297,6 +310,8 @@ Inquira（インクワイラ）は、社内のマニュアル・規程・過去 
   <tr><td><b>共有回答あたり削減時間</b></td><td>ユーザー提供回答 1 件の価値（分）</td><td>20 分</td></tr>
   <tr><td><b>時給単価</b></td><td>人件費換算の時給（円）</td><td>¥3,500</td></tr>
 </table>
+<img class="shot" src="./demo_admin_impact.png" alt="削減効果ダッシュボード" />
+<div class="shot-cap">▲ 削減効果：累計削減時間・コスト・回答件数・利用者数、月次推移、計算前提の調整欄（デモデータ）</div>
 <div class="tip"><b>💡 経営報告に</b> — 「今月、AI が N件回答し、約 N時間・¥N 相当の工数を削減」と数字で示せます。前提値は自社の平均的な人件費・対応時間に合わせて調整してください。</div>
 
 <div class="section-head"><span class="badge">07</span><h2>🌱 FAQ 候補（AI 自動検出）</h2></div>
@@ -316,6 +331,8 @@ Inquira（インクワイラ）は、社内のマニュアル・規程・過去 
 </table>
 <h3>自動承認モード</h3>
 <p>信頼度が特に高い候補を、人のレビュー無しで自動的にナレッジ化する設定も可能です。<b>自動承認の ON/OFF</b> と、その専用しきい値（確信度・回数・人数）を個別指定できます。</p>
+<img class="shot" src="./demo_admin_candidates.png" alt="FAQ候補タブ" />
+<div class="shot-cap">▲ FAQ候補：承認/却下タブ、検出のしきい値、自動承認モードの設定欄（デモデータ）</div>
 <div class="warn"><b>⚠ 自動承認は慎重に</b> — 運用初期は OFF にして手動レビューで品質を確認し、傾向が掴めてから ON にするのがおすすめです。</div>
 
 <div class="section-head"><span class="badge">08</span><h2>🔍 履歴・要望</h2></div>
@@ -345,6 +362,8 @@ Inquira（インクワイラ）は、社内のマニュアル・規程・過去 
   <tr><td><b>FAQ 格納フォルダ</b></td><td>取り込み済みナレッジの保存先</td></tr>
   <tr><td><b>原本ファイル格納フォルダ</b></td><td>アップロード元ファイルの保存先</td></tr>
 </table>
+<img class="shot" src="./demo_admin_settings.png" alt="設定・出力タブ" />
+<div class="shot-cap">▲ 設定・出力：組織情報のカスタマイズ欄と、各種 CSV/JSON エクスポートボタン（デモデータ）</div>
 <div class="warn"><b>⚠ フォルダ変更時</b>は、取り込み済みデータを新フォルダへ移してからアプリ再起動を推奨。既存ファイルは自動移動されません。</div>
 
 <h3>レポート出力（CSV / JSON）</h3>
