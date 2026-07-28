@@ -12,6 +12,18 @@ Inquira のリリースノート。すべての変更点を時系列順に記録
 
 ## [Unreleased]
 
+### Added — note 有料記事① と再利用テンプレート
+- 📝 **note 有料記事①本文** `docs/note/note_01_faq_tool_with_claude_code.md` 追加
+  - Claude Code を使った開発・納品プロセスの全記録 (付録 A〜F を全文収録)
+  - 実数値ベース: コード 6,814 行 / テスト 377 本 / 検索 5ms / API 1 質問 2〜3 円
+  - オンプレ導入の詰まり 13 件、アンチパターン 5 件、30 日再現スケジュール
+- 🧰 **再利用テンプレート一式** `docs/note/assets/` 追加
+  - `CLAUDE.md.template` (注釈付き。モジュール分割ルールを追加し main.py 肥大化を防ぐ)
+  - Skill 3 本: `ja-pdf-export` / `release-guard` / `customer-handoff`
+  - プロンプトテンプレート 12 型
+  - チェックリスト 3 種: オンプレ事前ヒアリング / コミット前 / AI 生成物の公開前レビュー
+- 📋 **販売運用メモ** `docs/note/README.md` 追加 (有料エリア境界、配布方式、価格設計の根拠)
+
 ### Added — リリース運用基盤
 - 🚀 **顧客側ワンコマンド更新スクリプト** `scripts/update_inquira.ps1` 追加
   - GitHub からタグ/ブランチを取得 → コード入れ替え → 自動ヘルスチェック → 失敗時は自動ロールバック
