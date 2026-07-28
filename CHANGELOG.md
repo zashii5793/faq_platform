@@ -22,6 +22,15 @@ Inquira のリリースノート。すべての変更点を時系列順に記録
   - SemVer 規約、リリースフロー、Breaking change 時の特別対応、ロールバック方針
 - 📖 **アップデート利用者ガイド** `scripts/update_inquira_README.md` 追加 (顧客 IT 部門向け)
 
+### Fixed — CI (lint) の復旧
+- 🟢 **`pyproject.toml` に `[tool.ruff.lint] select` を追加** し、適用ルールを
+  `E4 / E7 / E9 / F` に固定。未指定だと ruff の既定ルールセットがそのまま使われるため、
+  ruff 0.16.0 で既定が拡張された際にコード無変更のまま CI が赤くなっていた (155 件検出)
+- 🧹 未使用の import 12 件・未使用のローカル変数 3 件を除去 (F401 / F841)
+  - `tests/test_integration.py`: 未使用の戻り値代入を除去 (`/api/ask` の呼び出し自体は維持)
+  - `tests/test_runtime_settings_strict.py`: 未使用となった `settings` の局所 import を除去
+- テスト結果に変化なし (375 passed, 2 xfailed)
+
 ---
 
 ## [0.8.0] - 2026-06-02

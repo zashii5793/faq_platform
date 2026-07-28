@@ -12,15 +12,13 @@
 from __future__ import annotations
 
 import gc
-import os
 import time
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.masking import build_rules, mask
-from app.rag import Chunk, FaqIndex, load_chunks, record_feedback
+from app.rag import Chunk, FaqIndex, record_feedback
 
 
 @pytest.fixture
