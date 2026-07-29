@@ -95,17 +95,26 @@ def convert_table(header: list[str], rows: list[list[str]]) -> list[str]:
         # 1 列目が連番だけの表は、2 列目を見出しに繰り上げる
         if re.fullmatch(r"[#\d\s.]*", title) and len(r) > 1:
             num = title.strip()
-            title = _clean(r[1])
+            label = (num + " " if num else "") + _clean(r[1])
             rest = list(zip(header[2:], r[2:]))
-            out.append(f"■ {num + ' ' if num else ''}{title}")
         else:
+            label = title
             rest = list(zip(header[1:], r[1:]))
-            out.append(f"■ {title}")
-        for name, val in rest:
-            val = _clean(val)
-            if val and val != "—":
-                # 列名は常に残す。落とすと「何の値か」が読み取れなくなる
-                out.append(f"・{_clean(name)}：{val}")
+
+        items = [(_clean(n), _clean(v)) for n, v in rest]
+        items = [(n, v) for n, v in items if v and v != "—"]
+
+        # 値が短い表は 1 行にまとめる。3 行に分けると情報量に対して冗長になる
+        joined = " / ".join(f"{n}：{v}" for n, v in items)
+        if items and len(joined) <= 60:
+            out.append(f"■ {label}　{joined}")
+            out.append("")
+            continue
+
+        out.append(f"■ {label}")
+        for name, val in items:
+            # 列名は常に残す。落とすと「何の値か」が読み取れなくなる
+            out.append(f"・{name}：{val}")
         out.append("")
     while out and out[-1] == "":
         out.pop()

@@ -162,13 +162,23 @@ def render_table(header: list[str], rows: list[list[str]]) -> list[str]:
         else:
             label = title
             rest = list(zip(header[1:], r[1:]))
-        out.append(f'<p class="row-title"><strong>■ {inline(label)}</strong></p>')
-        items = [(n, _clean(v)) for n, v in rest]
+        items = [(_clean(n), _clean(v)) for n, v in rest]
         items = [(n, v) for n, v in items if v and v != "—"]
+
+        # 値が短い表は 1 行にまとめる。3 行に分けると情報量に対して冗長になる
+        joined = " / ".join(f"{n}：{v}" for n, v in items)
+        if items and len(joined) <= 60:
+            out.append(
+                f'<p class="row-title"><strong>■ {inline(label)}</strong>'
+                f"　{inline(joined)}</p>"
+            )
+            continue
+
+        out.append(f'<p class="row-title"><strong>■ {inline(label)}</strong></p>')
         if items:
             out.append("<ul>")
             for name, val in items:
-                out.append(f"<li>{inline(_clean(name))}：{inline(val)}</li>")
+                out.append(f"<li>{inline(name)}：{inline(val)}</li>")
             out.append("</ul>")
     return out
 

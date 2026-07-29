@@ -82,12 +82,20 @@ def table_blocks(header: list[str], rows: list[list[str]]) -> list[dict]:
         else:
             label = title
             rest = list(zip(header[1:], r[1:]))
+        items = [(_clean(n), _clean(v)) for n, v in rest]
+        items = [(n, v) for n, v in items if v and v != "—"]
+
+        # 値が短い表は 1 行にまとめる。3 行に分けると情報量に対して冗長になる
+        joined = " / ".join(f"{n}：{v}" for n, v in items)
+        if items and len(joined) <= 60:
+            out.append({"t": "p", "rowTitle": True,
+                        "runs": runs(f"**■ {label}**　{joined}")})
+            continue
+
         out.append({"t": "p", "rowTitle": True, "runs": runs(f"**■ {label}**")})
-        for name, val in rest:
-            val = _clean(val)
-            if val and val != "—":
-                out.append({"t": "li", "ordered": False, "level": 1,
-                            "runs": runs(f"{_clean(name)}：{val}")})
+        for name, val in items:
+            out.append({"t": "li", "ordered": False, "level": 1,
+                        "runs": runs(f"{name}：{val}")})
     return out
 
 
