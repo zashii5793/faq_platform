@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>【実物公開】社内FAQ AIツールを Claude Code で作り、実企業に納品するまでの全設計図</title>
+<style>
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", YuGothic, Meiryo, "IPAPGothic", "IPAGothic", sans-serif;
+  line-height: 1.9;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px 120px;
+  color: #1a1a1a;
+}
+h1 { font-size: 1.8em; margin: 1.8em 0 .6em; line-height: 1.5; }
+h2 { font-size: 1.45em; margin: 2em 0 .6em; line-height: 1.5;
+     border-bottom: 2px solid #e5e5e5; padding-bottom: .3em; }
+h3 { font-size: 1.15em; margin: 1.8em 0 .5em; line-height: 1.6; }
+h4 { font-size: 1.02em; margin: 1.4em 0 .4em; }
+p { margin: .9em 0; }
+ul, ol { margin: .8em 0; padding-left: 1.6em; }
+li { margin: .35em 0; }
+blockquote { margin: 1.2em 0; padding: .6em 1em; border-left: 4px solid #ccc;
+              background: #fafafa; }
+pre { background: #f5f5f5; padding: 14px 16px; overflow-x: auto;
+       border-radius: 4px; line-height: 1.6; }
+pre, code { font-family: "SFMono-Regular", Consolas, "Courier New", monospace;
+             font-size: .88em; }
+code { background: #f0f0f0; padding: .1em .35em; border-radius: 3px; }
+pre code { background: none; padding: 0; }
+hr { border: none; border-top: 1px solid #ddd; margin: 2.4em 0; }
+strong { font-weight: 700; }
+.row-title { margin: 1.1em 0 .2em; }
+</style>
+</head>
+<body>
+<h1>【実物公開】社内FAQ AIツールを Claude Code で作り、実企業に納品するまでの全設計図</h1>
+<h3>— CLAUDE.md / Skill / プロンプト12型 / オンプレ導入チェックリスト、全部そのまま渡します</h3>
+<hr>
+<blockquote><strong>この記事は「作り方の物語」ではありません。</strong><br>私が実際に 1 人で開発し、実企業のオンプレ環境に納品して稼働している社内 FAQ AI（RAG）プラットフォームの、<br><strong>設計判断・Claude Code の運用ルール・そのままコピーして使えるテンプレート一式</strong> を丸ごと渡す記事です。<br><br>記事内のテンプレートは、読んだその日から自分のプロジェクトに貼り付けて動かせます。</blockquote>
+<hr>
+<h2>0. 最初に：この記事で「何が手に入るか」</h2>
+<p>読み物としての価値ではなく、<strong>明日の作業が変わるか</strong> で判断してください。</p>
+<h3>A. 読んで得られるもの（ノウハウ）</h3>
+<p class="row-title"><strong>■ 1 <strong>システム構成と「捨てた技術」4 つ</strong></strong></p>
+<ul>
+<li>具体的に何が変わるか：DB もベクトル DB も形態素解析器も使わない構成と、その全理由。オンプレ納品を前提にした設計の逆算</li>
+</ul>
+<p class="row-title"><strong>■ 2 <strong>ハルシネーション対策の三重防御</strong></strong></p>
+<ul>
+<li>具体的に何が変わるか：「答えないこと」をどう設計したか。実際のしきい値・システムプロンプト全文・確信度の計算式</li>
+</ul>
+<p class="row-title"><strong>■ 3 <code>CLAUDE.md</code> の設計思想と実物</strong></p>
+<ul>
+<li>具体的に何が変わるか：AI に毎回同じ指示を出す作業がゼロになる。事故（フォント化け・顧客情報混入）が構造的に起きなくなる</li>
+</ul>
+<p class="row-title"><strong>■ 4 Skill 化する判断基準と実物 3 本</strong></p>
+<ul>
+<li>具体的に何が変わるか：「毎回説明していた手順」が 1 単語で呼び出せるようになる</li>
+</ul>
+<p class="row-title"><strong>■ 5 プロンプト 12 型</strong></p>
+<ul>
+<li>具体的に何が変わるか：「なんとなく指示 → 微妙な出力 → 手直し」のループが消える</li>
+</ul>
+<p class="row-title"><strong>■ 6 TDD スプリントの回し方</strong></p>
+<ul>
+<li>具体的に何が変わるか：テスト 120 → 377 本、実バグ 6 件（Stored XSS 含む）を検出した実際の手順</li>
+</ul>
+<p class="row-title"><strong>■ 7 AI が絶対にやってくれない工程の地図</strong></p>
+<ul>
+<li>具体的に何が変わるか：「機能は 2 週間で完成、納品まで 6 週間」のギャップの正体</li>
+</ul>
+<p class="row-title"><strong>■ 8 実測コスト表</strong></p>
+<ul>
+<li>具体的に何が変わるか：API 実費・開発工数・運用費の実数値。見積もりの根拠になる</li>
+</ul>
+<h3>B. そのまま持ち帰れるもの（テンプレート同梱）</h3>
+<p>この記事の後半に、<strong>全文をコピー可能な状態で掲載</strong> しています。加工不要です。</p>
+<pre><code>① CLAUDE.md テンプレート（注釈付き・約 200 行）
+② Skill 定義 3 本
+   - ja-pdf-export     … 日本語 PDF を中国語フォント化させずに生成する
+   - release-guard     … コミット前の秘密情報スキャン + バージョン同期
+   - customer-handoff  … 顧客配布ドキュメント一式を生成する
+③ プロンプトテンプレート 12 型（Before / After 付き）
+④ オンプレ導入 事前ヒアリングシート（6 カテゴリ）
+⑤ コミット前チェックリスト
+⑥ AI 生成物 公開前レビューチェックリスト
+⑦ 30 日再現スケジュール（日割り）
+⑧ テンプレートの設置手順（どこに置けば効くのか）</code></pre>
+<h3>C. この記事を買うべきでない人</h3>
+<p>高額なので、先に書きます。<strong>以下に当てはまる方は買わないでください。</strong></p>
+<ul>
+<li>Claude Code を触ったことがなく、まずインストール方法を知りたい方 → 公式ドキュメントが最良です</li>
+<li>「AI に丸投げしたら勝手に完成した」という話を期待している方 → そういう話は 1 行も出てきません</li>
+<li>Python / Web アプリの基礎知識がまったくない方 → コードそのものの解説はしていません</li>
+<li>無料で読める「Claude Code 便利だった」系の記事の延長を期待している方</li>
+</ul>
+<h3>D. この記事を買うべき人</h3>
+<ul>
+<li><strong>すでに Claude Code を使っていて、「速いけど散らかる」問題に直面している方</strong></li>
+<li><strong>個人開発したものを実際に企業へ納品したい / 納品しようとして詰まっている方</strong></li>
+<li><strong>社内 AI・RAG・FAQ ツールの導入を検討していて、実際の落とし穴と実費を知りたい方</strong></li>
+<li><strong>AI 開発の「設計と運用ルール」の実例を、丸ごと 1 セット手に入れたい方</strong></li>
+</ul>
+<hr>
+<h2>1. 何を作ったのか（前提の共有）</h2>
+<p><strong>Inquira</strong> — 社内ドキュメントを根拠に AI が回答する、セルフサービス型 FAQ プラットフォーム。</p>
+<h3>解決した課題</h3>
+<p>導入先（教育系・従業員 35 名規模）からの相談は、こうでした。</p>
+<blockquote>「ヘルプデスクのチケットが 1,000 件溜まっている。毎日同じ質問が来て若手が消耗している。<br>ChatGPT を使いたいが、社内データを外に出すのは絶対に無理」</blockquote>
+<p>この「<strong>同じ質問が繰り返される</strong>」「<strong>でもデータは出せない</strong>」の組み合わせは、業界を問わず存在します。<br>情シス、学校事務、製造業の現場——構造は同じです。</p>
+<h3>実装した機能（抜粋）</h3>
+<ul>
+<li><strong>RAG 回答</strong>：社内文書を根拠に日本語で回答。出典ファイル・該当セクション・関連度を必ず提示</li>
+<li><strong>確信度スコア</strong>：0〜100% で提示。低い場合は「該当情報なし」と明示して<strong>ハルシネーションを構造的に抑制</strong></li>
+<li><strong>多形式取り込み</strong>：PDF / Word / Excel / PowerPoint / CSV / JSON / Markdown</li>
+<li><strong>PII マスキング</strong>：メール・電話・カード番号（Luhn 検証付き）・マイナンバー・IP・URL を送信前に除去</li>
+<li><strong>ナレッジ蓄積</strong>：社員が自分の解決策を共有 → 全社の資産化。入力中に類似質問をリアルタイムサジェスト</li>
+<li><strong>FAQ 候補抽出</strong>：繰り返された質問を自動でクラスタリングし「FAQ にすべき質問」を管理者に提示</li>
+<li><strong>回答キャッシュ</strong>：同一質問の再問い合わせで API を呼ばない（API コスト 30〜50% 削減）</li>
+<li><strong>管理ダッシュボード</strong>：利用状況・削減効果・質問履歴の全文検索</li>
+<li><strong>認証</strong>：Google OAuth + 許可メール / 許可ドメイン制御</li>
+</ul>
+<h3>現在のリポジトリ実数値</h3>
+<p>私が語る「実績」の根拠を、検証可能な数字だけで出します。</p>
+<ul>
+<li><strong>アプリケーションコード</strong>：<strong>6,814 行</strong>（14 モジュール）</li>
+<li><strong>テストコード</strong>：<strong>4,553 行</strong>（20 ファイル）</li>
+<li><strong>テスト関数</strong>：<strong>377 本</strong></li>
+<li><strong>テスト / コード比</strong>：<strong>0.67</strong>（1 行の実装に対し 0.67 行のテスト）</li>
+<li><strong>カバレッジ</strong>：<strong>88%</strong></li>
+<li><strong>ドキュメント</strong>：<strong>114 ファイル</strong>（Markdown 33 / HTML 17 / PDF 16 / 画像 47）</li>
+<li><strong>運用スクリプト</strong>：<strong>27 本</strong></li>
+<li><strong>CHANGELOG</strong>：222 行（v0.1.0 〜 v0.8.0 の全変更履歴）</li>
+<li><strong>検索性能</strong>：5,000 チャンクで <strong>約 5ms</strong>（p95: 5.4ms）</li>
+<li><strong>API 実費</strong>：<strong>1 質問あたり 約 2〜3 円</strong></li>
+</ul>
+<p><strong>重要なのは 6,814 行という数字ではなく、テストが 4,553 行あることです。</strong><br>AI にコードを書かせる開発において、<strong>テストは品質保証ではなく「AI の暴走を検知するセンサー」</strong> として機能します。<br>ここは後で詳しく書きます。</p>
+<hr>
+<h1>【ここから本編】</h1>
+<hr>
+<h2>2. 先に用語だけ — この記事に出てくる専門語の全解説</h2>
+<p>技術記事は「知っている前提」で進むから読めなくなります。<strong>この記事で使う専門用語を、先に全部ここで説明します。</strong><br>読み飛ばして、分からない語が出てきたらここに戻ってきてください。</p>
+<h3>2-1. AI・検索まわり</h3>
+<ul>
+<li><strong>LLM</strong>：Large Language Model。ChatGPT や Claude のような「文章を生成する AI」の総称。この記事では Claude を指します</li>
+<li><strong>API</strong>：プログラムから外部サービスを呼び出す窓口。「Claude API を呼ぶ」＝自分のプログラムから Claude に質問を投げて答えを受け取ること</li>
+<li><strong>トークン</strong>：AI が文章を数える単位。日本語はだいたい <strong>1 文字 ≒ 1 トークン</strong>。料金がこの単位で決まります</li>
+<li><strong>RAG</strong>：Retrieval-Augmented Generation。<strong>「まず社内文書を検索して、見つかった文章だけを AI に渡して答えさせる」</strong>やり方。AI に社内情報を覚えさせるのではなく、毎回カンニングペーパーを渡すイメージです</li>
+<li><strong>チャンク</strong>：文書を検索しやすい大きさに切った断片。本システムでは <strong>1 チャンク 600 文字</strong>が上限。「就業規則.pdf」1 ファイルが数十チャンクになります</li>
+<li><strong>ハルシネーション</strong>：AI が<strong>もっともらしい嘘をつく</strong>現象。「幻覚」と訳されます。この記事の第 4 章は、ほぼ全部この対策の話です</li>
+<li><strong>システムプロンプト</strong>：AI に対する「あなたはこう振る舞ってください」という指示書。ユーザーには見えない、常に効いている前提条件</li>
+<li><strong>プロンプトキャッシュ</strong>：毎回同じ指示文を送るとき、2 回目以降を割引価格にする仕組み。単価が <strong>約 1/10</strong> になります</li>
+<li><strong>TF-IDF</strong>：古典的な検索アルゴリズム。ざっくり言うと<strong>「この文書にだけ多く出てくる珍しい単語」を重視して探す</strong>方式。AI モデルのダウンロードが不要で軽い</li>
+<li><strong>文字 N-gram</strong>：文章を「2〜3 文字ずつ」に機械的に切って検索する方式。<code>有給休暇</code> → <code>有給</code>, <code>給休</code>, <code>休暇</code>… 。<strong>日本語は単語の区切りが無いので、この方式だと辞書なしで検索できます</strong></li>
+<li><strong>形態素解析</strong>：日本語を単語に切る処理（<code>有給/休暇/を/申請</code>）。MeCab などのツールと辞書のインストールが必要</li>
+<li><strong>埋め込み / ベクトル</strong>：文章を「意味を表す数字の列」に変換したもの。意味が近い文章は数字も近くなるので、<strong>言い回しが違っても意味で探せます</strong>。ただし変換用の AI モデル（数百 MB〜）が必要</li>
+<li><strong>コサイン類似度</strong>：2 つのベクトルの「向きの近さ」を 0〜1 で測る計算。意味の近さの指標として使います</li>
+<li><strong>確信度</strong>：本システムが独自に算出している「この回答どれくらい信用できるか」の 0〜100% 表示。<strong>AI が自己申告した数字ではありません</strong>（第 4-4 節）</li>
+</ul>
+<h3>2-2. セキュリティ・個人情報</h3>
+<ul>
+<li><strong>PII</strong>：Personally Identifiable Information。氏名・メール・電話番号など、<strong>個人を特定できる情報</strong></li>
+<li><strong>マスキング</strong>：PII を <code>[氏名]</code> <code>[メール]</code> のような伏せ字に置き換える処理。外部 API に送る前に実施します</li>
+<li><strong>Luhn（ルーン）アルゴリズム</strong>：クレジットカード番号が満たす<strong>計算上の法則</strong>。「この数字列は本当にカード番号か」を数学的に判定でき、誤検知を減らせます</li>
+<li><strong>XSS</strong>：Cross-Site Scripting。悪意ある人が画面に JavaScript を仕込み、<strong>他人のブラウザで勝手に実行させる</strong>攻撃</li>
+<li><strong>Stored XSS</strong>：上記のうち、攻撃コードが<strong>サーバーに保存されて全員に配信される</strong>タイプ。最も被害が大きい。第 9 章で実際に見つけたのがこれです</li>
+<li><strong>OAuth</strong>：「Google アカウントでログイン」を実現する仕組み。パスワードを自社で預からずに本人確認ができます</li>
+<li><strong>監査ログ</strong>：誰がいつ何を質問したかの記録。社内ツールでは「後から追跡できること」が導入条件になる場合が多い</li>
+</ul>
+<h3>2-3. インフラ・導入</h3>
+<ul>
+<li><strong>オンプレミス（オンプレ）</strong>：クラウドではなく<strong>顧客の自社サーバー</strong>にインストールして動かす形態。「データを外に出せない」企業向け</li>
+<li><strong>FQDN</strong>：<code>faq.example.co.jp</code> のような<strong>完全なホスト名</strong>。<code>10.0.0.5</code> のような IP アドレスとは別物で、<strong>Google OAuth は IP アドレスを受け付けません</strong>（第 10 章の詰まり #6）</li>
+<li><strong>DNS / A レコード</strong>：ホスト名を IP アドレスに変換する仕組み／その対応表の 1 行。社内 DNS への登録は AD 管理者の作業になることが多い</li>
+<li><strong>リバースプロキシ</strong>：利用者とアプリの間に立つ中継サーバー。HTTPS 化や複数アプリの振り分けに使います</li>
+<li><strong>IIS / ARR</strong>：Windows Server 標準の Web サーバー（IIS）と、そのリバースプロキシ機能（ARR）。第 10 章の詰まり #13 の犯人です</li>
+<li><strong>BOM</strong>：ファイル先頭に付く「これは UTF-8 です」という目印（3 バイト）。<strong>これが無いと PowerShell が日本語を Shift-JIS と誤解して文字化けします</strong>（詰まり #4）</li>
+<li><strong>UNC パス</strong>：<code>\\サーバー名\共有名\フォルダ</code> 形式の、Windows のファイル共有パス</li>
+<li><strong>SPA</strong>：Single Page Application。React / Vue で作る今風の Web 画面。作るには Node.js のビルド環境が必要</li>
+<li><strong>Docker</strong>：アプリを環境ごと箱詰めして動かす技術。便利ですが、<strong>使用を許可していない企業も多い</strong>（詰まり #1）</li>
+</ul>
+<h3>2-4. 開発プロセス</h3>
+<ul>
+<li><strong>TDD</strong>：Test-Driven Development。<strong>テストを先に書いて、わざと失敗させてから実装する</strong>開発手法</li>
+<li><strong>カバレッジ</strong>：テストがコードの何 % を実際に通ったかの割合。88% なら 12% は一度も実行されていない</li>
+<li><strong>xfail</strong>：「失敗するのを承知で残しているテスト」。<strong>直せていない弱点を、記録として残すため</strong>に使います（第 9-2 節）</li>
+<li><strong>CI</strong>：Continuous Integration。<strong>コードを push するたびに自動でテストが走る</strong>仕組み。本プロジェクトは GitHub Actions を使用</li>
+<li><strong>lint / ruff</strong>：コードの書き方の乱れを自動検出するツール。ruff は Python 用</li>
+<li><strong>SemVer</strong>：Semantic Versioning。<code>0.8.0</code> のような番号の付け方のルール。左から MAJOR.MINOR.PATCH</li>
+<li><strong>CHANGELOG</strong>：変更履歴ファイル。「いつ何を変えたか」を人間が読む形で残したもの</li>
+<li><strong>CLAUDE.md</strong>：<strong>Claude Code が毎回自動で読み込む指示書</strong>。プロジェクトのルートに置くだけで効きます（第 6 章）</li>
+<li><strong>Skill</strong>：手順書をファイルにしておき、<strong>必要なときだけ Claude Code に読ませる</strong>仕組み（第 7 章）</li>
+<li><strong>プレースホルダ</strong>：<code>&lt;顧客ドメイン&gt;</code> のような<strong>仮の値</strong>。実際の値の代わりに書いておき、公開しても問題ない状態にします</li>
+</ul>
+<hr>
+<h2>3. システム構成 — 何を選び、何を捨てたか</h2>
+<p>技術選定の記事はよくありますが、<strong>「なぜ選ばなかったか」まで書かれているものは少ない</strong>ので、そこを厚めに書きます。</p>
+<p>この構成は「技術的に最適」を狙ったものではありません。狙ったのは <strong>「顧客の社内サーバーで、担当者が 15 分でインストールでき、その後の運用を人に押し付けない」</strong> という 1 点です。<br>その制約から逆算すると、選択肢はかなり絞られます。</p>
+<h3>3-1. 全体像</h3>
+<pre><code>   👤 社員（ブラウザ）
+    │
+    │ ① 質問を送信
+    ▼
+ ┌─────────────────────────────────┐
+ │  FastAPI サーバー（単一プロセス）      │
+ │                                  │
+ │  ② 認証チェック（Google OAuth）      │
+ │        ↓                         │
+ │  ③ PII マスキング ← 送信前に個人情報除去 │
+ │        ↓                         │
+ │  ④ 検索（TF-IDF / e5 切替可）         │
+ │        ↓                         │
+ │  ⑤ 確信度スコア算出                   │
+ │        ↓                         │
+ │   ┌── しきい値未満 → LLM を呼ばず終了 ──┐│
+ │   │                              ││
+ │  ⑥ 回答キャッシュ確認                 ││
+ │        ↓                         ││
+ │  ⑦ Claude API（プロンプトキャッシュ）  ││
+ │        ↓                         ││
+ │  ⑧ 「該当情報なし」判定の整合          ││
+ │        ↓                         ││
+ │  ⑨ 監査ログ記録 ←──────────────────┘│
+ └─────────────────────────────────┘
+    │
+    ▼
+ 📁 data/  （すべてファイル。DB なし）
+   ├ faq_master/        取り込み済みナレッジ (Markdown)
+   ├ raw/               アップロード原本 (PDF/Excel/...)
+   ├ audit/             監査ログ (JSONL)
+   ├ embeddings.npz     埋め込みキャッシュ
+   └ *.json             設定・フィードバック・FAQ候補</code></pre>
+<h3>3-2. 技術スタックと選定理由</h3>
+<p class="row-title"><strong>■ Web フレームワーク</strong></p>
+<ul>
+<li>採用：FastAPI + Uvicorn</li>
+<li>理由：単一プロセスで完結。Python だけで動く</li>
+</ul>
+<p class="row-title"><strong>■ LLM</strong></p>
+<ul>
+<li>採用：Anthropic Claude API</li>
+<li>理由：<strong>入力データを学習に使わない</strong>（商用契約で明示）</li>
+</ul>
+<p class="row-title"><strong>■ 検索</strong></p>
+<ul>
+<li>採用：TF-IDF (char_wb 2-3gram) 既定 / multilingual-e5 切替可</li>
+<li>理由：モデル DL 不要で起動できることを既定にした</li>
+</ul>
+<p class="row-title"><strong>■ 認証</strong></p>
+<ul>
+<li>採用：Google OAuth (Authlib)</li>
+<li>理由：社内に IDaaS がなくても Google Workspace はほぼある</li>
+</ul>
+<p class="row-title"><strong>■ 文書パース</strong></p>
+<ul>
+<li>採用：pypdf / openpyxl / python-pptx / pandas</li>
+<li>理由：既存資料をそのまま投入できることが導入の最大要件</li>
+</ul>
+<p class="row-title"><strong>■ 永続化</strong></p>
+<ul>
+<li>採用：<strong>ファイルのみ（DB なし）</strong></li>
+<li>理由：下記 2-3 で詳述</li>
+</ul>
+<p class="row-title"><strong>■ 設定</strong></p>
+<ul>
+<li>採用：pydantic-settings (<code>.env</code>) + 管理 UI からの実行時変更</li>
+<li>理由：顧客が <code>.env</code> を編集せずに済む</li>
+</ul>
+<h3>3-3. 捨てたもの 4 つと、その理由</h3>
+<p>ここが構成のいちばん重要な部分です。</p>
+<h4>❌ 捨てた① データベース</h4>
+<p><strong>PostgreSQL も SQLite も使っていません。</strong> すべて <code>data/</code> 配下のファイルです。</p>
+<p>技術的には DB のほうが優れています。それでも捨てた理由は 3 つ。</p>
+<ol>
+<li><strong>顧客に DB 運用を要求しない</strong> — インストール手順に「PostgreSQL のセットアップ」が入った瞬間、担当者の心理的ハードルが跳ね上がる</li>
+<li><strong>バックアップがフォルダのコピーで済む</strong> — 「<code>data</code> フォルダを既存のバックアップ対象に追加してください」で説明が終わる。<code>pg_dump</code> の運用設計を顧客に負わせない</li>
+<li><strong>ファイルサーバーの共有パスに置ける</strong> — サーバーを入れ替えてもデータが残る。これは実際に顧客が最も安心した点でした</li>
+</ol>
+<p><strong>トレードオフは正直に書きます。</strong> 同時書き込みに弱く、数百人規模の同時アクセスには耐えません。<br>ただ、<strong>社内 FAQ の実際の同時アクセスは数人</strong>です。「将来の理論上のスケール」より「今日インストールできること」を優先しました。</p>
+<h4>❌ 捨てた② ベクトルデータベース</h4>
+<p>Pinecone も Chroma も Faiss も使っていません。既定は <strong>scikit-learn の TF-IDF</strong> です。</p>
+<p>理由は <strong>オフラインで起動できること</strong>。ベクトル検索には埋め込みモデルが要り、初回起動時に数百 MB〜2GB のダウンロードが発生します。<br><strong>社内サーバーが外部へ自由に出られない環境は珍しくありません。</strong> そこで止まると導入自体が終わります。</p>
+<p>そのうえで、精度が必要な顧客のために<strong>バックエンドを差し替え可能</strong>にしてあります。</p>
+<pre><code>EMBEDDING_BACKEND=e5-small   # 環境変数 1 つで multilingual-e5 に切替</code></pre>
+<p>初期化に失敗したら TF-IDF に自動フォールバックする実装にしてあります。<strong>「精度は上げたいが、止まるのは困る」</strong> という顧客の要求はこの形でしか満たせませんでした。</p>
+<p>そして実測で、TF-IDF でも <strong>5,000 チャンクの検索が約 5ms</strong>。応答時間の 98% 以上は Claude API の往復なので、<strong>検索を速くしても体感は変わりません</strong>。ここに凝るのは投資先として間違いです。</p>
+<h4>❌ 捨てた③ 形態素解析器（MeCab / Sudachi）</h4>
+<p>日本語検索といえば形態素解析、が定石です。使っていません。</p>
+<p>代わりに <strong>文字 N-gram（<code>char_wb</code>, 2-3gram）</strong> を使っています。</p>
+<pre><code>TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 3))</code></pre>
+<p>理由は導入コストです。MeCab は辞書のインストールが必要で、<strong>Windows Server 上での環境構築が導入の障壁になります</strong>。<br>文字 N-gram なら、分かち書きなしで日本語をそのまま扱えて、追加インストールがゼロ。</p>
+<p>精度は形態素解析に劣ります。それでも、<strong>「入らない 100 点」より「入る 80 点」</strong> を選びました。</p>
+<h4>❌ 捨てた④ SPA（React / Vue）とビルド工程</h4>
+<p>フロントエンドは <strong>素の HTML + JavaScript</strong> で、Python 側から文字列として返しています。Node.js を必要としません。</p>
+<p>これも「顧客サーバーに Node を入れさせない」ためです。</p>
+<p><strong>この判断には明確な代償があります。</strong> <code>app/main.py</code> が 4,471 行に膨らんだ主因がこれです（第 9 章で正直に書きます）。<br><strong>設計判断には必ず借金がつく</strong>という実例として受け取ってください。</p>
+<h3>3-4. モジュール構成</h3>
+<p class="row-title"><strong>■ <code>main.py</code></strong></p>
+<ul>
+<li>行数：4,471</li>
+<li>責務：FastAPI ルーティング + 埋め込み HTML/JS（<strong>肥大化。要分割</strong>）</li>
+</ul>
+<p class="row-title"><strong>■ <code>rag.py</code></strong></p>
+<ul>
+<li>行数：323</li>
+<li>責務：検索エンジン。バックエンド切替、フィードバック学習</li>
+</ul>
+<p class="row-title"><strong>■ <code>ingest.py</code></strong></p>
+<ul>
+<li>行数：426</li>
+<li>責務：文書パース → チャンク化 → PII 検出 → 推奨判定</li>
+</ul>
+<p class="row-title"><strong>■ <code>faq_candidates.py</code></strong></p>
+<ul>
+<li>行数：458</li>
+<li>責務：監査ログから FAQ 候補を自動抽出</li>
+</ul>
+<p class="row-title"><strong>■ <code>llm.py</code></strong></p>
+<ul>
+<li>行数：186</li>
+<li>責務：Claude 呼び出し。システムプロンプト、2 種のキャッシュ</li>
+</ul>
+<p class="row-title"><strong>■ <code>masking.py</code></strong></p>
+<ul>
+<li>行数：185</li>
+<li>責務：PII マスキング（Luhn 検証を含む）</li>
+</ul>
+<p class="row-title"><strong>■ <code>impact.py</code></strong></p>
+<ul>
+<li>行数：163</li>
+<li>責務：工数削減レポートの集計</li>
+</ul>
+<p class="row-title"><strong>■ <code>runtime_settings.py</code></strong></p>
+<ul>
+<li>行数：162</li>
+<li>責務：管理 UI からの実行時設定変更</li>
+</ul>
+<p class="row-title"><strong>■ <code>shared_qa.py</code></strong></p>
+<ul>
+<li>行数：151</li>
+<li>責務：社員が共有した Q&amp;A の管理</li>
+</ul>
+<p class="row-title"><strong>■ <code>faq_candidate_settings.py</code></strong></p>
+<ul>
+<li>行数：98</li>
+<li>責務：FAQ 候補化のしきい値設定</li>
+</ul>
+<p class="row-title"><strong>■ <code>audit.py</code></strong></p>
+<ul>
+<li>行数：73</li>
+<li>責務：監査ログ（JSONL 追記）</li>
+</ul>
+<p class="row-title"><strong>■ <code>config.py</code></strong></p>
+<ul>
+<li>行数：68</li>
+<li>責務：環境変数の型付き読み込み</li>
+</ul>
+<p class="row-title"><strong>■ <code>auth.py</code></strong></p>
+<ul>
+<li>行数：43</li>
+<li>責務：Google OAuth</li>
+</ul>
+<p><strong>分割できているモジュールは平均 200 行前後に収まっています。</strong><br>つまり分割の判断さえすれば適切なサイズになる。にもかかわらず <code>main.py</code> だけが 4,471 行になった。<br><strong>これは AI の限界ではなく、私が「どこに書くか」を指示しなかった結果です。</strong></p>
+<hr>
+<h2>4. 何にこだわったか — 「答えないこと」を設計する</h2>
+<p>機能一覧を見ても伝わらない部分を書きます。<strong>このプロダクトで最も時間をかけたのは、回答精度ではなく「答えない判断」の設計です。</strong></p>
+<h3>4-1. なぜ「答えないこと」が最重要なのか</h3>
+<p>社内 FAQ で最悪の事故は、回答できないことではありません。</p>
+<blockquote><strong>もっともらしい嘘を、自信ありげに答えること。</strong></blockquote>
+<p>「有給の申請期限は 3 営業日前です」と AI が言い、実際は 5 営業日前だった——これが一度起きると、<strong>そのツールは二度と信用されません</strong>。<br>社内ツールは、一度信頼を失うと使われなくなり、使われなければ存在しないのと同じです。</p>
+<p>だから設計目標を、こう置きました。</p>
+<blockquote><strong>「答えられないときに、正しく黙れること」</strong></blockquote>
+<h3>4-2. ハルシネーション対策の三重防御</h3>
+<p>これを 1 箇所の工夫ではなく、<strong>3 段階の独立した防御</strong>にしました。1 つが破られても次で止まります。</p>
+<h4>防御① 検索スコアが低ければ、そもそも LLM を呼ばない</h4>
+<p>いちばん確実なハルシネーション対策は、<strong>AI に喋らせないこと</strong>です。</p>
+<pre><code># 確信度: top-1 スコアがこの値未満ならLLM呼び出しを行わず「該当情報なし」を返す
+# TF-IDF char_wb の経験値: 関連質問は 0.15+, ノイズマッチは 0.05-0.07 程度
+min_score_threshold: float = 0.08</code></pre>
+<p>コメントの数値は、実データで観測した実測値です。<strong>この 1 行が、精度とコストの両方に効きます</strong>（呼ばない = 課金されない）。</p>
+<p>さらに、「ノイズが 1 件だけ強く当たった」ケースを別途弾いています。</p>
+<pre><code># 突出ノイズ判定: top1 が弱く（&lt; 0.12）2位との差が極端な場合のみ
+# 0.12 以上は正解1件にヒットしている可能性が高いので回答に進める
+if top &lt; 0.12 and len(scored_chunks) &gt;= 2:
+    second = scored_chunks[1][1]
+    if second / top &lt; 0.3:
+        return 0</code></pre>
+<p>「1 位だけ妙に高くて 2 位以下が全滅」は、<strong>関連文書が本当にある状態ではなく、たまたま文字列が一致した状態</strong>であることが多い——これは実際にログを見て分かったパターンです。</p>
+<h4>防御② システムプロンプトで「推測の語彙」を名指しで禁止する</h4>
+<p>ここは何度も書き直しました。最終形の中核はこれです。</p>
+<pre><code>ルール（厳守）:
+1. 提供された [参考情報] に**明示的に書かれている内容のみ**を根拠に回答する
+2. [参考情報] に直接の答えが書かれていない場合は、推測せず以下の文言を返す:
+   「該当情報が見つかりませんでした。社内ヘルプデスクにお問い合わせください。」
+3. 推測表現の使用を禁止: 「だと思います」「おそらく」「一般的には」「〜のはずです」
+   「もしかすると」「推察します」など、不確実な語彙は一切使わない
+4. 一般常識・あなたの事前知識からの補完を禁止する
+   （例: マニュアルに書かれていない手順を「業界の慣習」で埋めない）
+5. 回答末尾に出典（ドキュメント名やID）を必ず明記する</code></pre>
+<p><strong>ルール 3 が効きます。</strong><br>「推測しないで」という抽象的な指示より、<strong>禁止したい語彙を具体的に列挙する</strong>ほうが圧倒的に守られます。<br>これは Claude Code に対する <code>CLAUDE.md</code> の書き方（第 6 章）と、まったく同じ原理です。</p>
+<p><strong>ルール 4 も実戦で必要でした。</strong> AI は親切なので、マニュアルに書いていない手順を「一般的にはこうです」で埋めようとします。<br>社内規程においては、<strong>一般論は間違いと同義</strong>です。</p>
+<h4>防御③ LLM の返答を、後段でもう一度検査する</h4>
+<p>プロンプトで指示しても、破られる可能性はゼロになりません。だから出力側でも検査します。</p>
+<pre><code># LLM が「答えられない」と判断したフレーズ。検出時は sources / confidence を 0 に揃える
+_NO_ANSWER_MARKERS = (
+    "該当情報が見つかりませんでした",
+    "関連する情報も見つかりませんでした",
+)</code></pre>
+<p>なぜこれが要るか。<strong>「該当情報が見つかりませんでした」と答えているのに、画面には確信度 72%・出典 3 件が表示される</strong>——という状態が起きうるからです。<br>機能としては正しく動いていても、<strong>ユーザーから見れば完全に壊れて見えます</strong>。</p>
+<p><strong>UI に出る全ての信号を、意味的に一致させる。</strong> ここは地味ですが、信頼性の体感を最も左右した部分でした。</p>
+<h3>4-3. 二値ではなく「参考情報」という第三の状態を作った</h3>
+<p>当初は「答える / 答えない」の 2 状態でした。運用してみると、<strong>この二択が現実に合っていませんでした。</strong></p>
+<p>「直接の答えは書かれていないが、明らかに関連する記述はある」というケースが多いのです。<br>これを「該当情報なし」で切り捨てると、<strong>目の前にある有用な情報を捨てる</strong>ことになります。</p>
+<p>そこで第 3 の状態を作りました。</p>
+<pre><code>is_reference = confidence &lt; 50</code></pre>
+<p>確信度 50% 未満のときは <strong>専用の別プロンプト</strong>に切り替え、こう振る舞わせます。</p>
+<ul>
+<li>「以下は関連しそうな情報です」と、<strong>公式回答ではないことを明示させる</strong></li>
+<li>引用・要約に留めさせ、推測は引き続き全面禁止</li>
+<li>画面上部に <code>⚠ 公式FAQ未登録の参考情報です（正確性は保証されません）</code> を必ず付ける</li>
+</ul>
+<p><strong>「自信の度合いに応じて、話し方を変える」</strong> という設計です。<br>人間の担当者も「規程にはこう書いてあります」と「たしか関連する話が別の資料にあった気がします」を区別して話します。それを実装しただけとも言えます。</p>
+<h3>4-4. 確信度は「それらしい数字」にしない</h3>
+<p>確信度は、UI に出す以上は<strong>根拠のある数字</strong>である必要があります。演出で数字を出すのは最悪です。</p>
+<pre><code>base = min(95, int(30 + top * 250))
+relevant = sum(1 for _, s in scored_chunks if s &gt;= settings.min_score_threshold)
+return min(98, base + max(0, relevant - 1) * 3)</code></pre>
+<ul>
+<li>検索スコアから線形に算出</li>
+<li><strong>上限を 95 / 98 に固定</strong> — 100% は絶対に出さない</li>
+<li>関連文書が複数あれば少し加点（1 件だけより裏が取れている）</li>
+</ul>
+<p><strong>100% を出さないのは意図的です。</strong> AI の回答に「確信度 100%」と表示されたら、それは嘘だからです。<br>ユーザーに「必ず出典を確認する」習慣を残すために、上限を開けてあります。</p>
+<h3>4-5. PII マスキング — 本当の敵は「見落とし」ではなく「誤検知」</h3>
+<p>送信前に個人情報を除去する機能ですが、開発時間の大半は<strong>誤検知の抑制</strong>に消えました。</p>
+<p>クレジットカード番号の検出で、こうなったのです。</p>
+<pre><code>2024-06-24 084412  →  [カード番号]</code></pre>
+<p><strong>タイムスタンプが誤検知されました。</strong> 業務ログを取り込むと、これが大量に発生します。<br>マスキングが過剰だと、<strong>検索に必要な情報まで潰れて回答不能になります</strong>。</p>
+<p>対策は 2 段構えにしました。</p>
+<pre><code>def _is_likely_credit_card(s: str) -&gt; bool:
+    """Luhn + 数字グループ構造で誤検知を抑える厳密判定。
+
+    除外する代表パターン:
+      - タイムスタンプ 「2024-06-24 084412」（グループサイズ 4-2-2-6）
+      - 4桁未満や8桁超の塊が混ざるもの
+    カード番号の典型構造（4-4-4-4, 4-6-5, 16桁連続 等）のみ True。
+    """</code></pre>
+<ol>
+<li><strong>Luhn アルゴリズム</strong>でチェックディジットを検証（カード番号が満たす数学的性質）</li>
+<li><strong>数字グループの構造</strong>を検査（<code>4-4-4-4</code> のような区切り方をしているか）</li>
+</ol>
+<p>そして、モジュールの冒頭にこう明記しました。</p>
+<pre><code>実装ポリシー:
+- 完全な PII 除去は保証しない（深層モデル必須レベル）。
+  "見落とし時の被害を減らす"目的の防御層</code></pre>
+<p><strong>できないことを、コードに書いて宣言する。</strong><br>「個人情報を完全に除去します」と顧客に説明したら、それは嘘になります。<strong>防御層の 1 枚であると正確に伝えるほうが、長期的には信用されます。</strong></p>
+<h3>4-6. 「機能として動く」と「運用に耐える」は別物</h3>
+<p>第 12 章のアンチパターンとも重なりますが、設計上のこだわりとして書いておきます。</p>
+<p>埋め込みキャッシュの初期実装は、コーパス全体で 1 つのハッシュキーを作っていました。<strong>機能としては完璧に動きます。</strong><br>ただし、1 ファイル追加するたびに全件再計算が走り、<strong>30 分〜2 時間</strong>かかりました。</p>
+<pre><code>"""チャンク単位の差分キャッシュ。
+
+旧実装は全チャンクで1つのハッシュキーを作っていたため、1ファイル追加
+するだけで全件再エンコードが発生していた（200K chunks で 30分〜2h）。
+本実装は (chunk_id, text_hash) → vector をキャッシュし、追加/変更され
+たチャンクだけを再計算する。
+"""</code></pre>
+<p>キーの単位を変えただけで、<strong>1 ファイル追加が数秒</strong>になりました。</p>
+<p><strong>「動く」の次に「毎週これを実行できるか？」を問う。</strong> この 1 問を挟むかどうかで、ツールが定着するかが決まります。</p>
+<h3>4-7. フィードバック学習に、あえて上限をかけた</h3>
+<p>👍👎 を検索スコアに反映していますが、<strong>影響の上限を ±15% に固定</strong>しています。</p>
+<pre><code>def _boost_factor(source: str, fb) -&gt; float:
+    """フィードバックに基づくブースト係数。
+    ネット票数 (up - down) を tanh で滑らかにし、最大 ±15% の倍率に。
+    例: net=+5 → ×1.114 / net=-5 → ×0.886 / net=0 → ×1.0
+    """</code></pre>
+<p><code>tanh</code> を使っているのは、<strong>票が積み上がっても効果が飽和する</strong>ようにするためです。</p>
+<p>無制限に学習させると、<strong>声の大きい少数の投票で検索結果が支配されます</strong>。<br>社内ツールでは、これは「特定部署の資料ばかり出てくる」という形で現れます。</p>
+<p><strong>学習機能は、暴走しない上限とセットで初めて機能します。</strong></p>
+<h3>4-8. 売るために必要だった機能：削減効果の可視化</h3>
+<p>技術的には地味ですが、<strong>商談で最も効いた機能</strong>なので書いておきます。</p>
+<pre><code># 1質問あたりの「資料を探す or 人に聞く」想定削減時間（分）
+minutes_saved_per_answered_query: int = 8
+# 共有回答1件あたりの整備時間削減（分）
+minutes_saved_per_faq_shared: int = 20
+# 平均時給（円）。削減コスト換算用
+hourly_rate_yen: int = 3500</code></pre>
+<p>監査ログから「何件答えたか」を集計し、<strong>削減時間と金額に換算</strong>して管理画面に出します。<br>しかも <strong>前提値を管理者が変更できる</strong>ようにしました。</p>
+<p>これが重要な理由は、<strong>導入を決めた担当者が、社内で成果を説明する必要があるから</strong>です。<br>「便利です」では稟議は通りません。「月 120 時間、42 万円相当の削減」なら通ります。</p>
+<p><strong>継続利用を決めるのは、使っている社員ではなく、予算を持つ人です。</strong> その人に渡す数字を、プロダクト自身が生成する。<br>個人開発で企業に売るなら、この視点は機能開発と同じ優先度で持つべきだと思っています。</p>
+<hr>
+<h2>5. 大原則：Claude Code は「速いジュニア 10 人」であって「シニア 1 人」ではない</h2>
+<p>最初に、この記事全体を貫く認識を共有します。ここを取り違えると、以降のテクニックが全部空回りします。</p>
+<p>Claude Code を使った開発で人が失敗する原因は、ほぼ 1 つに集約されます。</p>
+<blockquote><strong>「優秀なので任せられる」と思ってしまうこと。</strong></blockquote>
+<p>実際の挙動は「シニアエンジニア 1 人」ではなく、<strong>「異常に手が速く、記憶が短く、遠慮がなく、指示された範囲を全力でやるジュニア 10 人」</strong> です。</p>
+<p>この認識に立つと、やるべきことが自動的に決まります。</p>
+<ul>
+<li><strong>就業規則・コーディング規約</strong>：<strong><code>CLAUDE.md</code></strong></li>
+<li><strong>定型作業の手順書</strong>：<strong>Skill</strong></li>
+<li><strong>作業指示書のフォーマット</strong>：<strong>プロンプトテンプレート</strong></li>
+<li><strong>成果物の検収基準</strong>：<strong>テスト</strong></li>
+<li><strong>出荷前の最終検品</strong>：<strong>人間のレビュー工程</strong></li>
+</ul>
+<p>「良いプロンプトを書く」は 5 つのうちの 1 つでしかありません。<br><strong>残り 4 つを整備していないことが、AI 開発が散らかる原因のほぼ全て</strong>です。</p>
+<p>私はこの 5 つを整備するのに合計で 1 日もかけていません。<br>そして、その 1 日が開発速度を 2〜3 倍にしました。以下、1 つずつ実物を出します。</p>
+<hr>
+<h2>6. 【最重要】CLAUDE.md — 投資対効果が最も高い 1 ファイル</h2>
+<h3>6-1. なぜ CLAUDE.md が効くのか</h3>
+<p><code>CLAUDE.md</code> はプロジェクトルートに置くだけで、<strong>全セッションの冒頭に自動で読み込まれる</strong>指示書です。</p>
+<p>多くの人はこれを「プロジェクト概要を書く場所」だと思っています。<strong>違います。</strong></p>
+<blockquote><strong>CLAUDE.md は「過去に起きた事故の再発防止書」です。</strong></blockquote>
+<p>概要を書いても効果はほとんどありません（コードを読めば分かるので）。<br>効果があるのは、<strong>「AI が放っておくと必ず間違えること」を先回りして禁止する記述</strong>です。</p>
+<p>私の運用ルールはシンプルです。</p>
+<blockquote><strong>同じミスを 2 回説明したら、CLAUDE.md に書く。</strong></blockquote>
+<p>3 回目を説明することは、二度とありません。</p>
+<h3>6-2. 実際に起きた事故と、そこから生まれたルール</h3>
+<p>私の <code>CLAUDE.md</code> に書かれているルールは、全て実際の事故から生まれました。3 つ紹介します。</p>
+<h4>事故①：PDF が中国語フォントで生成された</h4>
+<p>顧客に配る操作マニュアルを WeasyPrint で PDF 化したところ、<strong>漢字が中国語書体</strong>で出力されました。<br>「直」「経」「値」あたりの字形が明確に違い、日本の企業に出す資料としては即アウトです。</p>
+<p>原因は、Linux 環境で日本語フォントが指定されていないと、フォントマッチャが <strong>CJK 共通フォントから中国語圏のフォントを優先的に選ぶ</strong>こと。<br>Mac の開発機では正常に見えるため、<strong>気づかずに顧客へ渡す事故が起きうる</strong>のが最も怖い点です。</p>
+<p>これを「毎回指示する」のではなく、ルール化しました。</p>
+<pre><code>### 日本語フォント (中華フォントへのフォールバック防止)
+
+PDF 化される HTML には、必ず以下の font-family を使用すること。
+weasyprint で生成する PDF が中国語フォントにフォールバックする事故を防ぐため、
+IPA フォントを明示的に末尾に含める。
+
+​```css
+font-family:
+  "Hiragino Kaku Gothic ProN",
+  "Hiragino Sans",
+  "Yu Gothic",
+  YuGothic,
+  Meiryo,
+  "IPAPGothic",
+  "IPAGothic",
+  sans-serif;
+​```
+
+- Mac → Hiragino 系が優先される
+- Windows → Yu Gothic / Meiryo が優先される
+- Linux (weasyprint) → IPAPGothic / IPAGothic が使用される
+  (これを書かないと weasyprint が CJK フォントから中国語フォントを選ぶ事故が起きる)</code></pre>
+<p><strong>ポイントは「なぜそう書くか」の理由を併記していること。</strong><br>理由を書くと、AI は<strong>類似の状況にルールを応用</strong>します。理由なしの命令は、想定外のケースで破られます。</p>
+<h4>事故②：顧客の実データをリポジトリに書きそうになった</h4>
+<p>オンプレ導入の作業中、手順書に顧客の社内ドメイン・社内 IP・ファイルサーバの UNC パス・SSL 証明書の Thumbprint が<br>そのまま書かれた状態でコミット寸前まで行きました。</p>
+<p>これは <strong>AI の責任ではありません。</strong> 私が会話でその値を渡し、AI が親切に手順書へ埋め込んだだけです。<br>つまり <strong>「渡した情報は成果物に出る」</strong> という当たり前の帰結で、対策は AI 側ではなく運用側に置く必要があります。</p>
+<pre><code>### 顧客固有情報の取扱
+
+- 顧客名、社内ドメイン、社内 IP、UNC パス、SSL 証明書 Thumbprint 等は **絶対にコミットしない**
+- 例示する場合は `&lt;CUSTOMER_DOMAIN&gt;`, `example.local`, `10.0.0.x`,
+  `\\fileserver\share\inquira` のような一般的な値を使用
+- 実値は `.private/` 配下で管理 (.gitignore 済み)
+- コミット前に下記のチェックを実行することを推奨:
+  ​```bash
+  git diff --cached | grep -iE '&lt;顧客固有語&gt;|192\.168\.|@gmail\.com|sk-ant-|GOCSPX-'
+  ​```</code></pre>
+<p>grep パターンに <code>sk-ant-</code>（Anthropic API キー）と <code>GOCSPX-</code>（Google OAuth クライアントシークレット）を<br>含めているのが実務上のキモです。<strong>この 2 つは開発中に最も漏れやすい</strong>。</p>
+<h4>事故③：資料の文体が「押しつけがましく」なっていた</h4>
+<p>AI に顧客向けマニュアルを書かせると、<strong>善意で余計なことを書きます。</strong></p>
+<blockquote>「ご不明な点は社内の情報システム部門へお問い合わせください」</blockquote>
+<p>一見親切ですが、これは <strong>顧客の組織構造を勝手に決めつけている</strong>文章です。<br>情シス部門が存在しない会社、外部委託している会社では、この 1 行が信頼を削ります。</p>
+<pre><code>### 「情シス」「弊社」「A 社」等の表現
+
+- 「不明点は社内情シスへ」のような **押しつけがましい表現は使わない**
+  (顧客側の組織構造を勝手に決めつけることになる)
+- 「弊社」「A 社」のような **特定の組織を指す表現は使わない**
+  (汎用テンプレートとして使えなくなる)
+- 推奨表現: 「サービス提供元」「本ツールを導入された管理者の方」「サービスご利用元」</code></pre>
+<p><strong>この 1 ルールの効果は絶大でした。</strong><br>なぜなら、「特定顧客向けに作った資料」が、そのまま「2 社目に出せるテンプレート」になるからです。<br><strong>1 社目の納品物が資産になるか、使い捨てになるかは、この文体ルールで決まります。</strong></p>
+<h3>6-3. CLAUDE.md に書くべき 6 カテゴリ</h3>
+<p>私の経験上、効くのはこの 6 種類です。逆に、これ以外は書いても薄い。</p>
+<p class="row-title"><strong>■ 1 <strong>事故の再発防止</strong></strong></p>
+<ul>
+<li>例：フォント指定、秘密情報の扱い</li>
+<li>なぜ効くか：AI は同じ罠に必ず再度かかる</li>
+</ul>
+<p class="row-title"><strong>■ 2 <strong>環境固有の罠</strong></strong></p>
+<ul>
+<li>例：PowerShell は BOM 付き UTF-8、<code>python3.11</code> を明示</li>
+<li>なぜ効くか：AI は一般解を出す。環境の特殊性は伝えないと分からない</li>
+</ul>
+<p class="row-title"><strong>■ 3 <strong>文体・表現の禁止事項</strong></strong></p>
+<ul>
+<li>例：「情シス」「弊社」を使わない</li>
+<li>なぜ効くか：AI は善意で余計な断定をする</li>
+</ul>
+<p class="row-title"><strong>■ 4 <strong>バージョニング規約</strong></strong></p>
+<ul>
+<li>例：<code>pyproject.toml</code> と <code>__init__.py</code> を同期</li>
+<li>なぜ効くか：2 箇所同期は AI が最も忘れる作業</li>
+</ul>
+<p class="row-title"><strong>■ 5 <strong>記録の義務</strong></strong></p>
+<ul>
+<li>例：CHANGELOG の <code>[Unreleased]</code> に必ず追記</li>
+<li>なぜ効くか：1 人開発で最も先に崩壊するのが記録</li>
+</ul>
+<p class="row-title"><strong>■ 6 <strong>命名規約</strong></strong></p>
+<ul>
+<li>例：ブランチ <code>feature/&lt;name&gt;</code>、タグ <code>v0.9.0</code></li>
+<li>なぜ効くか：揺れるとレビューコストが増える</li>
+</ul>
+<h3>6-4. 逆効果になる CLAUDE.md（重要）</h3>
+<p>やりがちな失敗も書いておきます。</p>
+<ul>
+<li><strong>プロジェクトの機能説明を延々書く</strong>：コードを読めば分かる。トークンの無駄で、肝心の禁止事項が埋もれる</li>
+<li><strong>「丁寧に書いて」「良いコードを書いて」</strong>：判定基準がないので何も変わらない</li>
+<li><strong>500 行を超える</strong>：重要度が均され、守られなくなる。<strong>200 行以内が実用限界</strong>（私の実物は約 100 行）</li>
+<li><strong>理由を書かずに命令だけ書く</strong>：想定外のケースで応用が効かず、あっさり破られる</li>
+<li><strong>一度書いて放置</strong>：事故が起きるたびに追記して初めて機能する。<strong>育てるファイル</strong>です</li>
+</ul>
+<blockquote>📎 <strong>完全なテンプレート</strong>（注釈付き・すぐ使える形）は<br><strong>付録 A：<code>CLAUDE.md</code> テンプレート全文</strong> に掲載しています。</blockquote>
+<hr>
+<h2>7. Skill 化 — 「毎回説明していた手順」を 1 単語にする</h2>
+<h3>7-1. Skill とは何で、いつ作るべきか</h3>
+<p>Skill は、<strong>手順書をファイル化して、必要なときだけ AI に読み込ませる仕組み</strong>です。<br><code>CLAUDE.md</code> が「常時読まれる憲法」なら、Skill は「必要時に開く業務マニュアル」。</p>
+<p>作るべきかの判断基準は 1 つだけです。</p>
+<blockquote><strong>同じ手順を 3 回説明したら Skill にする。</strong></blockquote>
+<p><code>CLAUDE.md</code> が「2 回」、Skill が「3 回」なのは、<strong>分量の違い</strong>です。<br>1〜2 行で済む禁止事項は <code>CLAUDE.md</code> に、数十行の手順は Skill に。<br><code>CLAUDE.md</code> に長い手順を書くと、常時読み込みでトークンを食い、他のルールを薄めます。</p>
+<h3>7-2. 私が実際に作った Skill 3 本</h3>
+<p>実際に効いた 3 本を、<strong>全文そのまま</strong>付録に載せています。ここでは「なぜそれが必要だったか」を書きます。</p>
+<h4>① <code>ja-pdf-export</code> — 日本語 PDF 生成</h4>
+<p><strong>必要になった理由</strong>：前述のフォント事故に加え、PDF 生成は「フォント指定」だけでは終わらないため。</p>
+<p>実際には毎回、以下を確認する必要がありました。</p>
+<ol>
+<li>font-family に IPA フォントが含まれているか</li>
+<li>生成後に<strong>目視で中文化していないか</strong>（Linux 生成時は特に）</li>
+<li>A4 に収まっているか（表がはみ出す事故が頻発）</li>
+<li>改ページが表の途中で入っていないか</li>
+</ol>
+<p>これは 4 ステップの手順であり、<code>CLAUDE.md</code> に書くには長すぎます。Skill が正解です。</p>
+<h4>② <code>release-guard</code> — リリース前の防御</h4>
+<p><strong>必要になった理由</strong>：1 人開発では、リリース作業が最も雑になるため。</p>
+<p>私が実際に何度もやらかしたのは、この 3 つ。</p>
+<ul>
+<li><code>pyproject.toml</code> は上げたが <code>app/__init__.py</code> の <code>__version__</code> を上げ忘れる</li>
+<li>CHANGELOG に書き忘れる</li>
+<li><code>.env</code> の値をコミットしそうになる</li>
+</ul>
+<p>これらは<strong>全て機械的にチェックできる</strong>ので、Skill にして丸投げしました。<br>「リリースして」の一言で、バージョン同期・CHANGELOG 昇格・秘密情報 grep・テスト実行までが走ります。</p>
+<h4>③ <code>customer-handoff</code> — 顧客配布ドキュメント一式の生成</h4>
+<p><strong>必要になった理由</strong>：<strong>これが最も金額的インパクトが大きかった Skill です。</strong></p>
+<p>企業に納品する際、必要なドキュメントは 1 種類ではありません。</p>
+<p class="row-title"><strong>■ 顧客 IT 部門</strong></p>
+<ul>
+<li>必要なドキュメント：インストール手順書</li>
+<li>前提知識：高い</li>
+</ul>
+<p class="row-title"><strong>■ AD / DNS 管理者</strong></p>
+<ul>
+<li>必要なドキュメント：DNS レコード設定依頼書</li>
+<li>前提知識：高い（が、担当が別人）</li>
+</ul>
+<p class="row-title"><strong>■ インフラ担当</strong></p>
+<ul>
+<li>必要なドキュメント：リバースプロキシ設定依頼書</li>
+<li>前提知識：高い</li>
+</ul>
+<p class="row-title"><strong>■ 顧客側の管理者</strong></p>
+<ul>
+<li>必要なドキュメント：管理画面クイックスタート</li>
+<li>前提知識：中</li>
+</ul>
+<p class="row-title"><strong>■ 全社員</strong></p>
+<ul>
+<li>必要なドキュメント：利用ガイド（1 枚）</li>
+<li>前提知識：<strong>ゼロ</strong></li>
+</ul>
+<p><strong>同じ製品なのに、5 種類の異なる読者向けに、異なる文体・粒度で書く必要がある。</strong><br>これを手作業でやると 1 社あたり数日かかります。Skill 化すれば、<strong>顧客ごとの差分を入力するだけ</strong>になります。</p>
+<p>私のリポジトリに PDF が 16 個ある理由がこれです。<strong>AI 開発の本当のレバレッジは、コードより納品ドキュメントにあります。</strong></p>
+<blockquote>📎 <strong>Skill 3 本の全文</strong>は <strong>付録 B：Skill 定義集</strong> に掲載しています。</blockquote>
+<hr>
+<h2>8. プロンプト 12 型 — 「なんとなく指示」をやめる</h2>
+<p>ここが一番「明日から効く」パートです。<br>1 ヶ月以上、毎日 Claude Code に指示を出し続けて、<strong>明確に出力品質が変わった型</strong>を 12 個に絞りました。</p>
+<p>各型に <strong>Before（効かない指示）/ After（効く指示）</strong> を付けます。</p>
+<hr>
+<h3>型 1：エラーは「そのまま」貼る（要約禁止）</h3>
+<ul>
+<li><strong>❌ Before</strong>：「Python のバージョンエラーが出ました」</li>
+<li><strong>✅ After</strong>：ターミナル出力を<strong>一切加工せず全部</strong>貼る</li>
+</ul>
+<p><strong>なぜ効くか</strong>：エラーログには、あなたが「関係ない」と判断した情報が詰まっています。<br>実行ディレクトリ、Python のパス、ライブラリのバージョン、スタックトレースの深さ。<br><strong>要約は、診断に必要な情報を捨てる行為です。</strong></p>
+<p>私の実例：<code>cloudflared --version</code> が <code>Illegal instruction: 4</code> で落ちた件。<br>このエラー文字列を丸ごと貼ったことで、<strong>「Apple Silicon 機に Intel バイナリが入っている」</strong>まで一発で特定できました。<br>「起動できません」と要約していたら、何往復もしていたはずです。</p>
+<hr>
+<h3>型 2：コマンドは「コピペで動く形で」と明示的に要求する</h3>
+<ul>
+<li><strong>❌ Before</strong>：「起動方法を教えて」</li>
+<li><strong>✅ After</strong>：「<strong>そのままターミナルに貼って動く 1 行</strong>で。ディレクトリ移動も含めて」</li>
+</ul>
+<p><strong>なぜ効くか</strong>：AI はデフォルトで「説明」を返します。「プロジェクトディレクトリに移動して、仮想環境を有効化して…」という文章は、<strong>あなたの脳内で翻訳する工数</strong>を発生させます。</p>
+<pre><code># ✅ こう返させる
+cd ~/faq_platform &amp;&amp; PYTHON=python3.11 ./scripts/serve.sh</code></pre>
+<p>これを毎回要求するのが面倒なら、<strong><code>CLAUDE.md</code> に書けば恒久化します</strong>（これが第 6 章とつながります）。</p>
+<hr>
+<h3>型 3：「視覚的に」「HTML で」「PDF で」と出力形式を指定する</h3>
+<ul>
+<li><strong>❌ Before</strong>：「導入手順をまとめて」</li>
+<li><strong>✅ After</strong>：「<strong>顧客の IT 部門にそのまま渡せる HTML</strong> で。チェックボックス付き、フェーズごとに色分け、所要時間を明記」</li>
+</ul>
+<p><strong>なぜ効くか</strong>：これが<strong>この記事で最も過小評価されているテクニック</strong>です。</p>
+<p>Claude Code は、テキストだけでなく <strong>構造化されたビジュアル資料</strong>を作れます。<br>色分けチェックリスト、フェーズマップ、大きな数字での統計表示、タイムライン。</p>
+<p>そして重要なのは、<strong>その成果物が「自分用メモ」と「顧客配布資料」の両方になる</strong>こと。<br>私のリポジトリの HTML 17 本 / PDF 16 本は、ほぼ全てこの型から生まれています。</p>
+<p><strong>個人開発者が企業に売り込むとき、資料の見た目は技術力と同じくらい効きます。</strong> ここを AI にやらせない手はありません。</p>
+<hr>
+<h3>型 4：「いまどこまでやったか」を AI に棚卸しさせる</h3>
+<ul>
+<li><strong>❌ Before</strong>：（自分で思い出そうとする）</li>
+<li><strong>✅ After</strong>：「これまでのやり取りと git 履歴から、<strong>残タスクを優先度付きで整理して</strong>」</li>
+</ul>
+<p><strong>なぜ効くか</strong>：AI は git log・CHANGELOG・会話履歴・ファイルの状態を<strong>同時に</strong>参照できます。<br>人間より正確に棚卸しできる、数少ない領域です。</p>
+<p>1 人開発で最も怖いのは「何をやり残したか分からなくなる」ことなので、<strong>週 1 でこれを実行するだけで開発が止まりにくくなります</strong>。</p>
+<hr>
+<h3>型 5：フェーズを分割し、「完了報告」を挟ませる</h3>
+<ul>
+<li><strong>❌ Before</strong>：「認証機能を作って」</li>
+<li><strong>✅ After</strong>：「フェーズ 1（OAuth 設定）だけやって、<strong>完了したら止まって</strong>。動作確認してからフェーズ 2 に進む」</li>
+</ul>
+<p><strong>なぜ効くか</strong>：AI は一気に大量の変更を入れられます。それが問題です。<br>5 ファイルを同時に変更されてから動かなくなると、<strong>どの変更が原因か切り分け不能</strong>になります。</p>
+<p>「速いから任せる」のではなく、<strong>「速いから細かく切る」</strong>。これが逆説的に最速です。</p>
+<hr>
+<h3>型 6：スクリーンショットを送る</h3>
+<p><strong>なぜ効くか</strong>：Google Cloud Console、Cloudflare、IIS、Windows のダイアログ。<br><strong>これらの UI は文章で説明しきれず、しかも頻繁に変わります。</strong></p>
+<p>「同意画面の設定はどこですか」と 3 往復するより、スクリーンショット 1 枚のほうが速い。<br>特にオンプレ導入では、この差が数時間になります。</p>
+<hr>
+<h3>型 7：「これ、Git に push して大丈夫？」を毎回聞く</h3>
+<p><strong>なぜ効くか</strong>：AI は <code>.gitignore</code> の内容、ステージング中の差分、ファイルの中身を全部読んだうえで判断できます。</p>
+<p>これは<strong>チェックリストを人間の記憶に頼らない</strong>という発想です。<br>第 6 章の「顧客情報の混入」事故以降、私はコミット前にこれを機械的に実行しています。</p>
+<hr>
+<h3>型 8：「失敗するテストを先に書いて」と要求する（TDD 強制）</h3>
+<ul>
+<li><strong>❌ Before</strong>：「マスキング機能を作って」</li>
+<li><strong>✅ After</strong>：「マスキング機能の<strong>仕様を満たすテストを先に書いて</strong>。失敗することを確認してから実装して」</li>
+</ul>
+<p><strong>なぜ効くか</strong>：これが <strong>AI 開発における品質の生命線</strong>です。詳細は第 9 章で書きます。</p>
+<hr>
+<h3>型 9：「この設計の欠点を 3 つ挙げて」と批判させる</h3>
+<ul>
+<li><strong>❌ Before</strong>：「この設計でいい？」</li>
+<li><strong>✅ After</strong>：「この設計の<strong>欠点を 3 つ</strong>挙げて。特に、規模が 10 倍になったときに壊れる箇所」</li>
+</ul>
+<p><strong>なぜ効くか</strong>：AI は既定では同意的です。「いいですね」と返ってきます。<br><strong>明示的に批判を要求すると、質が変わります。</strong></p>
+<p>私はこれで「TF-IDF は 1 ファイルの語彙が巨大だと IDF が希薄化して他の文書が検索から落ちる」という指摘を得ました。<br>これは実際に、<strong>20 万チャンクのチャットログを取り込んだ瞬間に検索精度が全体崩壊する</strong>という形で現実化しました。<br>事前に指摘されていたので、対処（該当ファイルの隔離運用）が即断できました。</p>
+<hr>
+<h3>型 10：「過去の記録から抜粋して」で資料を作らせる</h3>
+<ul>
+<li><strong>❌ Before</strong>：（週報を自分で書く）</li>
+<li><strong>✅ After</strong>：「CHANGELOG と git log から、<strong>今週の成果を顧客報告用にまとめて</strong>」</li>
+</ul>
+<p><strong>なぜ効くか</strong>：記録が資産になります。<br>CHANGELOG を律儀に書く動機が「AI が後で使えるから」に変わると、<strong>記録を書くコストが投資に変わります</strong>。</p>
+<hr>
+<h3>型 11：数字を要求する（「速い」を禁止する）</h3>
+<ul>
+<li><strong>❌ Before</strong>：「パフォーマンスを改善して」</li>
+<li><strong>✅ After</strong>：「<strong>5,000 チャンクでの検索時間を実測するベンチマークスクリプトを書いて</strong>。改善前後で比較できる形で」</li>
+</ul>
+<p><strong>なぜ効くか</strong>：顧客に「速いです」は通用しません。「5,000 文書で 5ms です」が通用します。<br>そして<strong>その数字は、あなたが測らない限り存在しません</strong>。</p>
+<p>AI はベンチマークスクリプトを書くのが得意です。<strong>測定を頼むことが、そのまま営業資料の作成になります。</strong></p>
+<hr>
+<h3>型 12：「公開資料です」と宣言してから書かせる</h3>
+<ul>
+<li><strong>❌ Before</strong>：「週次レポートを作って」</li>
+<li><strong>✅ After</strong>：「<strong>社外に公開する</strong>週次レポートを作って。個人名・顧客名・内部 IP は一切含めないこと」</li>
+</ul>
+<p><strong>なぜ効くか</strong>：私は実際に、AI が生成したレポートに<strong>自分の本名がそのまま入っていた</strong>ことがあります。<br>会話の文脈から親しみを込めて書いてくれたわけですが、公開資料としてはアウトです。</p>
+<p><strong>AI は「この文章がどこまで公開されるか」を知りません。</strong> それは指示する側の責任です。</p>
+<hr>
+<h3>12 型の使い分けマトリクス</h3>
+<ul>
+<li><strong>バグが出た</strong>：型 1 → 型 5</li>
+<li><strong>新機能を作る</strong>：型 8 → 型 9 → 型 5</li>
+<li><strong>顧客に資料を出す</strong>：型 3 → 型 12 → 人間レビュー</li>
+<li><strong>進捗が分からなくなった</strong>：型 4 → 型 10</li>
+<li><strong>性能を主張したい</strong>：型 11</li>
+<li><strong>コミット前</strong>：型 7</li>
+</ul>
+<blockquote>📎 <strong>コピペ用のプロンプト全文</strong>は <strong>付録 C：プロンプトテンプレート 12 型</strong> に掲載しています。</blockquote>
+<hr>
+<h2>9. TDD スプリント — テスト 120 → 377 本、実バグ 6 件検出の実際</h2>
+<h3>9-1. なぜ AI 開発でテストが「品質保証」ではなく「センサー」なのか</h3>
+<p>普通の開発において、テストは品質保証の手段です。<br><strong>AI 開発では意味が変わります。</strong></p>
+<p>AI は、あなたが依頼していない箇所も「ついでに」改善します。善意で。<br>その結果、<strong>別の場所が壊れる</strong>。しかも、あなたはその変更に気づいていない。</p>
+<p>つまり AI 開発におけるテストは、</p>
+<blockquote><strong>「自分が見ていない場所で、何かが壊れたことを知るための警報装置」</strong></blockquote>
+<p>です。この目的が変わると、書くべきテストも変わります。カバレッジ率より、<strong>「壊れたら致命的な箇所を全部押さえているか」</strong>が重要になります。</p>
+<h3>9-2. 実際に回した「TDD スプリント」の手順</h3>
+<p>私は 2 時間のスプリントで、テストを 120 → 293 本に増やし（現在 377 本）、<strong>実装バグを 6 件発見</strong>しました。手順はこうです。</p>
+<h4>Step 1：攻撃者視点でテストを書かせる（実装は見せない）</h4>
+<pre><code>tests/test_security.py を作って。
+このアプリに対する攻撃を想定したテストを書いて:
+- XSS（管理画面から保存した値が HTML に反映される箇所すべて）
+- SQL/コマンドインジェクション
+- 認証バイパス（未ログインで管理 API を叩く）
+- パストラバーサル（../ を含むファイル名でアップロード）
+
+重要: 「今の実装が通るテスト」ではなく、
+「安全なアプリなら通るはずのテスト」を書いて。
+落ちてもいい。</code></pre>
+<p><strong>最後の 3 行が決定的です。</strong><br>これを書かないと、AI は「現在の実装に合わせたテスト」を書きます。それは何も検出しません。</p>
+<h4>Step 2：落ちたテストを「仕様が正しい」と仮定して修正する</h4>
+<p>このスプリントで実際に見つかったバグを 1 つ紹介します。</p>
+<p><strong>🔴 Stored XSS（重大度：高）</strong></p>
+<p>管理画面から設定できる「組織名」が、HTML にエスケープなしで埋め込まれていました。</p>
+<pre><code>再現手順:
+1. PUT /api/admin/settings に {"org_name": "&lt;script&gt;alert(1)&lt;/script&gt;"} を送信
+2. GET / でメインページを取得
+3. &lt;p&gt; タグ内に &lt;script&gt;alert(1)&lt;/script&gt; が未エスケープで埋め込まれる
+
+影響: 管理画面に値を保存できる者が、全社員のブラウザで任意 JS を実行できる</code></pre>
+<p>これは<strong>社内ツールだから安全</strong>という油断が生む典型例です。修正は単純でした。</p>
+<pre><code>def _esc(s: str | None) -&gt; str:
+    """HTML エスケープ（XSS 防止）。組織名等を HTML に埋め込む前に必ず通す。"""
+    return html.escape(str(s or ""), quote=True)</code></pre>
+<p>重要なのは、<strong>このバグを AI が「自分で書いたコードの中から」見つけた</strong>という事実です。<br>書き手としての AI と、テスターとしての AI は、<strong>別人格として使えます。</strong></p>
+<h4>Step 3：直せない弱点は <code>xfail</code> で「既知」として記録する</h4>
+<p>すべてを直す必要はありません。私は 3 件を <code>xfail</code>（既知の失敗）として残しました。</p>
+<p><strong>これが実務上とても重要です。</strong><br>「直せていない弱点がテストとして明示されている」状態は、<br>「弱点が存在することを誰も知らない」状態より、<strong>桁違いに安全</strong>です。</p>
+<h3>9-3. スプリントの成果（実数）</h3>
+<p class="row-title"><strong>■ テスト総数</strong></p>
+<ul>
+<li>Before：120</li>
+<li>After：<strong>293</strong>（+144%）</li>
+</ul>
+<p class="row-title"><strong>■ カバレッジ</strong></p>
+<ul>
+<li>Before：84%</li>
+<li>After：<strong>88%</strong></li>
+</ul>
+<p class="row-title"><strong>■ 発見した実装バグ</strong></p>
+<ul>
+<li>After：<strong>6 件</strong>（全て修正）</li>
+</ul>
+<p class="row-title"><strong>■ <code>app/auth.py</code> カバレッジ</strong></p>
+<ul>
+<li>Before：59%</li>
+<li>After：<strong>89%</strong></li>
+</ul>
+<p class="row-title"><strong>■ <code>app/runtime_settings.py</code> カバレッジ</strong></p>
+<ul>
+<li>Before：62%</li>
+<li>After：<strong>100%</strong></li>
+</ul>
+<p class="row-title"><strong>■ 所要時間</strong></p>
+<ul>
+<li>After：<strong>約 2 時間</strong></li>
+</ul>
+<p><strong>2 時間で Stored XSS を含む 6 件のバグを発見・修正。</strong><br>これが、AI にテストを書かせる最大の投資対効果です。</p>
+<h3>9-4. 正直に書く：それでも私のコードには負債がある</h3>
+<p>信頼していただくために、都合の悪い数字も出します。</p>
+<p><strong><code>app/main.py</code> は 4,471 行あります。</strong></p>
+<p>アプリ全体 6,814 行のうち <strong>66%</strong> が 1 ファイルに集中しています。これは明確な技術的負債です。</p>
+<p>原因ははっきりしています。<strong>AI は「今あるファイルに追記する」のが最も速く、私がそれを止めなかったから。</strong><br>機能追加のたびに main.py が膨らみ、v0.8.0 に到達した時点で 4,471 行になっていました。</p>
+<p><strong>教訓</strong>：AI 開発では、<strong>「どこに書くか」を人間が決めないと、必ず 1 ファイルに集中します。</strong><br>「新しい機能は新しいモジュールに」というルールを <code>CLAUDE.md</code> に書いておくべきでした。<br>（これは付録 A のテンプレートには<strong>反映済み</strong>です。同じ失敗をしないでください）</p>
+<hr>
+<h2>10. AI がやってくれない工程 — 「機能完成」と「納品」の間にある壁</h2>
+<p>ここが、個人開発者が企業案件で最も詰まるポイントです。</p>
+<p>私の体感は、こうでした。</p>
+<blockquote><strong>機能の実装：2 週間</strong><br><strong>企業で実際に動くまで：さらに 4 週間</strong></blockquote>
+<p>後半の 4 週間に、コードを書く作業は<strong>ほとんどありません</strong>。<br>そしてこの 4 週間の存在を知らないと、見積もりが 3 倍外れます。</p>
+<h3>10-1. オンプレ導入で実際に詰まった 13 箇所</h3>
+<p>実際に発生した順に、全部書きます。<strong>これはそのままチェックリストとして使えます。</strong></p>
+<p class="row-title"><strong>■ 1 Docker 前提で進めたが「Docker 不可」と途中で判明</strong></p>
+<ul>
+<li>原因：環境の事前確認不足</li>
+<li>対策：キックオフ前に「Docker 使えますか？」</li>
+</ul>
+<p class="row-title"><strong>■ 2 Windows Server に Linux 用 <code>install.sh</code> を渡そうとした</strong></p>
+<ul>
+<li>原因：OS 確認不足</li>
+<li>対策：「OS は何ですか？」を最初に聞く</li>
+</ul>
+<p class="row-title"><strong>■ 3 管理者権限がなくタスクスケジューラ登録不可</strong></p>
+<ul>
+<li>原因：権限確認不足</li>
+<li>対策：「サーバーの管理者権限ありますか？」</li>
+</ul>
+<p class="row-title"><strong>■ 4 <code>install.ps1</code> が文字化けしてパースエラー</strong></p>
+<ul>
+<li>原因：<strong>BOM なし UTF-8 を PowerShell が Shift-JIS と解釈</strong></li>
+<li>対策：スクリプトは <strong>BOM 付き UTF-8</strong> で配布</li>
+</ul>
+<p class="row-title"><strong>■ 5 CMD と PowerShell の構文を顧客が混同</strong></p>
+<ul>
+<li>原因：案内の曖昧さ</li>
+<li>対策：コマンドに必ず「<strong>PowerShell で</strong>」と明記</li>
+</ul>
+<p class="row-title"><strong>■ 6 Google OAuth が IP アドレスのリダイレクト URI を拒否</strong></p>
+<ul>
+<li>原因：Google の仕様</li>
+<li>対策：「社内 DNS で FQDN を割り当てられますか？」</li>
+</ul>
+<p class="row-title"><strong>■ 7 OAuth テストユーザー登録漏れで<strong>全員ログイン不可</strong></strong></p>
+<ul>
+<li>原因：手順書の欠落</li>
+<li>対策：提供側の準備リストに必ず含める</li>
+</ul>
+<p class="row-title"><strong>■ 8 DNS 設定権限がない（担当者 ≠ AD 管理者）</strong></p>
+<ul>
+<li>原因：権限分離の見落とし</li>
+<li>対策：「DNS は誰が触れますか？」</li>
+</ul>
+<p class="row-title"><strong>■ 9 リポジトリに顧客固有値を書いてしまった</strong></p>
+<ul>
+<li>原因：提供側のミス</li>
+<li>対策：プレースホルダ運用 + コミット前 grep</li>
+</ul>
+<p class="row-title"><strong>■ 10 Mac から Windows サーバへ ZIP を直接渡せない（RDP 制限）</strong></p>
+<ul>
+<li>原因：転送経路の確認不足</li>
+<li>対策：最初から GitHub 経由 DL を案内</li>
+</ul>
+<p class="row-title"><strong>■ 11 <code>Invoke-WebRequest -OutFile</code> で <strong>BOM が剥がれて</strong>文字化け</strong></p>
+<ul>
+<li>原因：PowerShell 5.1 の挙動</li>
+<li>対策：<code>(New-Object System.Net.WebClient).DownloadFile(...)</code> を使う</li>
+</ul>
+<p class="row-title"><strong>■ 12 DNS A レコードを <strong>AD サーバー自身の IP</strong> で登録して接続不能</strong></p>
+<ul>
+<li>原因：アプリサーバと DNS サーバが別マシンである見落とし</li>
+<li>対策：登録後に必ず <code>nslookup &lt;ホスト名&gt;</code> で検証</li>
+</ul>
+<p class="row-title"><strong>■ 13 OAuth で Google に飛ばず自ホストの <code>/o/oauth2/v2/auth</code> に 404</strong></p>
+<ul>
+<li>原因：<strong>IIS ARR の <code>reverseRewriteHostInResponseHeaders</code> が Location ヘッダの <code>accounts.google.com</code> を自ホストに書き換える</strong></li>
+<li>対策：<code>false</code> に設定する</li>
+</ul>
+<p><strong>#13 は、丸 1 日溶かしました。</strong><br>リバースプロキシが OAuth のリダイレクト先ホスト名を勝手に書き換えるという挙動は、<br>症状（自分のサイトで 404）から原因（プロキシのヘッダ書き換え設定）に到達するのが極めて難しい。</p>
+<p>この 13 個のうち、<strong>AI に聞いて即解決したのは #4・#11・#13 の 3 つだけ</strong>です。<br>残り 10 個は「顧客に何を聞いておくべきだったか」の問題であり、<strong>技術ではなく段取りの失敗</strong>です。</p>
+<h3>10-2. だからヒアリングシートを作った</h3>
+<p>上記 10 個は、<strong>キックオフ前に 6 カテゴリを埋めてもらうだけで全部消えます。</strong></p>
+<ol>
+<li>インフラ環境（OS / Docker 可否 / Python / 管理者権限 / 外向き通信）</li>
+<li>ネットワーク・DNS（社内ドメイン / DNS 権限 / 希望 FQDN）</li>
+<li>データ保存先（ローカル or 共有 / バックアップ運用）</li>
+<li>アクセス制御（管理者アカウント / 全社開放の可否 / 会社ドメイン）</li>
+<li>HTTPS / リバースプロキシ（IIS 有無 / 必要モジュール / 証明書）</li>
+<li>役割分担（誰が何を何分でやるか）</li>
+</ol>
+<blockquote>📎 <strong>記入式の完全版シート</strong>は <strong>付録 D：オンプレ導入 事前ヒアリングシート</strong> に掲載しています。<br><strong>これは私が 13 回詰まって作ったものです。1 社目から使ってください。</strong></blockquote>
+<h3>10-3. 設計判断の早見表（顧客に説明するための表）</h3>
+<p>顧客との会話でそのまま使える判断表も置いておきます。</p>
+<p><strong>公開 URL の形式</strong></p>
+<p class="row-title"><strong>■ <code>http://localhost:8000/</code></strong></p>
+<ul>
+<li>Google OAuth 通る：○</li>
+<li>全社員から見える：×（サーバー上のみ）</li>
+<li>用途：デモ・PoC</li>
+</ul>
+<p class="row-title"><strong>■ <code>http://192.168.x.x:8000/</code></strong></p>
+<ul>
+<li>Google OAuth 通る：<strong>×（Google が IP を拒否）</strong></li>
+<li>全社員から見える：△</li>
+<li>用途：<strong>選択不可</strong></li>
+</ul>
+<p class="row-title"><strong>■ <code>http://inquira.example.jp:8000/</code></strong></p>
+<ul>
+<li>Google OAuth 通る：○</li>
+<li>全社員から見える：○</li>
+<li>用途：本番（HTTP）</li>
+</ul>
+<p class="row-title"><strong>■ <code>https://inquira.example.jp/</code></strong></p>
+<ul>
+<li>Google OAuth 通る：○</li>
+<li>全社員から見える：○</li>
+<li>用途：<strong>本番（推奨）</strong></li>
+</ul>
+<p><strong>自動起動の方式</strong></p>
+<p class="row-title"><strong>■ 管理者権限</strong></p>
+<ul>
+<li>スタートアップフォルダ：不要</li>
+<li>タスクスケジューラ（SYSTEM）：必要</li>
+</ul>
+<p class="row-title"><strong>■ 再起動時</strong></p>
+<ul>
+<li>スタートアップフォルダ：<strong>誰かがログオンするまで起動しない</strong></li>
+<li>タスクスケジューラ（SYSTEM）：ログオン不要で起動</li>
+</ul>
+<p class="row-title"><strong>■ 推奨</strong></p>
+<ul>
+<li>スタートアップフォルダ：PoC</li>
+<li>タスクスケジューラ（SYSTEM）：<strong>24 時間運用</strong></li>
+</ul>
+<p><strong>データ保存先</strong></p>
+<p class="row-title"><strong>■ バックアップ</strong></p>
+<ul>
+<li>ローカル：個別 PC 単位</li>
+<li>ファイルサーバ共有：<strong>既存のバックアップ体制に乗る</strong></li>
+</ul>
+<p class="row-title"><strong>■ サーバー入替時</strong></p>
+<ul>
+<li>ローカル：データが消える</li>
+<li>ファイルサーバ共有：データが残る</li>
+</ul>
+<p class="row-title"><strong>■ 推奨</strong></p>
+<ul>
+<li>ローカル：PoC</li>
+<li>ファイルサーバ共有：<strong>本番</strong></li>
+</ul>
+<hr>
+<h2>11. 実測コスト — 見積もりの根拠になる数字</h2>
+<p>「AI で作ると安い」と言うだけでは提案になりません。<strong>実数を出します。</strong></p>
+<h3>11-1. API 実費（Anthropic API・従量課金）</h3>
+<ul>
+<li><strong>月額固定費</strong>：<strong>なし</strong>（完全従量課金）</li>
+<li><strong>最低使用料</strong>：<strong>なし</strong></li>
+<li><strong>使わなかった月</strong>：<strong>0 円</strong></li>
+</ul>
+<p><strong>1 質問あたりの実測コスト</strong></p>
+<p class="row-title"><strong>■ チャンク 5 件 × 300 字</strong></p>
+<ul>
+<li>入力：約 2,500 tok</li>
+<li>出力：約 200 tok</li>
+<li>コスト：<strong>約 1.7 円</strong></li>
+</ul>
+<p class="row-title"><strong>■ チャンク 5 件 × 800 字</strong></p>
+<ul>
+<li>入力：約 5,000 tok</li>
+<li>出力：約 300 tok</li>
+<li>コスト：約 3.1 円</li>
+</ul>
+<p class="row-title"><strong>■ 参考情報 10 件 + 長文</strong></p>
+<ul>
+<li>入力：約 12,000 tok</li>
+<li>出力：約 500 tok</li>
+<li>コスト：約 6.8 円</li>
+</ul>
+<p><strong>本番実装値（チャンク 350 字 × 5 件 + 出典）= 1 質問あたり 約 2〜3 円</strong></p>
+<p><strong>規模別の月額</strong></p>
+<p class="row-title"><strong>■ 5〜10 名</strong></p>
+<ul>
+<li>月間質問数：330〜1,760 問</li>
+<li>月額 API 実費：<strong>約 660 〜 5,500 円</strong></li>
+</ul>
+<p class="row-title"><strong>■ 35 名（控えめ）</strong></p>
+<ul>
+<li>月間質問数：3,850 問</li>
+<li>月額 API 実費：<strong>約 7,700 〜 12,000 円</strong></li>
+</ul>
+<p class="row-title"><strong>■ 35 名（標準）</strong></p>
+<ul>
+<li>月間質問数：7,700 問</li>
+<li>月額 API 実費：<strong>約 15,000 〜 25,000 円</strong></li>
+</ul>
+<p><strong>コスト削減の実装</strong>（提案時の武器になります）</p>
+<ul>
+<li><strong>プロンプトキャッシュ</strong>：共通の指示部分をキャッシュ読み出しに（1M トークンあたり $3 → $0.30）</li>
+<li><strong>回答キャッシュ</strong>：同一質問の再問い合わせで API を呼ばない → <strong>30〜50% 削減</strong></li>
+</ul>
+<p>小規模組織ほど「同じ質問の繰り返し率」が高いので、<strong>回答キャッシュは規模が小さいほど効きます</strong>。<br>これは提案時に刺さるポイントです。</p>
+<h3>11-2. 「データが学習に使われない」という決定的な一言</h3>
+<p>技術以外で、最も商談を動かした事実を書きます。</p>
+<blockquote><strong>「Anthropic の API は、入力データをモデルの学習に使用しません。商用契約として明示されています」</strong></blockquote>
+<p>社内 AI 導入が止まっている企業の理由は、ほぼ 100% これです。<br>「便利なのは分かるが、うちのデータが学習されるのは絶対に無理」。</p>
+<p><strong>商用 API を使う設計にするだけで、この壁は越えられます。</strong><br>そして多くの担当者は、この事実を知りません。<strong>提案の最初の 1 分でここを伝えるかどうかで、会話の方向が変わります。</strong></p>
+<h3>11-3. 初期コスト 0 円で PoC を始める設計</h3>
+<p>もう 1 つ、実際に効いた提案の形。</p>
+<blockquote>「最初の試験運用は、<strong>こちらの環境で動かします</strong>。データは Cloudflare Tunnel 経由でアクセスするだけなので、<br>御社のインフラ変更は不要。<strong>初期費用 0 円</strong>で始められます。本契約時にサーバーへ移行します」</blockquote>
+<p>最初は「え？」という反応でした。しかし説明すると、<strong>「ハードルが下がった」と感謝されました。</strong></p>
+<p>中小企業向けにおいて、<strong>「稟議を通さずに試せる」ことの価値は、機能より大きい</strong>場合があります。</p>
+<h3>11-4. 「動くデモ」は資料 100 枚に勝る</h3>
+<p>提案でスライドを見せるより、<strong>その場で顧客のマニュアルを取り込んで質問してもらう</strong>方が圧倒的に速い。</p>
+<p>「これ、御社のマニュアルを入れれば 5 分で動きます」と言って、実際に 5 分で動かす。<br><strong>表情が変わります。</strong></p>
+<p>だからこそ、Claude Code で<strong>デモ環境を常に動く状態に保つ</strong>ことに投資する価値があります。<br>私はデモ用のダミー企業データ（整備工場想定：車検手順、工具管理、VPN 接続マニュアル等）を用意して、<br><strong>いつでも初対面の相手に触ってもらえる状態</strong>を維持しています。</p>
+<hr>
+<h2>12. やってはいけないこと（アンチパターン集）</h2>
+<p>私が実際にやらかしたものだけを書きます。</p>
+<h3>❌ 1. Claude Code が作ったブランチをそのまま使い続ける</h3>
+<p>ある日 <code>git clone</code> したら、<code>main</code> に README しかありませんでした。</p>
+<pre><code>$ git clone &lt;repo&gt; &amp;&amp; cd &lt;repo&gt; &amp;&amp; ls
+README.md   # ← 「えっ、コードは!?」</code></pre>
+<p>実装は全部 <code>claude/add-roadmap-docs-XXXXX</code> ブランチにありました。<br><strong>便利さに任せていると、「本体がどこにあるか分からない」状態になります。</strong></p>
+<p>対策：<strong>週 1 で main にマージする</strong>。もしくはマージ日を決めておく。</p>
+<h3>❌ 2. 「とにかく全部取り込む」</h3>
+<p>RAG の精度は、モデルではなく<strong>入力データの質</strong>で決まります。</p>
+<p>私はテストで自分のブログのエクスポート（9MB）を取り込んだ瞬間、回答品質が崩壊しました。<br>該当記事はちゃんと検索でヒットしているのに、<strong>確信度 0%</strong>。</p>
+<p>チャンクの中身を見て理由が分かりました。</p>
+<pre><code>&lt;p class="p1"&gt;&lt;span class="s1"&gt;だと思います。&lt;/span&gt;&lt;/p&gt;
+&lt;p class="p2"&gt;&amp;nbsp;&lt;/p&gt;
+&lt;li&gt;&lt;span class="hatena-asin-detail-label"&gt;発売日:&lt;/span&gt;</code></pre>
+<p><strong>HTML タグとメタデータが本文を埋め尽くしていた。</strong><br>検索は単語の出現頻度で効くので、意味のあるキーワードがノイズに沈み、関連度スコアが 0.06 まで落ちていました。</p>
+<p>さらに悪いのは、<strong>巨大な 1 ファイルがコーパス全体の語彙を支配し、他の正しい文書まで検索から落とす</strong>現象です。<br>実データ 200MB（約 20 万チャンク）を投入したときにこれが起きました。</p>
+<p>対策：</p>
+<ol>
+<li>取り込む前にクレンジング（HTML タグ除去）</li>
+<li><strong>精度を壊すファイルは隔離ディレクトリに退避する運用ルール</strong>を作る</li>
+</ol>
+<p><strong>「データは多いほど良い」は、RAG では明確に誤りです。</strong></p>
+<h3>❌ 3. 全件再計算の設計にする</h3>
+<p>初期実装では、<strong>1 ファイル追加するたびに全チャンクの埋め込みを再計算</strong>していました。</p>
+<pre><code>1 ファイル追加 → 30 分〜2 時間   ← 運用不能</code></pre>
+<p>キャッシュのキーを「コーパス全体のハッシュ」から <strong><code>(chunk_id, text_hash)</code> 単位</strong>に変更しただけで、</p>
+<pre><code>1 ファイル追加 → 数秒
+1 ファイル更新 → 数秒
+1 ファイル削除 → 即時</code></pre>
+<p><strong>「定期的に文書を追加する」という運用が、これで初めて現実的になりました。</strong><br>機能としては最初から動いていたのに、<strong>運用としては破綻していた</strong>典型例です。</p>
+<h3>❌ 4. AI 生成物を人間レビューなしで外に出す</h3>
+<p>繰り返しますが、これは絶対です。実際に混入したもの：</p>
+<ul>
+<li><strong>開発者本人の氏名</strong>（会話の文脈から親しみを込めて書かれた）</li>
+<li>顧客の正式名称の表記ゆれ</li>
+<li>生成時点で古くなっていた数値</li>
+</ul>
+<p><strong>公開前に人間が見る工程は、削ってはいけません。</strong></p>
+<h3>❌ 5. CLAUDE.md を書いて放置する</h3>
+<p>書いた時点では 100 点でも、事故が起きるたびに追記しなければ<strong>すぐに陳腐化</strong>します。<br>私の運用は「同じミスを 2 回説明したら追記」。<strong>育てるファイルです。</strong></p>
+<hr>
+<h2>13. 30 日再現スケジュール</h2>
+<p>「で、自分は何から始めればいいのか」に答えます。<br>私が 1 ヶ月でやったことを、<strong>順序を最適化して</strong>日割りにしました。</p>
+<h3>Week 1：土台づくり（ここを飛ばすと後で全部やり直し）</h3>
+<p class="row-title"><strong>■ 1 <code>CLAUDE.md</code> を置く（付録 A をコピー→自分用に調整）</strong></p>
+<ul>
+<li>成果物：<code>CLAUDE.md</code></li>
+</ul>
+<p class="row-title"><strong>■ 1 Git 初期化、<code>.gitignore</code> に <code>.env</code> <code>.private/</code> を追加</strong></p>
+<p class="row-title"><strong>■ 2 最小の動くもの（1 機能だけ）を作る。<strong>型 8（TDD）を最初から使う</strong></strong></p>
+<ul>
+<li>成果物：動く PoC + テスト</li>
+</ul>
+<p class="row-title"><strong>■ 3 CI（GitHub Actions）を設定。<strong>push のたびにテストが走る状態</strong>にする</strong></p>
+<ul>
+<li>成果物：<code>.github/workflows/test.yml</code></li>
+</ul>
+<p class="row-title"><strong>■ 4-5</strong></p>
+<ul>
+<li>やること：コア機能の実装。<strong>型 5（フェーズ分割）で 1 機能ずつ</strong></li>
+</ul>
+<p class="row-title"><strong>■ 6-7</strong></p>
+<ul>
+<li>やること：<code>CHANGELOG.md</code> 開始、v0.1.0 をタグ付け</li>
+<li>成果物：CHANGELOG</li>
+</ul>
+<blockquote>💡 <strong>Day 3 の CI 設定を絶対に飛ばさないでください。</strong><br>AI は速いので、CI がないと「壊れたことに気づかないまま 20 コミット進む」が普通に起きます。</blockquote>
+<h3>Week 2：機能を積む</h3>
+<ul>
+<li><strong>8-12</strong>：機能追加を繰り返す。<strong>新機能は新モジュールに</strong>（main.py 肥大化の回避）</li>
+<li><strong>13</strong>：<strong>型 9（批判させる）</strong> で設計レビュー。「規模 10 倍で壊れる箇所を 3 つ」</li>
+<li><strong>14</strong>：週次の棚卸し（<strong>型 4</strong>）+ main へマージ</li>
+</ul>
+<h3>Week 3：品質と「売れる状態」</h3>
+<p class="row-title"><strong>■ 15 <strong>TDD スプリント</strong>（第 9 章の手順そのまま）。2 時間集中</strong></p>
+<ul>
+<li>成果物：テスト倍増 + バグ検出</li>
+</ul>
+<p class="row-title"><strong>■ 16 <strong>型 11</strong> でベンチマークスクリプトを書かせ、性能を実測</strong></p>
+<ul>
+<li>成果物：性能データ（営業資料になる）</li>
+</ul>
+<p class="row-title"><strong>■ 17 API コストを実測・試算</strong></p>
+<ul>
+<li>成果物：コスト表</li>
+</ul>
+<p class="row-title"><strong>■ 18-19</strong></p>
+<ul>
+<li>やること：<strong>型 3</strong> で提案資料（HTML/PDF）を生成</li>
+<li>成果物：提案書</li>
+</ul>
+<p class="row-title"><strong>■ 20-21</strong></p>
+<ul>
+<li>やること：デモ環境の整備。<strong>ダミーデータで初対面の人に触らせられる状態</strong>に</li>
+<li>成果物：デモ</li>
+</ul>
+<h3>Week 4：納品できる状態にする</h3>
+<p class="row-title"><strong>■ 22 <strong>付録 D のヒアリングシート</strong>を顧客に送る</strong></p>
+<ul>
+<li>成果物：環境情報</li>
+</ul>
+<p class="row-title"><strong>■ 23 回答に基づき導入設計を確定（第 10-3 の判断表を使う）</strong></p>
+<ul>
+<li>成果物：導入計画</li>
+</ul>
+<p class="row-title"><strong>■ 24-25</strong></p>
+<ul>
+<li>やること：インストールスクリプトを書く。<strong>Windows なら BOM 付き UTF-8 で</strong>（詰まり #4）</li>
+<li>成果物：<code>install.ps1</code></li>
+</ul>
+<p class="row-title"><strong>■ 26 <code>customer-handoff</code> Skill で配布ドキュメント 5 種を生成</strong></p>
+<ul>
+<li>成果物：手順書一式</li>
+</ul>
+<p class="row-title"><strong>■ 27 <strong>人間レビュー</strong>（付録 F のチェックリスト）</strong></p>
+<p class="row-title"><strong>■ 28-29</strong></p>
+<ul>
+<li>やること：導入実施。<strong>詰まり 13 箇所の表</strong>を手元に置いて進める</li>
+<li>成果物：稼働</li>
+</ul>
+<p class="row-title"><strong>■ 30 起きた問題を <code>CLAUDE.md</code> と Skill に反映</strong></p>
+<ul>
+<li>成果物：更新されたルール</li>
+</ul>
+<p><strong>Day 30 の作業が最も重要です。</strong><br>1 社目で起きた問題をルール化すると、<strong>2 社目の工数が半分以下になります。</strong></p>
+<hr>
+<h1>付録：テンプレート集</h1>
+<p>ここからは、<strong>そのままコピーして使えるファイル</strong>です。加工不要です。</p>
+<hr>
+<h2>付録 A：<code>CLAUDE.md</code> テンプレート全文</h2>
+<blockquote><strong>使い方</strong>：プロジェクトのルートに <code>CLAUDE.md</code> として保存。<br><code>&lt;&gt;</code> の箇所を自分のプロジェクトに合わせて置き換えるだけ。<br>不要なセクションは削除してください（<strong>短い方が守られます</strong>）。</blockquote>
+<pre><code># CLAUDE.md
+
+このリポジトリで Claude Code が作業する際の遵守事項。
+
+## 0. このファイルの運用ルール
+
+- 同じミスを **2 回説明したら、ここに追記する**
+- 命令だけでなく **「なぜそうするか」の理由を必ず併記** する（理由があると応用が効く）
+- 200 行を超えたら、長い手順は Skill (.claude/skills/) に切り出す
+
+---
+
+## 1. コード構成
+
+### モジュール分割
+
+- **新機能は新しいモジュールに実装する。既存の大きなファイルに追記しない**
+  - 理由: 追記が最も速いため、放置すると 1 ファイルが数千行に肥大化する
+- 1 ファイルが 800 行を超えたら、分割を提案すること
+
+### テスト
+
+- **実装より先にテストを書く**（失敗することを確認してから実装する）
+- 「今の実装が通るテスト」ではなく「仕様として正しいテスト」を書く
+- 修正できない既知の弱点は削除せず `xfail` として残す
+  - 理由: 弱点が明示されている状態は、知られていない状態より安全
+
+---
+
+## 2. ドキュメント / HTML / PDF
+
+### 日本語フォント（中華フォントへのフォールバック防止）
+
+PDF 化される HTML、および社外に渡す HTML には、必ず以下の font-family を使用すること。
+
+```css
+font-family:
+  "Hiragino Kaku Gothic ProN",
+  "Hiragino Sans",
+  "Yu Gothic",
+  YuGothic,
+  Meiryo,
+  "IPAPGothic",
+  "IPAGothic",
+  sans-serif;
+```
+
+- Mac → Hiragino 系が優先される
+- Windows → Yu Gothic / Meiryo が優先される
+- Linux → IPAPGothic / IPAGothic が使用される
+  - **これを書かないと、PDF 生成時に CJK 共通フォントから中国語書体が選ばれる事故が起きる**
+
+### PDF 生成後の確認
+
+生成後、必ず以下を確認すること:
+
+1. PDF を開いて中文化していないか目視（Linux で生成した場合は特に）
+2. A4 に収まっているか（表がはみ出していないか）
+3. 表の途中で改ページされていないか
+
+---
+
+## 3. 秘密情報・顧客固有情報
+
+- 顧客名、社内ドメイン、社内 IP、UNC パス、証明書 Thumbprint、
+  API キー、OAuth クライアントシークレットは **絶対にコミットしない**
+- 例示は一般的な値を使う:
+  `&lt;CUSTOMER_DOMAIN&gt;` / `example.local` / `10.0.0.x` / `\\fileserver\share\&lt;app&gt;`
+- 実値は `.private/` 配下で管理する（`.gitignore` 済み）
+- コミット前に以下を実行すること:
+
+```bash
+git diff --cached | grep -iE 'sk-ant-|GOCSPX-|192\.168\.|10\.0\.|@gmail\.com|BEGIN (RSA |EC )?PRIVATE KEY'
+```
+
+---
+
+## 4. 文体・表現の禁止事項
+
+社外に出る可能性のある文書では、以下を使わない。
+
+| 禁止 | 理由 | 代替 |
+|---|---|---|
+| 「不明点は社内情シスへ」 | 顧客の組織構造を勝手に決めつけている | 「本ツールを導入された管理者の方へ」 |
+| 「弊社」「A 社」 | 特定組織に紐づくとテンプレートとして再利用できない | 「サービス提供元」「ご利用元」 |
+| 個人名 | 公開資料に実名は不可 | 役割名（「管理者」「担当者」） |
+
+- **公開資料であることを明示された場合、個人名・顧客名・内部 IP を一切含めないこと**
+
+---
+
+## 5. 環境固有の注意（自分の環境に合わせて記述）
+
+- PowerShell スクリプトは **BOM 付き UTF-8** で保存すること
+  - 理由: BOM なしだと PowerShell 5.1 が Shift-JIS と解釈して文字化けし、パースエラーになる
+- ダウンロード手順を案内する場合、`Invoke-WebRequest -OutFile` は使わない
+  - 理由: BOM が剥がれる。`(New-Object System.Net.WebClient).DownloadFile(...)` を使う
+- Python は `python3.11` 以上を明示すること（システム標準の python3 は古い場合がある）
+
+---
+
+## 6. コマンド提示のルール
+
+- 手順を案内する際は、**そのままターミナルに貼り付けて動く形**で書くこと
+  - ✅ `cd ~/&lt;project&gt; &amp;&amp; PYTHON=python3.11 ./scripts/serve.sh`
+  - ❌ 「プロジェクトディレクトリに移動して起動スクリプトを実行してください」
+- Windows 向けの場合、**「PowerShell で実行」なのか「コマンドプロンプトで実行」なのか**を必ず明記する
+
+---
+
+## 7. バージョニング / リリース
+
+- `pyproject.toml` と `&lt;package&gt;/__init__.py` の `__version__` を**必ず同期**させる
+- Semantic Versioning (`MAJOR.MINOR.PATCH`) を遵守
+- 機能追加・修正は `CHANGELOG.md` の `[Unreleased]` に記録し、リリース時に日付付きセクションへ昇格
+- ブランチ: `feature/&lt;name&gt;` / `fix/&lt;name&gt;` / `hotfix/&lt;name&gt;`
+- タグ: `v0.9.0`（`v` プレフィックス付き）</code></pre>
+<hr>
+<h2>付録 B：Skill 定義集（3 本）</h2>
+<blockquote><strong>使い方</strong>：<code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code> として保存します。</blockquote>
+<h3>B-1. <code>ja-pdf-export</code> — 日本語 PDF を安全に生成する</h3>
+<pre><code>---
+name: ja-pdf-export
+description: 日本語の HTML を PDF に変換する。中国語フォントへのフォールバックを防ぎ、A4 レイアウトを検証する。「PDF にして」「PDF 化」「資料を印刷用に」と言われたときに使用する。
+---
+
+# 日本語 PDF エクスポート
+
+## 手順
+
+### 1. HTML のフォント指定を確認する
+
+対象 HTML の `font-family` に IPA フォントが含まれているかを確認する。
+含まれていない場合は、**変換前に必ず修正する**。
+
+```css
+body {
+  font-family:
+    "Hiragino Kaku Gothic ProN", "Hiragino Sans",
+    "Yu Gothic", YuGothic, Meiryo,
+    "IPAPGothic", "IPAGothic", sans-serif;
+}
+```
+
+理由: Linux 環境では、日本語フォントを明示しないと CJK 共通フォントから
+**中国語書体が選択される**。Mac の開発機では正常に見えるため、
+気づかずに社外へ配布する事故につながる。
+
+### 2. 印刷用 CSS を確認する
+
+以下が含まれていない場合は追加する。
+
+```css
+@page { size: A4; margin: 15mm; }
+table { page-break-inside: avoid; }
+h1, h2, h3 { page-break-after: avoid; }
+.page-break { page-break-before: always; }
+```
+
+### 3. 変換を実行する
+
+```bash
+python3 -c "
+from weasyprint import HTML
+HTML(filename='docs/&lt;name&gt;.html').write_pdf('docs/&lt;name&gt;.pdf')
+"
+```
+
+### 4. 生成後の検証（省略禁止）
+
+以下を必ず報告する。
+
+1. 生成された PDF のページ数とファイルサイズ
+2. **「フォント指定に IPA フォントが含まれていることを確認済み」** の明示
+3. ユーザーへの依頼:
+   「PDF を開いて、**漢字の字形が日本語書体になっているか**を目視確認してください。
+   特に『直』『経』『値』『骨』の字形を確認すると判別しやすいです」
+
+### 5. 中文化していた場合の対処
+
+システムに日本語フォントが入っていない可能性がある。
+
+```bash
+# Debian / Ubuntu
+sudo apt-get install -y fonts-ipafont fonts-ipaexfont
+fc-list | grep -i ipa   # 導入確認
+```
+
+## やってはいけないこと
+
+- フォント指定を確認せずに変換すること
+- 「PDF を生成しました」だけを報告して、目視確認の依頼を省略すること</code></pre>
+<h3>B-2. <code>release-guard</code> — リリース前の機械的チェック</h3>
+<pre><code>---
+name: release-guard
+description: リリース前の安全確認とバージョン同期を行う。「リリースして」「バージョンを上げて」「コミットして大丈夫か」と言われたときに使用する。秘密情報スキャン、バージョン同期、CHANGELOG 更新、テスト実行を含む。
+---
+
+# リリースガード
+
+リリース前に、以下を **上から順に** 実行する。1 つでも失敗したら中断し、ユーザーに報告する。
+
+## 1. 秘密情報スキャン（最優先・省略禁止）
+
+```bash
+git diff --cached | grep -inE 'sk-ant-|GOCSPX-|AIza[0-9A-Za-z_-]{35}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|password\s*=\s*["'"'"'][^"'"'"']{6,}|192\.168\.[0-9]|10\.[0-9]+\.[0-9]+\.[0-9]'
+```
+
+**ヒットした場合は、その時点で中断する。** 自己判断でコミットを進めない。
+ヒット箇所を提示し、「これはプレースホルダですか、実値ですか」とユーザーに確認する。
+
+追加で確認する:
+
+```bash
+git status --porcelain | grep -E '\.env$|\.pem$|\.key$|/\.private/'
+```
+
+## 2. バージョン同期
+
+以下 2 箇所が一致しているか確認する。ずれていたら修正する。
+
+- `pyproject.toml` の `version`
+- `&lt;package&gt;/__init__.py` の `__version__`
+
+バージョンの上げ方（Semantic Versioning）:
+
+| 変更内容 | 上げる箇所 |
+|---|---|
+| 後方互換のないインターフェース変更 | MAJOR |
+| 後方互換のある機能追加 | MINOR |
+| バグ修正のみ | PATCH |
+
+## 3. CHANGELOG
+
+`CHANGELOG.md` の `[Unreleased]` セクションに、今回の変更が記載されているか確認する。
+記載がない場合は、git diff から内容を要約して追記する。
+
+リリース時は `[Unreleased]` を `[&lt;version&gt;] - YYYY-MM-DD` に昇格させ、
+新しい空の `[Unreleased]` を上に作る。
+
+## 4. テストと静的解析
+
+```bash
+ruff check &lt;package&gt; tests
+pytest -q
+```
+
+**失敗している状態でリリースを進めない。**
+
+## 5. 報告
+
+以下の形式で報告する。
+
+```
+✅ 秘密情報スキャン: 検出なし
+✅ バージョン同期: pyproject.toml / __init__.py ともに 0.9.0
+✅ CHANGELOG: [0.9.0] - 2026-07-28 に昇格済み
+✅ テスト: 377 passed
+✅ Lint: エラーなし
+
+次のコマンドでリリースできます:
+git tag v0.9.0 &amp;&amp; git push origin main --tags
+```</code></pre>
+<h3>B-3. <code>customer-handoff</code> — 顧客配布ドキュメント一式の生成</h3>
+<pre><code>---
+name: customer-handoff
+description: 顧客への納品ドキュメント一式を生成する。「導入資料を作って」「顧客に渡す手順書」「引き渡し資料」と言われたときに使用する。読者ごとに前提知識と粒度を変えた 5 種類のドキュメントを作る。
+---
+
+# 顧客引き渡しドキュメント生成
+
+## 原則
+
+**同じ製品でも、読者ごとに別のドキュメントを作る。** 1 つの資料を全員に渡すと、
+IT 部門には冗長で、一般社員には難解、という最悪の結果になる。
+
+## 生成する 5 種類
+
+| # | 読者 | ドキュメント | 前提知識 | 分量の目安 |
+|---|---|---|---|---|
+| 1 | 顧客 IT 部門 | インストール手順書 | 高い | 詳細に。コマンドは全てコピペ可能な形で |
+| 2 | DNS / AD 管理者 | DNS 設定依頼書 | 高いが**別担当者** | 1〜2 ページ。依頼内容だけ |
+| 3 | インフラ担当 | リバースプロキシ設定依頼書 | 高い | 1〜2 ページ。設定値を表で |
+| 4 | 顧客側の管理者 | 管理画面クイックスタート | 中 | 画面ごとに何ができるか |
+| 5 | 全社員 | 利用ガイド | **ゼロ** | **1 ページ**。図中心、専門用語ゼロ |
+
+## 書き分けのルール
+
+### 依頼書（#2, #3）で必ず守ること
+
+- **依頼相手は製品を知らない**前提で書く。製品の説明は 2 行以内に留める
+- 「何を設定してほしいか」を**表**で示す（文章にしない）
+- 設定後の**検証コマンド**を必ず含める（例: `nslookup &lt;hostname&gt;`）
+- 想定所要時間を明記する（相手が着手判断できる）
+
+### 全社員向け（#5）で必ず守ること
+
+- **専門用語を 1 つも使わない**（「RAG」「LLM」「OAuth」全て禁止）
+- 1 ページに収める。読まれない資料は存在しないのと同じ
+- 「ログインできないとき」の対処を必ず含める（問い合わせが最も多い）
+- **「社内の情シスに聞いてください」と書かない**。顧客の組織構造を決めつけないこと
+
+## 顧客固有情報の扱い
+
+- ドキュメント内の顧客固有値は、必ずプレースホルダにする
+  - `&lt;CUSTOMER_DOMAIN&gt;` / `&lt;SERVER_IP&gt;` / `&lt;ADMIN_EMAIL&gt;`
+- 実値を埋めた版は `.private/` 配下に出力し、**リポジトリにコミットしない**
+- 生成後、以下で確認する:
+
+```bash
+grep -rInE '192\.168\.|@gmail\.com|\\\\[a-z]+\\' docs/
+```
+
+## 出力形式
+
+- 社外に渡すものは **HTML → PDF**（`ja-pdf-export` スキルを使用）
+- font-family には必ず IPA フォントを含める</code></pre>
+<hr>
+<h2>付録 C：プロンプトテンプレート 12 型（コピペ用）</h2>
+<blockquote><strong>使い方</strong>：そのままコピーして、<code>&lt;&gt;</code> を埋めて使ってください。</blockquote>
+<pre><code>## 型 1：エラー診断
+（ターミナルの出力を一切加工せず貼り付ける）
+上記のエラーが出ました。原因の候補を可能性の高い順に 3 つと、
+それぞれの切り分け方法を教えてください。
+
+## 型 2：コピペで動くコマンド
+&lt;やりたいこと&gt; の手順を教えてください。
+そのままターミナルに貼り付けて動く形で書いてください。
+ディレクトリ移動も含めてください。
+Windows の場合は PowerShell / コマンドプロンプトのどちらかを明記してください。
+
+## 型 3：配布資料の生成
+&lt;内容&gt; を &lt;読者: 例「顧客の IT 部門」&gt; にそのまま渡せる HTML で作ってください。
+- チェックボックス付き
+- フェーズごとに色分け
+- 各ステップの所要時間を明記
+- font-family には IPA フォントを含める（PDF 化時の中文化防止）
+
+## 型 4：棚卸し
+これまでのやり取り、git 履歴、CHANGELOG から、
+現在の残タスクを優先度順に整理してください。
+「終わったこと」「進行中」「未着手」に分けてください。
+
+## 型 5：フェーズ分割
+&lt;機能&gt; を実装したいです。
+まず全体を 3〜5 フェーズに分割した計画だけを提示してください。
+実装はまだしないでください。
+私が承認したフェーズだけを、1 つずつ実装します。
+
+## 型 6：スクリーンショット
+（画面をキャプチャして添付）
+この画面で &lt;やりたいこと&gt; をするには、どこを操作すればいいですか。
+
+## 型 7：コミット前チェック
+今からコミットしようとしています。
+git の差分と .gitignore を確認して、
+push してはいけない情報が含まれていないか確認してください。
+特に API キー、OAuth シークレット、内部 IP、個人名、顧客固有の値。
+
+## 型 8：TDD
+&lt;機能&gt; のテストを先に書いてください。
+重要: 「今の実装が通るテスト」ではなく「仕様として正しいテスト」を書いてください。
+落ちても構いません。落ちたテストを見てから実装方針を決めます。
+
+## 型 9：設計批判
+この設計の欠点を 3 つ挙げてください。
+特に以下の観点で:
+- データ量が 10 倍になったときに壊れる箇所
+- 運用開始後に変更しづらくなる箇所
+- 私が見落としている前提
+
+## 型 10：記録からの資料生成
+CHANGELOG.md と git log から、
+&lt;期間&gt; の成果を &lt;用途: 例「顧客への月次報告」&gt; 用にまとめてください。
+技術用語は読者に合わせて調整してください。
+
+## 型 11：実測
+&lt;対象&gt; の性能を実測するベンチマークスクリプトを書いてください。
+- データ量を 100 / 500 / 1000 / 2500 / 5000 と変えて計測
+- 平均と p95 を出す
+- 改善前後で比較できる形式で結果を保存
+結果は顧客説明に使うので、表形式でまとめてください。
+
+## 型 12：公開資料
+これは社外に公開する資料です。
+以下を一切含めないでください:
+- 個人名（役割名に置き換える）
+- 顧客の実名・ドメイン・IP アドレス
+- 内部のファイルパス、サーバー名
+- 生成時点で古くなる可能性のある数値（出典と日付を明記する）</code></pre>
+<hr>
+<h2>付録 D：オンプレ導入 事前ヒアリングシート</h2>
+<blockquote><strong>使い方</strong>：キックオフ前に顧客へ送り、埋めてもらう。<br><strong>これを埋めないまま着手すると、第 10 章の 13 個の詰まりが再現します。</strong></blockquote>
+<pre><code># &lt;製品名&gt; 導入 事前確認シート
+
+ご記入いただいた内容をもとに、導入手順を確定いたします。
+不明な項目は「不明」とご記入ください。こちらで確認方法をご案内します。
+
+## 1. サーバー環境
+
+| 項目 | ご回答 | 補足 |
+|---|---|---|
+| サーバー OS とバージョン | | 例: Windows Server 2022 / Ubuntu 22.04 |
+| Docker の利用可否 | 可 / 不可 / 不明 | 不可の場合は直接インストール方式になります |
+| Python 3.11 以上の導入状況 | あり / なし / 不明 | |
+| 作業担当者の管理者権限 | あり / なし | なしの場合、サービス自動起動の方式が変わります |
+| サーバーの IP アドレス | | 社内 LAN 内のアドレス |
+| 外部通信（HTTPS）の可否 | 可 / 不可 | 外部 API への到達確認が必要です |
+
+## 2. ネットワーク・DNS
+
+| 項目 | ご回答 | 補足 |
+|---|---|---|
+| 社内で使用しているドメイン | | 例: example.co.jp |
+| 社内 DNS サーバーの管理者 | | 作業担当者と同一か、別部署か |
+| DNS レコード追加の可否 | 可 / 要依頼 / 不可 | 要依頼の場合、依頼書をご用意します |
+| 希望するホスト名 | | 例: faq / kb / helpdesk |
+
+&gt; ⚠ 認証に Google アカウントを使用するため、**IP アドレスでのアクセスは利用できません**。
+&gt; ホスト名（FQDN）の割り当てが必須となります。
+
+## 3. データの保存先
+
+| 項目 | ご回答 | 補足 |
+|---|---|---|
+| 保存先の希望 | サーバー内 / ファイルサーバー共有 | 本番運用は共有を推奨 |
+| 共有パス（該当する場合） | | 作業担当者がアクセスできるか要確認 |
+| 既存のバックアップ運用 | あり / なし | ある場合、保存先を対象に追加していただきます |
+
+## 4. 利用者・アクセス制御
+
+| 項目 | ご回答 | 補足 |
+|---|---|---|
+| 管理者となる方のメールアドレス | | 最大数名 |
+| 全社員へ開放するか | する / しない | |
+| 会社の Google Workspace ドメイン | | 全社開放する場合に必要 |
+| 初期の想定利用人数 | | 名 |
+
+## 5. HTTPS 化
+
+| 項目 | ご回答 | 補足 |
+|---|---|---|
+| HTTPS 化の要否 | 必要 / 不要（後で対応） | 不要の場合、ブラウザに「保護されていない通信」と表示されます |
+| リバースプロキシの有無 | IIS / nginx / なし | |
+| SSL 証明書の入手方法 | 社内 CA / 外部発行 / 未定 | |
+| 上記の設定担当部署 | | 作業担当者と別の場合、依頼書をご用意します |
+
+## 6. 役割分担と想定所要時間
+
+| フェーズ | ご担当 | 想定時間 |
+|---|---|---|
+| 事前準備（認証設定等） | サービス提供元 | 15 分 |
+| Python 導入 | 貴社 | 10 分 |
+| 本体インストール | 貴社 | 15 分 |
+| DNS 設定 | 貴社 DNS 管理者 | 5 分（依頼書提供） |
+| リバースプロキシ設定 | 貴社インフラ担当 | 30 分（依頼書提供） |
+| 初期データ投入 | 貴社管理者 | 30 分〜 |
+| 社内告知 | 貴社 | — |</code></pre>
+<hr>
+<h2>付録 E：コミット前チェックリスト</h2>
+<pre><code># コミット前チェックリスト
+
+## 自動チェック（コピペで実行）
+
+```bash
+# 1. 秘密情報スキャン
+git diff --cached | grep -inE 'sk-ant-|GOCSPX-|AIza[0-9A-Za-z_-]{35}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|192\.168\.|10\.[0-9]+\.[0-9]+\.[0-9]'
+
+# 2. 危険なファイルがステージされていないか
+git status --porcelain | grep -E '\.env$|\.pem$|\.key$|/\.private/|credentials'
+
+# 3. テストと Lint
+ruff check . &amp;&amp; pytest -q
+```
+
+いずれも「出力なし / 全て pass」であることを確認する。
+
+## 目視チェック
+
+- [ ] 顧客名・顧客ドメイン・社内 IP・UNC パスが含まれていないか
+- [ ] 個人名（自分の氏名を含む）が含まれていないか
+- [ ] バージョンを上げた場合、2 箇所（pyproject / __init__）が同期しているか
+- [ ] CHANGELOG の `[Unreleased]` に今回の変更を書いたか
+- [ ] 新機能の場合、テストを追加したか
+- [ ] コミットメッセージが「何をしたか」ではなく「何のために」を含んでいるか
+
+## Git 運用
+
+- [ ] 作業ブランチが命名規約に沿っているか（`feature/` `fix/` `hotfix/`）
+- [ ] **週 1 回以上、main にマージしているか**
+      （AI が作ったブランチに実装が取り残される事故の防止）</code></pre>
+<hr>
+<h2>付録 F：AI 生成物 公開前レビューチェックリスト</h2>
+<blockquote><strong>これは省略できません。</strong> 実際にここで実名混入を発見しています。</blockquote>
+<pre><code># AI 生成物 公開前チェックリスト
+
+対象: 顧客に渡す資料、社外公開する記事・スライド、GitHub の公開リポジトリ
+
+## 1. 固有名詞（最優先）
+
+- [ ] **個人の実名**が含まれていないか
+      → AI は会話の文脈から親しみを込めて実名を書くことがある
+- [ ] 顧客の正式名称・略称が含まれていないか
+- [ ] 顧客の社内ドメイン、サーバー名、共有フォルダのパスが含まれていないか
+- [ ] 内部 IP アドレスが含まれていないか
+
+## 2. 事実確認
+
+- [ ] 数値に **測定日または出典** が明記されているか
+      → AI は生成時点の記憶で数値を書く。古い可能性がある
+- [ ] 「〜と言われています」のような**根拠不明の断定**がないか
+- [ ] 外部サービスの料金・仕様を書いている場合、**現時点で正しいか確認したか**
+
+## 3. 表現
+
+- [ ] 顧客の組織構造を決めつける表現がないか
+      （例: 「情シスに聞いてください」「担当部署にご確認を」）
+- [ ] 特定組織を指す表現がないか（「弊社」「A 社」）
+      → テンプレートとして再利用できなくなる
+- [ ] 読者の前提知識に対して、専門用語が適切か
+      （全社員向け資料に「OAuth」「RAG」が出ていないか）
+
+## 4. 体裁
+
+- [ ] PDF の場合、**漢字が日本語書体か**（中国語書体になっていないか）
+- [ ] A4 に収まっているか、表が途中で切れていないか
+- [ ] リンクが実際に開くか
+
+## 5. 最終確認
+
+- [ ] **これを見知らぬ第三者が読んだとき、誰の・どの会社の話か特定できないか**</code></pre>
+<hr>
+<h2>付録 G：テンプレートの設置方法 — どこに、どうやって置くのか</h2>
+<p>付録 A〜F をコピーしたあと、<strong>どこに保存すれば効くのか</strong>を説明します。ここを間違えると、書いても一切読み込まれません。</p>
+<h3>G-1. ファイルの置き場所</h3>
+<p>自分のプロジェクトのフォルダを、こう配置します。</p>
+<pre><code>あなたのプロジェクト/
+├── CLAUDE.md                    ← 付録 A をここに保存（★これだけで有効）
+├── .claude/
+│   └── skills/
+│       ├── ja-pdf-export/
+│       │   └── SKILL.md         ← 付録 B-1
+│       ├── release-guard/
+│       │   └── SKILL.md         ← 付録 B-2
+│       └── customer-handoff/
+│           └── SKILL.md         ← 付録 B-3
+├── docs/
+│   └── checklists/              ← 付録 D・E・F（置き場所は自由）
+└── （あなたのコード）</code></pre>
+<p><strong>重要な点は 3 つです。</strong></p>
+<p class="row-title"><strong>■ <code>CLAUDE.md</code></strong></p>
+<ul>
+<li>置き場所：<strong>プロジェクトのルート直下</strong></li>
+<li>効き方：<strong>毎回自動で読み込まれる</strong>。設定作業は不要</li>
+</ul>
+<p class="row-title"><strong>■ Skill</strong></p>
+<ul>
+<li>置き場所：<code>.claude/skills/&lt;名前&gt;/SKILL.md</code></li>
+<li>効き方：<strong>フォルダ名 = Skill 名</strong>。<code>SKILL.md</code> というファイル名は固定</li>
+</ul>
+<p class="row-title"><strong>■ チェックリスト類</strong></p>
+<ul>
+<li>置き場所：どこでも可</li>
+<li>効き方：自動では読まれない。使うとき「<code>docs/checklists/xxx.md</code> に従って」と伝える</li>
+</ul>
+<p><code>.claude</code> はドット始まりなので、Mac の Finder では既定で見えません。<code>Cmd + Shift + .</code> で表示できます。</p>
+<h3>G-2. フォルダを作るのが面倒なら、Claude Code にやらせる</h3>
+<p>そもそも、この設置作業自体を頼めます。</p>
+<pre><code>プロジェクトルートに CLAUDE.md を作ってください。
+内容は以下です:
+
+（付録 A の中身を貼り付け）</code></pre>
+<p>Skill も同じ要領です。</p>
+<pre><code>.claude/skills/ja-pdf-export/SKILL.md を作ってください。
+フォルダが無ければ作成してください。
+内容は以下です:
+
+（付録 B-1 の中身を貼り付け）</code></pre>
+<h3>G-3. 効いているかの確認方法</h3>
+<p><code>CLAUDE.md</code> を置いたら、次のように聞いてみてください。</p>
+<pre><code>CLAUDE.md を読み込んでいますか？
+書かれているルールを 3 つ挙げてください。</code></pre>
+<p>書いたルールが返ってくれば正しく効いています。返ってこない場合は、<strong>ファイルの置き場所がルート直下になっていない</strong>のがほぼ全ての原因です。</p>
+<p>Skill の確認はこうです。</p>
+<pre><code>利用可能な Skill を一覧で教えてください。</code></pre>
+<h3>G-4. 最初から全部入れなくていい</h3>
+<p><strong>まず <code>CLAUDE.md</code> だけ置いてください。</strong> これだけで効果の大半が得られます。</p>
+<p>Skill は、実際に「同じ手順を 3 回説明したな」と感じてから作れば十分です。<br>最初から全部揃えようとすると、<strong>使わないルールが混ざって、肝心のルールが薄まります</strong>（第 6-4 節）。</p>
+<hr>
+<h2>14. おわりに — 個人開発者にとって、何が本当に変わったのか</h2>
+<p>最後に、1 ヶ月やって得た結論を書きます。</p>
+<p>Claude Code で変わったのは、<strong>「コードを書く速度」ではありませんでした。</strong></p>
+<p>正直に言えば、コードを書く速度は 3〜5 倍になった程度です。それも大きいですが、決定的ではありません。</p>
+<p><strong>決定的に変わったのは、「コード以外の全部」の速度です。</strong></p>
+<p class="row-title"><strong>■ 提案資料</strong></p>
+<ul>
+<li>従来の個人開発：作らない（作れない）</li>
+<li>実際に起きたこと：HTML/PDF で 16 本</li>
+</ul>
+<p class="row-title"><strong>■ 操作マニュアル</strong></p>
+<ul>
+<li>従来の個人開発：後回しにして結局作らない</li>
+<li>実際に起きたこと：読者別に 5 種類</li>
+</ul>
+<p class="row-title"><strong>■ 導入手順書</strong></p>
+<ul>
+<li>従来の個人開発：口頭で説明</li>
+<li>実際に起きたこと：依頼書として渡せる形に</li>
+</ul>
+<p class="row-title"><strong>■ 性能データ</strong></p>
+<ul>
+<li>従来の個人開発：「速いです」</li>
+<li>実際に起きたこと：5,000 チャンクで 5ms という実測値</li>
+</ul>
+<p class="row-title"><strong>■ コスト試算</strong></p>
+<ul>
+<li>従来の個人開発：どんぶり勘定</li>
+<li>実際に起きたこと：1 質問 2〜3 円という根拠</li>
+</ul>
+<p class="row-title"><strong>■ テスト</strong></p>
+<ul>
+<li>従来の個人開発：時間がなくて書かない</li>
+<li>実際に起きたこと：377 本、カバレッジ 88%</li>
+</ul>
+<p class="row-title"><strong>■ 変更履歴</strong></p>
+<ul>
+<li>従来の個人開発：記憶の中</li>
+<li>実際に起きたこと：CHANGELOG 222 行</li>
+</ul>
+<p><strong>個人開発が企業に売れない理由は、機能が足りないからではありません。</strong><br>「周辺の全部」が足りないからです。提案資料がない、手順書がない、根拠となる数字がない、テストがない。</p>
+<p><strong>Claude Code が本当に埋めたのは、そこです。</strong></p>
+<p>そして、それを引き出すために必要だったのが、この記事で書いた 5 つ——<br><code>CLAUDE.md</code>、Skill、プロンプトの型、テスト、人間のレビュー工程でした。</p>
+<p><strong>プロンプトの上手さは、5 分の 1 でしかありません。</strong><br>残りの 5 分の 4 は、<strong>環境の設計</strong>です。そしてそれは、1 日で構築できます。</p>
+<p>付録のテンプレートを、そのまま使ってください。<br>私が 13 回詰まって、6 件のバグを踏んで、PDF を中国語にして、実名を公開しかけて作ったものです。</p>
+<p><strong>同じ道を通る必要はありません。</strong></p>
+<hr>
+<h3>更新履歴</h3>
+<ul>
+<li><strong>初版</strong>：記事公開。付録 A〜F 収録</li>
+</ul>
+<hr>
+<h3>この記事の実測データについて</h3>
+<p>本文中の数値は、すべて実際のリポジトリから取得した実数です。</p>
+<ul>
+<li>コード行数・テスト数：<code>wc -l</code> および <code>grep -c "def test_"</code> の実行結果</li>
+<li>検索性能：ベンチマークスクリプトによる実測（Linux / Python 3.11 / TF-IDF char-wb 2-3gram）</li>
+<li>API コスト：実際の課金実績に基づく試算</li>
+<li>詰まり箇所 13 件：実際の導入作業で発生したものの全件記録</li>
+</ul>
+<p>推測や一般論ではなく、<strong>実際に起きたことだけ</strong>を書いています。</p>
+</body>
+</html>
