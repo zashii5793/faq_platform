@@ -23,3 +23,8 @@ data/faq_master/*
 .coverage
 data/org_settings.json
 data/client_eval/
+
+# note 記事の変換スクリプト用 (docx 生成時に npm install する)
+docs/note/assets/node_modules/
+docs/note/assets/package-lock.json
+docs/note/assets/package.json

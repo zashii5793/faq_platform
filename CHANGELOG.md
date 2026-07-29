@@ -31,7 +31,15 @@ Inquira のリリースノート。すべての変更点を時系列順に記録
 - 📚 **用語解説の章** を追加 (第 2 章) — AI/検索・セキュリティ・インフラ・開発プロセスの 4 分類で
   記事に出る専門語を全て解説
 - 🗂 **付録 G テンプレートの設置方法** を追加 — CLAUDE.md / Skill の保存先、効いているかの確認方法
-- 📝 **note 貼り付け用 HTML** `docs/note/note_01_for_note_paste.html` 追加 (推奨)
+- 📄 **note 貼り付け用 docx** `docs/note/note_01_for_note_paste.docx` 追加 (第 1 候補)
+  - HTML コピーが環境によりプレーンテキストに落ちる問題への対処
+  - 組み込み見出しスタイル / 箇条書き numbering / 太字 run を持つため、
+    Word・Pages・Google ドキュメント経由で貼ると note が書式を保持する
+  - 生成: `assets/md_to_blocks.py` (Markdown → ブロック JSON) + `assets/to_note_docx.js`
+- 💰 **有料エリアの境界を第 3 章「捨てた① データベース」の直後に変更**
+  - 無料範囲に用語解説と設計判断 1 項目を含め、購入判断の材料を与える構成に
+  - 境界直前に「この先に何があるか」の予告ブロックを追加
+- 📝 **note 貼り付け用 HTML** `docs/note/note_01_for_note_paste.html` 追加 (第 2 候補)
   - ブラウザで全選択コピー → note に貼ると見出し・太字・リスト・引用が保持される
   - テキスト貼り付けでレイアウトが崩れる問題への対処
 - 📝 **note 貼り付け用テキスト版** `docs/note/note_01_for_note_paste.md` 追加 (予備)
