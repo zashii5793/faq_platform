@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client(tmp_path, monkeypatch) -> TestClient:
-    from app import audit, rag, shared_qa as sqa
+    from app import audit, rag
     from app.config import settings
     from app.main import app
 

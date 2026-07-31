@@ -1,7 +1,6 @@
 """RAG（検索エンジン）の境界条件・エッジケース。"""
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -11,7 +10,6 @@ from app.rag import (
     FaqIndex,
     _boost_factor,
     _load_feedback,
-    _save_feedback,
     _split_text,
     load_chunks,
     record_feedback,

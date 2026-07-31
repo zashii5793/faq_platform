@@ -140,7 +140,6 @@ def test_llm_no_answer_response_resets_signals(client: TestClient, monkeypatch):
     """
     from app import llm
     from app.config import settings
-    from app.rag import Chunk
 
     # 文書を取り込んで TF-IDF が hit するようにする
     md = "# 経費精算\n\n月次締めは毎月25日です。".encode("utf-8")
@@ -1044,7 +1043,6 @@ def _assert_no_raw_newline_in_js_strings(js: str, label: str):
     state = None  # None / "'" / "`"
     line_no = 1
     string_start_line = 0
-    string_content_lines: list[int] = []
     i = 0
     while i < len(js):
         ch = js[i]
@@ -1121,7 +1119,7 @@ def test_llm_system_prompt_uses_cache_control(client: TestClient, monkeypatch):
     # ローカルモードを抜けて FakeClient 経由で呼ばれる
     md = "# VPN\n\nFortiClient で接続。".encode("utf-8")
     client.post("/api/admin/ingest", files={"file": ("vpn.md", md, "text/markdown")})
-    r = client.post("/api/ask", json={"question": "VPN設定"})
+    client.post("/api/ask", json={"question": "VPN設定"})
 
     # /api/ask 内で fixture により anthropic_api_key="" にリセットされるため、
     # 実呼出は走らない。直接 llm.answer を呼んでキャッシュ制御を確認。
