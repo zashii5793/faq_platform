@@ -188,13 +188,10 @@ class TestWriteFailureConsistency:
         理想は: 書き込み失敗時にロールバックすべき。
         既知の弱点: 現状は in-memory が先行更新→ファイル書き込み→失敗時に不整合。
         """
-        from app.config import settings
-
         # 親ディレクトリを作れないようなパスを指定
         bad_path = isolated_settings.parent / "no_perm" / "settings.json"
         monkeypatch.setattr(runtime_settings, "OVERRIDES_PATH", bad_path)
 
-        original = settings.org_name
         try:
             # 親ディレクトリ作成のため mkdir(parents=True) されるので、実際は成功する
             # 強制的に書き込み失敗にしたい場合は monkeypatch で write_text を例外化

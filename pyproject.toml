@@ -46,3 +46,12 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+# 適用するルールを明示的に固定する。
+# 未指定だと ruff の「既定ルールセット」がそのまま使われるため、ruff 本体が
+# バージョンアップで既定を広げた際に、コードを一切変更していなくても CI が
+# 赤くなる (実際に ruff 0.16.0 で既定が拡張され、155 件の指摘が発生した)。
+# 下記は従来の既定と同等: E4/E7/E9 (pycodestyle の主要エラー) + F (Pyflakes)。
+# ルールを増やす場合は、対象の指摘を解消してから select に追記すること。
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

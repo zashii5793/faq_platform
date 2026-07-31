@@ -4,7 +4,6 @@ TDD的に「こうあってほしい」期待値で書いている。失敗す�
 """
 from __future__ import annotations
 
-import pytest
 
 from app.masking import build_rules, mask
 

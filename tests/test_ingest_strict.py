@@ -1,7 +1,6 @@
 """ingest.py のエッジケース（既存 test_ingest.py の補強）。"""
 from __future__ import annotations
 
-import io
 
 import pytest
 
