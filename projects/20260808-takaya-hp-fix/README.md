@@ -30,6 +30,7 @@
 | `copy-draft.md` | 文面案。社長メモ 3案（お客様向け／採用向け／短縮）＋ 会社の目標の書き換え表 |
 | `google-sites-settings.md` | **Google サイト側の設定変更手順（「暗い」の根本対処）** |
 | `blog-migration.md` | **ブログのHP移行：現状分析と方針案（広告問題の指摘を含む）** |
+| `hp-mock.html` | **★ トップページ リニューアル案（赤基調・実装モック）**<br>https://claude.ai/code/artifact/4c06d5ac-0da0-4f04-9b96-73b7fc657b6c |
 | `mock-review.html` | **確認用モック（現行／修正案の並列表示）**。Artifact として公開済み<br>https://claude.ai/code/artifact/dd04663e-1524-4987-87de-0dfee7fcccae |
 | `preview/*.png` | レンダリング結果。`real-top.png` / `real-recruit.png` は**現行サイトの実物**、他は修正案 |
 
