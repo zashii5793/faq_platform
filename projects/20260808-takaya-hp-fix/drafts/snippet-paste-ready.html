@@ -3,13 +3,16 @@
   タカヤモーターグループ HP 修正案 — 貼り付け用スニペット
   案件ID: 20260808-takaya-hp-fix / 2026-08-08 / 下書き（未承認）
 
-  対象サイト: Google サイト（新版） www.takayagroup.co.jp
+  対象: Google サイト（新版） www.takayagroup.co.jp ＞ 会社概要ページ
+  対象ブロック: 「ごあいさつ」欄 ＋ 経営理念
 
   使い方:
     1. 会社概要ページを開く →「編集」
     2. 右メニュー「挿入」→「埋め込む」→「コードを埋め込む」
     3. このファイルの中身を <style> ごと丸ごと貼り付け →「次へ」→「挿入」
     4. 挿入されたブロックの枠をドラッグして高さを調整
+    5. あわせて、ページ上部の濃グレー帯を消す:
+       バナー部分にカーソル →「ヘッダーの種類」→「タイトルのみ」
 
   注意:
     - Google サイトの埋め込みは iframe 内で描画されます。
@@ -18,8 +21,13 @@
     - 埋め込みブロックは検索エンジンに拾われにくいです。
       経営理念の原文は、Google サイトの通常テキストでも 1 か所置いてください。
     - クラス名は全て tky- 始まりに揃えてあり、既存 CSS と衝突しません。
-    - 【要差替】と書いた箇所（氏名・顔写真・本文）は実物に合わせて置き換えてください。
-    - 社長メモの本文は仮テキストです。実際の原稿に置き換えてお使いください。
+    - 【要差替】＝顔写真のみ。本文・氏名は現行ページの実データに合わせてあります。
+
+  現行からの変更点（意図的なもの）:
+    - 環境の段落から「被害者であると同時に加害者である」という表現を外し、
+      「一台を長く良い状態で乗り続けることが、いちばん確かなエコ」に書き換えています。
+      取り組みの中身（エコ活動推進・排出ガス削減）は維持しています。
+    - 経営理念の文言は一字も変えていません。見出しの追加のみです。
   ============================================================
 -->
 
@@ -36,6 +44,8 @@ html, body { margin: 0; padding: 0; }
   --tky-blue-soft: #EAF2FC;
   --tky-orange: #F0910A;
   --tky-line: #E7E2DA;
+  --tky-green: #2E7D5B;
+  --tky-green-soft: #E7F4EE;
 
   box-sizing: border-box;
   line-height: 1.9;
@@ -52,43 +62,48 @@ html, body { margin: 0; padding: 0; }
 }
 .tky-block *, .tky-block *::before, .tky-block *::after { box-sizing: inherit; }
 
-/* ---------- 共通 ---------- */
 .tky-inner { max-width: 880px; margin: 0 auto; }
 
-/* ---------- 社長メモ ---------- */
+/* ---------- ごあいさつ ---------- */
 .tky-memo { background: var(--tky-cream); padding: 56px 20px; }
 .tky-memo__eyebrow {
   display: inline-block; background: var(--tky-orange); color: #fff;
   font-size: 12px; font-weight: bold; letter-spacing: .1em;
   padding: 5px 14px; border-radius: 100px; margin: 0 0 16px;
 }
-.tky-memo__title {
-  font-size: 26px; line-height: 1.65; margin: 0 0 26px; color: var(--tky-ink);
-}
+.tky-memo__title { font-size: 26px; line-height: 1.65; margin: 0 0 26px; }
 .tky-memo__hl { background: linear-gradient(transparent 62%, #FFE08A 62%); padding: 0 2px; }
 .tky-memo__card {
   background: #fff; border-radius: 12px; padding: 32px 32px 26px;
   box-shadow: 0 2px 14px rgba(180,150,100,.16);
 }
-.tky-memo__card p { font-size: 15.5px; margin: 0 0 16px; color: var(--tky-body); }
-.tky-memo__card p:last-of-type { margin-bottom: 0; }
-.tky-memo__sign {
-  display: flex; align-items: center; gap: 16px;
-  margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--tky-line);
+.tky-memo__card > p { font-size: 15.5px; margin: 0 0 16px; color: var(--tky-body); }
+
+/* 環境ブロック */
+.tky-eco { background: var(--tky-green-soft); border-radius: 10px; padding: 22px 24px; margin: 22px 0 0; }
+.tky-eco h3 { margin: 0 0 12px; font-size: 16px; color: var(--tky-green); }
+.tky-eco p { margin: 0 0 13px; font-size: 14.5px; color: #354A41; line-height: 1.85; }
+.tky-eco p:last-child { margin-bottom: 0; }
+
+/* 署名 */
+.tky-sign {
+  display: flex; gap: 26px; flex-wrap: wrap;
+  margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--tky-line);
 }
-.tky-memo__avatar {
-  width: 60px; height: 60px; border-radius: 50%; object-fit: cover;
+.tky-person { display: flex; align-items: center; gap: 13px; }
+.tky-avatar {
+  width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
   border: 2px solid #fff; box-shadow: 0 0 0 1px var(--tky-line); flex-shrink: 0;
   background: var(--tky-blue-soft);
 }
-.tky-memo__avatar--empty {
+.tky-avatar--empty {
   display: flex; align-items: center; justify-content: center;
   color: var(--tky-blue); font-size: 10px; font-weight: bold; letter-spacing: .08em;
 }
-.tky-memo__name { font-size: 12.5px; color: var(--tky-muted); }
-.tky-memo__name strong { display: block; font-size: 17px; color: var(--tky-ink); margin-top: 3px; }
+.tky-person__t { font-size: 12.5px; color: var(--tky-muted); line-height: 1.55; }
+.tky-person__t strong { display: block; font-size: 16.5px; color: var(--tky-ink); }
 
-/* ---------- 会社の目標 ---------- */
+/* ---------- 経営理念 ---------- */
 .tky-goal { background: #fff; padding: 56px 20px; }
 .tky-goal__eyebrow {
   display: block; text-align: center; color: var(--tky-blue);
@@ -107,69 +122,96 @@ html, body { margin: 0; padding: 0; }
   font-size: 18px; font-weight: bold;
   display: flex; align-items: center; justify-content: center;
 }
-.tky-goal__card h4 { margin: 7px 0 7px; font-size: 17px; line-height: 1.55; }
+.tky-goal__card h3 { margin: 7px 0 7px; font-size: 17px; line-height: 1.55; }
 .tky-goal__card p { margin: 0; font-size: 14.5px; color: #46505E; line-height: 1.85; }
+
+/* 原文の折りたたみ */
+.tky-orig { margin-top: 20px; border: 1px solid var(--tky-line); border-radius: 10px; background: #FAF8F4; }
+.tky-orig summary {
+  cursor: pointer; padding: 14px 18px; font-size: 14px; font-weight: bold; color: var(--tky-ink);
+  list-style: none;
+}
+.tky-orig summary::-webkit-details-marker { display: none; }
+.tky-orig summary::before { content: "▸ "; color: var(--tky-orange); }
+.tky-orig[open] summary::before { content: "▾ "; }
+.tky-orig__body { padding: 0 18px 18px; font-size: 14px; color: var(--tky-body); line-height: 2; }
 
 /* ---------- スマホ ---------- */
 @media (max-width: 640px) {
   .tky-memo, .tky-goal { padding: 40px 16px; }
   .tky-memo__title, .tky-goal__title { font-size: 21px; }
   .tky-memo__card { padding: 24px 20px 20px; }
+  .tky-eco { padding: 18px 18px; }
   .tky-goal__card { flex-direction: column; gap: 10px; }
+  .tky-sign { gap: 16px; }
 }
 </style>
 
 
-<!-- ===== ここから 社長メモ ===== -->
+<!-- ===== ここから ごあいさつ ===== -->
 <div class="tky-block">
   <section class="tky-memo">
     <div class="tky-inner">
-      <span class="tky-memo__eyebrow">社長メモ</span>
+      <span class="tky-memo__eyebrow">ごあいさつ</span>
 
-      <!-- 【要差替】見出し：一番伝えたい一言を入れてください -->
       <h2 class="tky-memo__title">
         車のことは、<span class="tky-memo__hl">ぜんぶタカヤで。</span>
       </h2>
 
       <div class="tky-memo__card">
-        <!-- 【要差替】本文（以下は仮テキスト） -->
         <p>昭和40年の創業から、岡山・高屋の地でお客様のカーライフをお手伝いしてきました。販売も、車検も、整備も、鈑金塗装も、リースも保険も。<strong>一か所で全部そろう</strong>——それが私たちの形です。</p>
         <p>鈑金塗装まで自社で完結できるので、<strong>代車は無料でご用意</strong>します。お車をお預かりしている間も、お客様の毎日は止まりません。お引き取りと納車もお伺いしますので、お忙しい方こそお任せください。</p>
-        <p>これからも新しい技術に向き合い続けます。スタッフが学び、伸びていける会社であることが、めぐりめぐってお客様への一番のサービスになると信じています。どうぞお気軽にお立ち寄りください。</p>
+        <p>これからも品質と満足度を高め続けます。スタッフが学び、伸びていける会社であることが、めぐりめぐってお客様への一番のサービスになると信じています。どうぞお気軽にお立ち寄りください。</p>
 
-        <div class="tky-memo__sign">
-          <!--
-            【要差替】顔写真
-            写真が用意できたら、下の div を消してこの img に入れ替えてください：
-            <img class="tky-memo__avatar" src="顔写真のURL" alt="代表取締役">
-          -->
-          <div class="tky-memo__avatar tky-memo__avatar--empty">PHOTO</div>
+        <div class="tky-eco">
+          <h3>― 地球と、これからのことを考える ―</h3>
+          <p>クルマは暮らしに欠かせない道具です。だからこそ<strong>一台を長く、良い状態で乗り続けることが、いちばん確かなエコ</strong>だと私たちは考えています。</p>
+          <p>きちんと整備されたクルマは燃費が落ちにくく、余計な部品交換も減ります。私たちが日々の点検・整備にこだわる理由のひとつは、ここにあります。お客様と一緒に、クルマとの付き合い方から環境に向き合っていきます。</p>
+        </div>
 
-          <div class="tky-memo__name">
-            タカヤモーター株式会社 代表取締役
-            <strong><!-- 【要差替】お名前 -->お名前</strong>
+        <div class="tky-sign">
+          <div class="tky-person">
+            <!--
+              【要差替】顔写真
+              用意できたら下の div を消して、この img に入れ替えてください：
+              <img class="tky-avatar" src="顔写真のURL" alt="草地 賢吾">
+            -->
+            <div class="tky-avatar tky-avatar--empty">PHOTO</div>
+            <div class="tky-person__t">
+              タカヤモーター株式会社 代表取締役社長
+              <strong>草地 賢吾</strong>
+            </div>
+          </div>
+
+          <div class="tky-person">
+            <!-- 【要差替】顔写真（同上） -->
+            <div class="tky-avatar tky-avatar--empty">PHOTO</div>
+            <div class="tky-person__t">
+              タカヤリース株式会社 代表取締役社長
+              <strong>石指 英樹</strong>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </section>
 </div>
-<!-- ===== ここまで 社長メモ ===== -->
+<!-- ===== ここまで ごあいさつ ===== -->
 
 
-<!-- ===== ここから 会社の目標 ===== -->
+<!-- ===== ここから 経営理念 ===== -->
 <div class="tky-block">
   <section class="tky-goal">
     <div class="tky-inner">
       <span class="tky-goal__eyebrow">OUR MISSION</span>
       <h2 class="tky-goal__title">私たちが大切にしていること</h2>
-      <p class="tky-goal__sub">創業から変わらない、3つの約束です。</p>
+      <p class="tky-goal__sub">昭和40年の創業から変わらない、3つの約束です。</p>
 
       <div class="tky-goal__list">
         <div class="tky-goal__card">
           <div class="tky-goal__num">1</div>
           <div>
-            <h4>人が育つ会社であること</h4>
+            <h3>人が育つ会社であること</h3>
             <p>技術も接客も、伸ばし続けます。学び続けるスタッフが、お客様の「困った」に応えられる一番の力になります。</p>
           </div>
         </div>
@@ -177,7 +219,7 @@ html, body { margin: 0; padding: 0; }
         <div class="tky-goal__card">
           <div class="tky-goal__num">2</div>
           <div>
-            <h4>お客様の満足を、いちばんに</h4>
+            <h3>お客様の満足を、いちばんに</h3>
             <p>良いものを、納得のいく形で。売って終わりではなく、乗り続ける毎日をずっと支えます。</p>
           </div>
         </div>
@@ -185,12 +227,21 @@ html, body { margin: 0; padding: 0; }
         <div class="tky-goal__card">
           <div class="tky-goal__num">3</div>
           <div>
-            <h4>地元・岡山とともに歩む</h4>
+            <h3>地元・岡山とともに歩む</h3>
             <p>価値ある仕事で得た利益を、働く仲間と地域へきちんと還元する。地元に根ざした会社であり続けます。</p>
           </div>
         </div>
       </div>
+
+      <details class="tky-orig">
+        <summary>経営理念（原文）</summary>
+        <div class="tky-orig__body">
+          一、常に豊かさを追求し、優れた人材育成へ努力・研鑽しよう。<br>
+          一、お客様満足度を第一とし、質の良い物・サービスを提供しよう。<br>
+          一、価値ある仕事を通じ、公平な配分と利益をもって地域社会に貢献しよう。
+        </div>
+      </details>
     </div>
   </section>
 </div>
-<!-- ===== ここまで 会社の目標 ===== -->
+<!-- ===== ここまで 経営理念 ===== -->
