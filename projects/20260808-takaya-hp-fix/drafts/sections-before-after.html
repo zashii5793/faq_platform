@@ -15,8 +15,8 @@
     --orange: #F0910A;
     --orange-soft: #FFF3E0;
     --line: #E7E2DA;
-    --dark-bg: #1C1C1E;
-    --dark-text: #9A9A9E;
+    --dark-bg: #000000;
+    --dark-text: #B0B0B0;
   }
 
   * { box-sizing: border-box; }
@@ -106,7 +106,7 @@
   .b-memo .sign { text-align: right; font-size: 13px; color: #7A7A7E; margin-top: 24px; }
 
   .b-goal {
-    background: #2A2A2E;
+    background: #333333;
     color: var(--dark-text);
     padding: 40px 28px;
   }
@@ -240,9 +240,14 @@
     <h1>HP 修正案：社長メモ／会社の目標を「明るく」する</h1>
     <p class="meta">案件ID: 20260808-takaya-hp-fix ｜ 対象: タカヤモーターグループ 公式サイト ｜ 作成日: 2026-08-08 ｜ ステータス: <strong>下書き（未承認）</strong></p>
     <div class="notice">
-      <strong>確認事項：</strong>作業環境のネットワーク制限により、公開中のサイト（takayagroup.co.jp / takaya-gp.jp）へ接続できませんでした。
-      左の「BEFORE」は<strong>「暗い」というご指摘から再現した想定イメージ</strong>で、実物の確認は取れていません。
-      現行の HTML またはスクリーンショットをいただければ、実際の配色・文面に合わせて差分を作り直します。
+      <strong>本資料の前提：</strong>保存ページ（ホーム／採用／車検・点検／カーリース／プライバシーポリシー／東京海上リペアネット工場ページ）をご提供いただき、
+      <strong>現行サイトの実配色を確認済み</strong>です。左の BEFORE はその実配色
+      （バナー <code style="background:#333;color:#fff;padding:1px 5px;border-radius:3px">#000000</code>・
+      帯とボタン <code style="background:#333;color:#fff;padding:1px 5px;border-radius:3px">#333333</code>・
+      強調文 <code style="background:#ff0000;color:#fff;padding:1px 5px;border-radius:3px">#ff0000</code>）で再現しています。<br>
+      ただし <strong>「会社概要」ページのみ未入手</strong>で、社長メモ・会社の目標の現行文面は確認できていません。文面は仮テキストです。<br>
+      なお本サイトは <strong>Google サイト（新版）</strong>のため、CSS 差し替えは不可。実際の直し方は
+      <code>google-sites-settings.md</code> を参照してください。
     </div>
   </div>
 </div>
@@ -256,7 +261,7 @@
 
     <div class="compare">
       <div class="pane">
-        <div class="pane-label before">BEFORE（暗い印象・想定）</div>
+        <div class="pane-label before">BEFORE（現行サイトの実配色で再現）</div>
         <div class="pane-body">
           <div class="b-memo">
             <h3>社長メモ</h3>
@@ -273,11 +278,11 @@
         <div class="pane-body">
           <div class="a-memo">
             <span class="eyebrow">社長メモ</span>
-            <h3>車のことで、<span class="hl">「まずタカヤに聞いてみよう」</span><br>と思ってもらえる会社に。</h3>
+            <h3>車のことは、<span class="hl">ぜんぶタカヤで。</span></h3>
             <div class="card">
-              <p>昭和40年の創業から、地元・岡山でお客様のカーライフをお手伝いしてきました。新車も、中古車も、車検も、リースも。「車のことなら全部ここで済む」——それが私たちの強みです。</p>
-              <p>整備工場を自社で持っているので、代車も即日ご用意できます。急なトラブルでも、お客様の生活を止めません。こうした「地元だからできること」を、これからもっと磨いていきます。</p>
-              <p>新しい技術にもどんどん挑戦します。若いスタッフが伸び伸び働ける会社をつくることが、めぐりめぐってお客様への一番のサービスになると信じています。どうぞお気軽にお立ち寄りください。</p>
+              <p>昭和40年の創業から、岡山・高屋の地でお客様のカーライフをお手伝いしてきました。販売も、車検も、整備も、鈑金塗装も、リースも保険も。<strong>一か所で全部そろう</strong>——それが私たちの形です。</p>
+              <p>鈑金塗装まで自社で完結できるので、<strong>代車は無料でご用意</strong>します。お車をお預かりしている間も、お客様の毎日は止まりません。お引き取りと納車もお伺いします。</p>
+              <p>これからも新しい技術に向き合い続けます。スタッフが学び、伸びていける会社であることが、めぐりめぐってお客様への一番のサービスになると信じています。どうぞお気軽にお立ち寄りください。</p>
               <div class="sign-row">
                 <div class="avatar">顔写真</div>
                 <div class="sign-name">
@@ -299,7 +304,7 @@
 
     <div class="compare">
       <div class="pane">
-        <div class="pane-label before">BEFORE（暗い印象・想定）</div>
+        <div class="pane-label before">BEFORE（現行サイトの実配色で再現）</div>
         <div class="pane-body">
           <div class="b-goal">
             <h3>会社の目標</h3>
@@ -355,12 +360,12 @@
       <tr><th>観点</th><th>BEFORE</th><th>AFTER</th></tr>
       <tr>
         <td>背景色</td>
-        <td>ほぼ黒 <code>#1C1C1E</code> / <code>#2A2A2E</code></td>
+        <td>黒 <code>#000000</code>（バナー）/ <code>#333333</code>（帯・ボタン）<br><small>※現行サイトからの実測値</small></td>
         <td>生成り <code>#FDF8F1</code>・白 <code>#FFFFFF</code>・淡い青 <code>#EAF2FC</code></td>
       </tr>
       <tr>
         <td>文字色</td>
-        <td>薄いグレー <code>#9A9A9E</code>（背景とのコントラスト不足で読みにくい）</td>
+        <td>薄いグレー＋赤 <code>#ff0000</code> / <code>#fa3019</code> の本文（警告色に見え、読みづらい）</td>
         <td>濃紺グレー <code>#1F2937</code> / <code>#37414F</code>（白背景でコントラスト比 12:1 以上）</td>
       </tr>
       <tr>
@@ -371,7 +376,7 @@
       <tr>
         <td>文章のトーン</td>
         <td>「厳しさを増し」「例外ではありません」など、課題・危機感が主語</td>
-        <td>強み（自社整備工場・即日代車・創業60年）と前向きな約束が主語</td>
+        <td>強み（昭和40年創業・鈑金塗装まで自社完結・無料代車・引取納車）と前向きな約束が主語</td>
       </tr>
       <tr>
         <td>語尾</td>
