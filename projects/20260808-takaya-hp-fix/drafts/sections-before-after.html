@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>タカヤモーターグループ HP 修正案｜社長メモ・会社の目標</title>
+<style>
+  :root {
+    --ink: #1F2937;
+    --muted: #5B6674;
+    --cream: #FDF8F1;
+    --white: #FFFFFF;
+    --blue: #0B6BCB;
+    --blue-soft: #EAF2FC;
+    --orange: #F0910A;
+    --orange-soft: #FFF3E0;
+    --line: #E7E2DA;
+    --dark-bg: #1C1C1E;
+    --dark-text: #9A9A9E;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 0 80px;
+    background: #F4F1EC;
+    color: var(--ink);
+    line-height: 1.9;
+    font-family:
+      "Hiragino Kaku Gothic ProN",
+      "Hiragino Sans",
+      "Yu Gothic",
+      YuGothic,
+      Meiryo,
+      "IPAPGothic",
+      "IPAGothic",
+      sans-serif;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---- 資料ヘッダ ---- */
+  .doc-head {
+    background: var(--white);
+    border-bottom: 4px solid var(--orange);
+    padding: 40px 0 32px;
+    margin-bottom: 40px;
+  }
+  .doc-head h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: .02em; }
+  .doc-head .meta { color: var(--muted); font-size: 14px; margin: 0; }
+  .notice {
+    margin-top: 24px;
+    background: var(--orange-soft);
+    border-left: 4px solid var(--orange);
+    padding: 14px 18px;
+    font-size: 14px;
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* ---- 比較レイアウト ---- */
+  .block { margin-bottom: 64px; }
+  .block > h2 {
+    font-size: 20px;
+    margin: 0 0 4px;
+    padding-left: 14px;
+    border-left: 5px solid var(--blue);
+  }
+  .block > .lead { color: var(--muted); font-size: 14px; margin: 0 0 24px; padding-left: 19px; }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 860px) { .compare { grid-template-columns: 1fr; } }
+
+  .pane {
+    background: var(--white); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    display: flex; flex-direction: column;
+  }
+  .pane-label {
+    font-size: 13px;
+    font-weight: bold;
+    padding: 10px 16px;
+    letter-spacing: .06em;
+  }
+  .pane-label.before { background: #E9E9EC; color: #6B6B70; }
+  .pane-label.after  { background: var(--blue); color: #fff; }
+  .pane-body { padding: 0; flex: 1; display: flex; }
+  .pane-body > * { flex: 1; }
+
+  /* ================================================
+     BEFORE（現状の想定 / 暗い版）
+     ================================================ */
+  .b-memo {
+    background: var(--dark-bg);
+    color: var(--dark-text);
+    padding: 40px 28px;
+  }
+  .b-memo h3 {
+    color: #C8C8CC;
+    font-size: 17px;
+    margin: 0 0 20px;
+    font-weight: normal;
+    letter-spacing: .08em;
+  }
+  .b-memo p { font-size: 14px; margin: 0 0 14px; }
+  .b-memo .sign { text-align: right; font-size: 13px; color: #7A7A7E; margin-top: 24px; }
+
+  .b-goal {
+    background: #2A2A2E;
+    color: var(--dark-text);
+    padding: 40px 28px;
+  }
+  .b-goal h3 {
+    color: #C8C8CC;
+    font-size: 17px;
+    margin: 0 0 24px;
+    font-weight: normal;
+    letter-spacing: .08em;
+  }
+  .b-goal ol { margin: 0; padding-left: 20px; font-size: 14px; }
+  .b-goal li { margin-bottom: 14px; }
+
+  /* ================================================
+     AFTER（明るい版）
+     ================================================ */
+
+  /* --- 社長メモ --- */
+  .a-memo {
+    background: var(--cream);
+    padding: 40px 28px;
+  }
+  .a-memo .eyebrow {
+    display: inline-block;
+    background: var(--orange);
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: .1em;
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 14px;
+  }
+  .a-memo h3 {
+    font-size: 21px;
+    line-height: 1.6;
+    margin: 0 0 22px;
+    color: var(--ink);
+  }
+  .a-memo h3 .hl {
+    background: linear-gradient(transparent 62%, #FFE08A 62%);
+    padding: 0 2px;
+  }
+  .a-memo .card {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 24px 24px 20px;
+    box-shadow: 0 2px 10px rgba(180,150,100,.14);
+  }
+  .a-memo p { font-size: 15px; margin: 0 0 15px; color: #37414F; }
+  .a-memo p:last-of-type { margin-bottom: 0; }
+  .a-memo .sign-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+  .a-memo .avatar {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    background: var(--blue-soft);
+    border: 2px solid var(--white);
+    box-shadow: 0 0 0 1px var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--blue); font-size: 11px; text-align: center; line-height: 1.3;
+    flex-shrink: 0;
+  }
+  .a-memo .sign-name { font-size: 12px; color: var(--muted); }
+  .a-memo .sign-name strong { display: block; font-size: 16px; color: var(--ink); margin-top: 2px; }
+
+  /* --- 会社の目標 --- */
+  .a-goal {
+    background: var(--white);
+    padding: 40px 24px;
+  }
+  .a-goal .eyebrow {
+    display: block;
+    text-align: center;
+    color: var(--blue);
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: .16em;
+    margin-bottom: 8px;
+  }
+  .a-goal h3 {
+    text-align: center;
+    font-size: 21px;
+    margin: 0 0 8px;
+  }
+  .a-goal .sub {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 28px;
+  }
+  .goal-list { display: grid; gap: 14px; }
+  .goal-card {
+    display: flex;
+    gap: 16px;
+    background: var(--blue-soft);
+    border-radius: 10px;
+    padding: 20px 20px 18px;
+  }
+  .goal-card .num {
+    flex-shrink: 0;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--orange);
+    color: #fff;
+    font-size: 17px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .goal-card h4 { margin: 6px 0 6px; font-size: 16px; line-height: 1.5; }
+  .goal-card p { margin: 0; font-size: 13.5px; color: #46505E; line-height: 1.8; }
+
+  /* ---- 変更ポイント表 ---- */
+  .points { background: var(--white); border-radius: 10px; padding: 8px 28px 28px; box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+  .points h2 { font-size: 19px; padding-left: 14px; border-left: 5px solid var(--orange); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #FAF8F4; font-weight: bold; white-space: nowrap; }
+  td code { background: #F2F0EC; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <div class="wrap">
+    <h1>HP 修正案：社長メモ／会社の目標を「明るく」する</h1>
+    <p class="meta">案件ID: 20260808-takaya-hp-fix ｜ 対象: タカヤモーターグループ 公式サイト ｜ 作成日: 2026-08-08 ｜ ステータス: <strong>下書き（未承認）</strong></p>
+    <div class="notice">
+      <strong>確認事項：</strong>作業環境のネットワーク制限により、公開中のサイト（takayagroup.co.jp / takaya-gp.jp）へ接続できませんでした。
+      左の「BEFORE」は<strong>「暗い」というご指摘から再現した想定イメージ</strong>で、実物の確認は取れていません。
+      現行の HTML またはスクリーンショットをいただければ、実際の配色・文面に合わせて差分を作り直します。
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===================== 社長メモ ===================== -->
+  <div class="block">
+    <h2>1. 社長メモ</h2>
+    <p class="lead">暗い背景＋小さい文字＋一人称の重い語り口 → 生成りの明るい紙面＋語りかけ調へ。</p>
+
+    <div class="compare">
+      <div class="pane">
+        <div class="pane-label before">BEFORE（暗い印象・想定）</div>
+        <div class="pane-body">
+          <div class="b-memo">
+            <h3>社長メモ</h3>
+            <p>昨今の自動車業界を取り巻く環境は厳しさを増しており、当社もまた例外ではありません。</p>
+            <p>電動化、法規制の強化、そして人材不足。従来のやり方が通用しない時代に入りました。</p>
+            <p>こうした状況の中、我々に何ができるのかを日々自問しております。</p>
+            <p class="sign">代表取締役</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane">
+        <div class="pane-label after">AFTER（明るい版）</div>
+        <div class="pane-body">
+          <div class="a-memo">
+            <span class="eyebrow">社長メモ</span>
+            <h3>車のことで、<span class="hl">「まずタカヤに聞いてみよう」</span><br>と思ってもらえる会社に。</h3>
+            <div class="card">
+              <p>昭和40年の創業から、地元・岡山でお客様のカーライフをお手伝いしてきました。新車も、中古車も、車検も、リースも。「車のことなら全部ここで済む」——それが私たちの強みです。</p>
+              <p>整備工場を自社で持っているので、代車も即日ご用意できます。急なトラブルでも、お客様の生活を止めません。こうした「地元だからできること」を、これからもっと磨いていきます。</p>
+              <p>新しい技術にもどんどん挑戦します。若いスタッフが伸び伸び働ける会社をつくることが、めぐりめぐってお客様への一番のサービスになると信じています。どうぞお気軽にお立ち寄りください。</p>
+              <div class="sign-row">
+                <div class="avatar">顔写真</div>
+                <div class="sign-name">
+                  タカヤモーター株式会社 代表取締役
+                  <strong>（お名前）</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 会社の目標 ===================== -->
+  <div class="block">
+    <h2>2. 会社の目標（経営理念）</h2>
+    <p class="lead">箇条書きの黒背景 → 番号付きカード3枚。社内向けの「〜しよう」から、お客様に伝わる言い方へ。</p>
+
+    <div class="compare">
+      <div class="pane">
+        <div class="pane-label before">BEFORE（暗い印象・想定）</div>
+        <div class="pane-body">
+          <div class="b-goal">
+            <h3>会社の目標</h3>
+            <ol>
+              <li>常に豊かさを追求し、優れた人材育成へ努力・研鑽しよう</li>
+              <li>お客様満足度を第一とし、質の良い物・サービスを提供しよう</li>
+              <li>価値ある仕事を通じ、公平な配分と利益をもって地域社会に貢献しよう</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane">
+        <div class="pane-label after">AFTER（明るい版）</div>
+        <div class="pane-body">
+          <div class="a-goal">
+            <span class="eyebrow">OUR MISSION</span>
+            <h3>私たちが大切にしていること</h3>
+            <p class="sub">創業から変わらない、3つの約束です。</p>
+            <div class="goal-list">
+              <div class="goal-card">
+                <div class="num">1</div>
+                <div>
+                  <h4>人が育つ会社であること</h4>
+                  <p>技術も接客も、伸ばし続けます。学び続けるスタッフが、お客様の「困った」に応えられる一番の力になります。</p>
+                </div>
+              </div>
+              <div class="goal-card">
+                <div class="num">2</div>
+                <div>
+                  <h4>お客様の満足を、いちばんに</h4>
+                  <p>良いものを、納得のいく形で。売って終わりではなく、乗り続ける毎日をずっと支えます。</p>
+                </div>
+              </div>
+              <div class="goal-card">
+                <div class="num">3</div>
+                <div>
+                  <h4>地元・岡山とともに歩む</h4>
+                  <p>価値ある仕事で得た利益を、働く仲間と地域へきちんと還元する。地元に根ざした会社であり続けます。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 変更ポイント ===================== -->
+  <div class="points">
+    <h2>3. 何を変えたか</h2>
+    <table>
+      <tr><th>観点</th><th>BEFORE</th><th>AFTER</th></tr>
+      <tr>
+        <td>背景色</td>
+        <td>ほぼ黒 <code>#1C1C1E</code> / <code>#2A2A2E</code></td>
+        <td>生成り <code>#FDF8F1</code>・白 <code>#FFFFFF</code>・淡い青 <code>#EAF2FC</code></td>
+      </tr>
+      <tr>
+        <td>文字色</td>
+        <td>薄いグレー <code>#9A9A9E</code>（背景とのコントラスト不足で読みにくい）</td>
+        <td>濃紺グレー <code>#1F2937</code> / <code>#37414F</code>（白背景でコントラスト比 12:1 以上）</td>
+      </tr>
+      <tr>
+        <td>アクセント</td>
+        <td>なし（全面が無彩色）</td>
+        <td>オレンジ <code>#F0910A</code>＋ブルー <code>#0B6BCB</code>。番号バッジ・見出しマーカーに使用</td>
+      </tr>
+      <tr>
+        <td>文章のトーン</td>
+        <td>「厳しさを増し」「例外ではありません」など、課題・危機感が主語</td>
+        <td>強み（自社整備工場・即日代車・創業60年）と前向きな約束が主語</td>
+      </tr>
+      <tr>
+        <td>語尾</td>
+        <td>「〜しよう」（社内向けの号令）</td>
+        <td>お客様への言い切り＋見出しで要点が一目で伝わる形</td>
+      </tr>
+      <tr>
+        <td>構造</td>
+        <td>ベタ書きの段落・箇条書き</td>
+        <td>見出し＋カード分割。スマホでも1項目ずつ読める</td>
+      </tr>
+      <tr>
+        <td>顔の見せ方</td>
+        <td>「代表取締役」のみ</td>
+        <td>顔写真＋氏名を添え、誰が言っているかを明示（信頼感・採用にも効く）</td>
+      </tr>
+    </table>
+  </div>
+
+</div>
+
+</body>
+</html>

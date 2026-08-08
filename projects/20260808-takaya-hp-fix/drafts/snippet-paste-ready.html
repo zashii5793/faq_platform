@@ -1,0 +1,186 @@
+<!--
+  ============================================================
+  タカヤモーターグループ HP 修正案 — 貼り付け用スニペット
+  案件ID: 20260808-takaya-hp-fix / 2026-08-08 / 下書き（未承認）
+
+  使い方:
+    Jimdo などの CMS の「HTML ウィジェット（自由入力）」に、
+    このファイルの中身をそのまま貼り付けてください。
+    <style> 部分も含めて 1 ブロックで完結します。
+
+  注意:
+    - クラス名は全て tky- 始まりに揃えてあり、既存 CSS と衝突しません。
+    - 【要差替】と書いた箇所（氏名・顔写真パス・本文）は実物に合わせて置き換えてください。
+    - 社長メモの本文は仮テキストです。実際の原稿に置き換えてお使いください。
+  ============================================================
+-->
+
+<style>
+.tky-block {
+  --tky-ink: #1F2937;
+  --tky-body: #37414F;
+  --tky-muted: #5B6674;
+  --tky-cream: #FDF8F1;
+  --tky-blue: #0B6BCB;
+  --tky-blue-soft: #EAF2FC;
+  --tky-orange: #F0910A;
+  --tky-line: #E7E2DA;
+
+  box-sizing: border-box;
+  line-height: 1.9;
+  color: var(--tky-ink);
+  font-family:
+    "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans",
+    "Yu Gothic",
+    YuGothic,
+    Meiryo,
+    "IPAPGothic",
+    "IPAGothic",
+    sans-serif;
+}
+.tky-block *, .tky-block *::before, .tky-block *::after { box-sizing: inherit; }
+
+/* ---------- 共通 ---------- */
+.tky-inner { max-width: 880px; margin: 0 auto; }
+
+/* ---------- 社長メモ ---------- */
+.tky-memo { background: var(--tky-cream); padding: 56px 20px; }
+.tky-memo__eyebrow {
+  display: inline-block; background: var(--tky-orange); color: #fff;
+  font-size: 12px; font-weight: bold; letter-spacing: .1em;
+  padding: 5px 14px; border-radius: 100px; margin: 0 0 16px;
+}
+.tky-memo__title {
+  font-size: 26px; line-height: 1.65; margin: 0 0 26px; color: var(--tky-ink);
+}
+.tky-memo__hl { background: linear-gradient(transparent 62%, #FFE08A 62%); padding: 0 2px; }
+.tky-memo__card {
+  background: #fff; border-radius: 12px; padding: 32px 32px 26px;
+  box-shadow: 0 2px 14px rgba(180,150,100,.16);
+}
+.tky-memo__card p { font-size: 15.5px; margin: 0 0 16px; color: var(--tky-body); }
+.tky-memo__card p:last-of-type { margin-bottom: 0; }
+.tky-memo__sign {
+  display: flex; align-items: center; gap: 16px;
+  margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--tky-line);
+}
+.tky-memo__avatar {
+  width: 60px; height: 60px; border-radius: 50%; object-fit: cover;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px var(--tky-line); flex-shrink: 0;
+  background: var(--tky-blue-soft);
+}
+.tky-memo__avatar--empty {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--tky-blue); font-size: 10px; font-weight: bold; letter-spacing: .08em;
+}
+.tky-memo__name { font-size: 12.5px; color: var(--tky-muted); }
+.tky-memo__name strong { display: block; font-size: 17px; color: var(--tky-ink); margin-top: 3px; }
+
+/* ---------- 会社の目標 ---------- */
+.tky-goal { background: #fff; padding: 56px 20px; }
+.tky-goal__eyebrow {
+  display: block; text-align: center; color: var(--tky-blue);
+  font-size: 12px; font-weight: bold; letter-spacing: .16em; margin: 0 0 10px;
+}
+.tky-goal__title { text-align: center; font-size: 26px; margin: 0 0 10px; }
+.tky-goal__sub { text-align: center; color: var(--tky-muted); font-size: 14.5px; margin: 0 0 34px; }
+.tky-goal__list { display: grid; gap: 16px; }
+.tky-goal__card {
+  display: flex; gap: 18px;
+  background: var(--tky-blue-soft); border-radius: 12px; padding: 24px 24px 22px;
+}
+.tky-goal__num {
+  flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%;
+  background: var(--tky-orange); color: #fff;
+  font-size: 18px; font-weight: bold;
+  display: flex; align-items: center; justify-content: center;
+}
+.tky-goal__card h4 { margin: 7px 0 7px; font-size: 17px; line-height: 1.55; }
+.tky-goal__card p { margin: 0; font-size: 14.5px; color: #46505E; line-height: 1.85; }
+
+/* ---------- スマホ ---------- */
+@media (max-width: 640px) {
+  .tky-memo, .tky-goal { padding: 40px 16px; }
+  .tky-memo__title, .tky-goal__title { font-size: 21px; }
+  .tky-memo__card { padding: 24px 20px 20px; }
+  .tky-goal__card { flex-direction: column; gap: 10px; }
+}
+</style>
+
+
+<!-- ===== ここから 社長メモ ===== -->
+<div class="tky-block">
+  <section class="tky-memo">
+    <div class="tky-inner">
+      <span class="tky-memo__eyebrow">社長メモ</span>
+
+      <!-- 【要差替】見出し：一番伝えたい一言を入れてください -->
+      <h2 class="tky-memo__title">
+        車のことで、<span class="tky-memo__hl">「まずタカヤに聞いてみよう」</span><br>
+        と思ってもらえる会社に。
+      </h2>
+
+      <div class="tky-memo__card">
+        <!-- 【要差替】本文（以下は仮テキスト） -->
+        <p>昭和40年の創業から、地元・岡山でお客様のカーライフをお手伝いしてきました。新車も、中古車も、車検も、リースも。「車のことなら全部ここで済む」——それが私たちの強みです。</p>
+        <p>整備工場を自社で持っているので、代車も即日ご用意できます。急なトラブルでも、お客様の生活を止めません。こうした「地元だからできること」を、これからもっと磨いていきます。</p>
+        <p>新しい技術にもどんどん挑戦します。若いスタッフが伸び伸び働ける会社をつくることが、めぐりめぐってお客様への一番のサービスになると信じています。どうぞお気軽にお立ち寄りください。</p>
+
+        <div class="tky-memo__sign">
+          <!--
+            【要差替】顔写真
+            写真が用意できたら、下の div を消してこの img に入れ替えてください：
+            <img class="tky-memo__avatar" src="顔写真のURL" alt="代表取締役">
+          -->
+          <div class="tky-memo__avatar tky-memo__avatar--empty">PHOTO</div>
+
+          <div class="tky-memo__name">
+            タカヤモーター株式会社 代表取締役
+            <strong><!-- 【要差替】お名前 -->お名前</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<!-- ===== ここまで 社長メモ ===== -->
+
+
+<!-- ===== ここから 会社の目標 ===== -->
+<div class="tky-block">
+  <section class="tky-goal">
+    <div class="tky-inner">
+      <span class="tky-goal__eyebrow">OUR MISSION</span>
+      <h2 class="tky-goal__title">私たちが大切にしていること</h2>
+      <p class="tky-goal__sub">創業から変わらない、3つの約束です。</p>
+
+      <div class="tky-goal__list">
+        <div class="tky-goal__card">
+          <div class="tky-goal__num">1</div>
+          <div>
+            <h4>人が育つ会社であること</h4>
+            <p>技術も接客も、伸ばし続けます。学び続けるスタッフが、お客様の「困った」に応えられる一番の力になります。</p>
+          </div>
+        </div>
+
+        <div class="tky-goal__card">
+          <div class="tky-goal__num">2</div>
+          <div>
+            <h4>お客様の満足を、いちばんに</h4>
+            <p>良いものを、納得のいく形で。売って終わりではなく、乗り続ける毎日をずっと支えます。</p>
+          </div>
+        </div>
+
+        <div class="tky-goal__card">
+          <div class="tky-goal__num">3</div>
+          <div>
+            <h4>地元・岡山とともに歩む</h4>
+            <p>価値ある仕事で得た利益を、働く仲間と地域へきちんと還元する。地元に根ざした会社であり続けます。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<!-- ===== ここまで 会社の目標 ===== -->
