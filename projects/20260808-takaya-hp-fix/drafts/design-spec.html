@@ -1,0 +1,491 @@
+<title>タカヤカーグループ HPリニューアル 設計書</title>
+<style>
+  :root{
+    --brand:#E04A18;
+    --brand-panel:#D23E0D;
+    --brand-ink:#B23C11;
+    --brand-tint:#FFF4EF;
+    --ground:#F4F2F0;
+    --surface:#FFFFFF;
+    --surface-2:#FAF8F6;
+    --ink:#141312;
+    --ink-2:#4E4945;
+    --ink-3:#857D77;
+    --line:#E4DFDA;
+    --line-soft:#EFEAE6;
+    --ok:#1F7A4D;      --ok-bg:#E8F5EE;
+    --warn:#9A5B00;    --warn-bg:#FFF3E0;
+    --stop:#B3271E;    --stop-bg:#FCEEEC;
+    --gothic:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",YuGothic,Meiryo,"IPAPGothic","IPAGothic",sans-serif;
+  }
+  @media(prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --brand:#FF7442; --brand-panel:#C93C0C; --brand-ink:#FF8E63; --brand-tint:#33190F;
+      --ground:#141210; --surface:#1D1A18; --surface-2:#252120;
+      --ink:#F2EEEB; --ink-2:#BAB2AC; --ink-3:#8B837D;
+      --line:#332E2B; --line-soft:#2A2523;
+      --ok:#63C795; --ok-bg:#16301F; --warn:#E0A755; --warn-bg:#31240F; --stop:#F0857A; --stop-bg:#351F1D;
+    }
+  }
+  :root[data-theme="dark"]{
+    --brand:#FF7442; --brand-panel:#C93C0C; --brand-ink:#FF8E63; --brand-tint:#33190F;
+    --ground:#141210; --surface:#1D1A18; --surface-2:#252120;
+    --ink:#F2EEEB; --ink-2:#BAB2AC; --ink-3:#8B837D;
+    --line:#332E2B; --line-soft:#2A2523;
+    --ok:#63C795; --ok-bg:#16301F; --warn:#E0A755; --warn-bg:#31240F; --stop:#F0857A; --stop-bg:#351F1D;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--ground);color:var(--ink);
+    font-family:var(--gothic);line-height:1.95;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:0 22px 110px;}
+
+  /* --- 表紙 --- */
+  .cover{border-top:6px solid var(--brand);padding:52px 0 34px;}
+  .cover__k{font-size:12px;letter-spacing:.2em;color:var(--brand-ink);font-weight:800;margin:0 0 14px;font-variant-numeric:tabular-nums;}
+  .cover h1{font-size:clamp(28px,5vw,44px);line-height:1.35;margin:0 0 16px;font-weight:800;letter-spacing:-.01em;text-wrap:balance;}
+  .cover p{margin:0;color:var(--ink-2);font-size:15.5px;max-width:64ch;}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;}
+  .b{font-size:12px;padding:5px 12px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);}
+  .b--draft{border-color:var(--brand);color:var(--brand-ink);background:var(--brand-tint);font-weight:800;}
+
+  /* --- 目次 --- */
+  .toc{background:var(--surface);border:1px solid var(--line);padding:22px 26px;margin:0 0 56px;}
+  .toc h2{font-size:12px;letter-spacing:.16em;color:var(--ink-3);margin:0 0 12px;font-weight:800;}
+  .toc ol{margin:0;padding-left:0;list-style:none;columns:2;column-gap:34px;}
+  @media(max-width:660px){.toc ol{columns:1;}}
+  .toc li{margin-bottom:6px;font-size:14px;break-inside:avoid;}
+  .toc a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid transparent;}
+  .toc a:hover,.toc a:focus-visible{color:var(--brand-ink);border-bottom-color:var(--brand);}
+  .toc b{color:var(--brand-ink);font-variant-numeric:tabular-nums;margin-right:7px;}
+
+  /* --- セクション --- */
+  section{margin-bottom:62px;scroll-margin-top:20px;}
+  h2.s{
+    font-size:22px;font-weight:800;margin:0 0 8px;letter-spacing:-.01em;
+    display:flex;align-items:baseline;gap:12px;
+  }
+  h2.s i{
+    font-style:normal;font-size:12px;font-weight:800;color:#fff;background:var(--brand-panel);
+    padding:3px 9px;flex-shrink:0;font-variant-numeric:tabular-nums;letter-spacing:.06em;
+  }
+  .s-lead{color:var(--ink-2);font-size:15px;margin:0 0 24px;max-width:70ch;}
+  h3{font-size:16.5px;font-weight:800;margin:32px 0 12px;padding-left:12px;border-left:3px solid var(--brand);}
+  h4{font-size:14.5px;font-weight:800;margin:22px 0 8px;color:var(--ink);}
+  p{margin:0 0 14px;font-size:14.8px;color:var(--ink-2);max-width:74ch;}
+  p strong,li strong,td strong{color:var(--ink);}
+  ul,ol{margin:0 0 16px;padding-left:1.3em;font-size:14.8px;color:var(--ink-2);}
+  li{margin-bottom:7px;}
+
+  /* --- 表 --- */
+  .tw{overflow-x:auto;border:1px solid var(--line);background:var(--surface);margin:0 0 18px;}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:600px;}
+  th,td{text-align:left;padding:13px 15px;border-bottom:1px solid var(--line-soft);vertical-align:top;color:var(--ink-2);}
+  thead th{background:var(--surface-2);color:var(--ink-3);font-size:12px;letter-spacing:.07em;font-weight:800;white-space:nowrap;}
+  tbody th{color:var(--ink);font-weight:800;white-space:nowrap;width:1%;}
+  tr:last-child td,tr:last-child th{border-bottom:none;}
+  td small{color:var(--ink-3);}
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap;}
+
+  /* --- 印 --- */
+  .pill{display:inline-block;font-size:11.5px;font-weight:800;padding:2px 9px;white-space:nowrap;}
+  .p-ok{background:var(--ok-bg);color:var(--ok);}
+  .p-warn{background:var(--warn-bg);color:var(--warn);}
+  .p-stop{background:var(--stop-bg);color:var(--stop);}
+  .p-brand{background:var(--brand-tint);color:var(--brand-ink);}
+
+  /* --- 注記ボックス --- */
+  .box{border:1px solid var(--line);border-left:3px solid var(--brand);background:var(--surface);padding:18px 22px;margin:0 0 18px;}
+  .box--stop{border-left-color:var(--stop);}
+  .box--ok{border-left-color:var(--ok);}
+  .box h4{margin:0 0 8px;}
+  .box p:last-child{margin-bottom:0;}
+
+  /* --- サイトマップ --- */
+  .map{background:var(--surface);border:1px solid var(--line);padding:22px 24px;font-size:14px;}
+  .map ul{list-style:none;padding-left:0;margin:0;}
+  .map ul ul{padding-left:22px;margin-top:6px;border-left:1px solid var(--line);}
+  .map li{margin-bottom:9px;color:var(--ink-2);}
+  .map b{color:var(--ink);}
+  .map em{font-style:normal;color:var(--ink-3);font-size:12.5px;}
+  .map .new{background:var(--brand-tint);color:var(--brand-ink);font-size:11px;font-weight:800;padding:1px 7px;margin-left:6px;}
+
+  /* --- 配色見本 --- */
+  .sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+  .sw div{border:1px solid var(--line);background:var(--surface);}
+  .sw i{display:block;height:52px;}
+  .sw span{display:block;padding:9px 11px;font-size:11.5px;color:var(--ink-2);line-height:1.6;}
+  .sw span b{display:block;color:var(--ink);font-size:12.5px;font-variant-numeric:tabular-nums;}
+
+  .foot{border-top:1px solid var(--line);padding-top:20px;font-size:12.5px;color:var(--ink-3);}
+  a{color:var(--brand-ink);}
+  :focus-visible{outline:3px solid var(--brand);outline-offset:2px;}
+</style>
+
+<div class="wrap">
+
+<header class="cover">
+  <p class="cover__k">案件 20260808-takaya-hp-fix ／ 2026-08-08</p>
+  <h1>タカヤカーグループ<br>HPリニューアル 設計書</h1>
+  <p>「暗い」の解消から始まった案件を、<strong>集客まで含めたサイト全体の設計</strong>に広げたものです。現行サイトの実測値と、既存の営業課題メモを根拠にしています。</p>
+  <div class="badges">
+    <span class="b b--draft">下書き・未承認</span>
+    <span class="b">対象：www.takayagroup.co.jp</span>
+    <span class="b">現行：Google サイト（新版）</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>目次</h2>
+  <ol>
+    <li><b>1</b><a href="#s1">前提と現状</a></li>
+    <li><b>2</b><a href="#s2">目的とKPI</a></li>
+    <li><b>3</b><a href="#s3">ターゲット</a></li>
+    <li><b>4</b><a href="#s4">集客設計</a></li>
+    <li><b>5</b><a href="#s5">サイト構成</a></li>
+    <li><b>6</b><a href="#s6">ページ要件</a></li>
+    <li><b>7</b><a href="#s7">デザイン仕様</a></li>
+    <li><b>8</b><a href="#s8">計測設計</a></li>
+    <li><b>9</b><a href="#s9">技術構成の選択肢</a></li>
+    <li><b>10</b><a href="#s10">進め方と未決事項</a></li>
+  </ol>
+</nav>
+
+<!-- ========== 1 ========== -->
+<section id="s1">
+  <h2 class="s"><i>1</i>前提と現状</h2>
+  <p class="s-lead">保存ページ7件を解析して得た実測値です。推測は含みません。</p>
+
+  <h3>1-1. 事業の実態</h3>
+  <div class="tw"><table>
+    <tbody>
+      <tr><th>創立</th><td>タカヤモーター 昭和40年5月10日／タカヤリース 昭和59年5月（事業部発足 昭和50年10月）</td></tr>
+      <tr><th>事業</th><td>新車・中古車販売／買取／リース／レンタカー／各種ローン／車検／一般整備／鈑金塗装／損害保険代理</td></tr>
+      <tr><th>強み</th><td><strong>鈑金塗装まで自社完結</strong>・<strong>代車無料</strong>・引取／納車・ワンストップ・ロータスクラブ加盟・東京海上日動リペアネット</td></tr>
+      <tr><th>所在</th><td>岡山市中区高屋21-1（JR高島駅 徒歩15分）／営業 8:30–17:30／定休 火曜</td></tr>
+      <tr><th>資産</th><td>ブログ記事 <span class="num">約161本</span>（2024-10〜2026-02、週2本ペース）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>1-2. 現行サイトの問題（実測）</h3>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>問題</th><th>根拠</th><th>影響</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><strong>自社HP上に第三者広告が出ている</strong></td><td>埋め込みブログの <code>adsbygoogle</code> に <code>data-ad-host</code>／Criteo・DoubleClick のフレームを確認</td><td><span class="pill p-stop">重大</span> 競合広告が自社サイトに表示されうる</td></tr>
+      <tr><td class="num">2</td><td>161記事のSEO資産が自社ドメインに効いていない</td><td>記事は blogspot.com 側。iframe 内は親ページの内容として扱われない</td><td><span class="pill p-stop">重大</span> 最大の機会損失</td></tr>
+      <tr><td class="num">3</td><td>「ごあいさつ」の文面が重い</td><td>「環境問題の<strong>被害者であると同時に加害者である</strong>ことを忘れてはなりません」</td><td><span class="pill p-warn">中</span> 来店意欲を削ぐ</td></tr>
+      <tr><td class="num">4</td><td>配色が暗い</td><td><code>#000000</code>×11（バナー帯）／<code>#333333</code>×24（帯・ボタン）／<code>#ff0000</code>系×6（本文）</td><td><span class="pill p-warn">中</span> 第一印象</td></tr>
+      <tr><td class="num">5</td><td>強みが伝わらない</td><td>「トータルカーライフサポート」という抽象語のみ。代車無料・自社完結が出てこない</td><td><span class="pill p-stop">重大</span> 差別化が伝わらない</td></tr>
+      <tr><td class="num">6</td><td>年数表記が古い</td><td>採用ページ「来年には創業60年」（2024年頃の記述）</td><td><span class="pill p-warn">中</span> 更新されていない印象</td></tr>
+      <tr><td class="num">7</td><td>問い合わせが外部リンク</td><td>Google フォームへ遷移。ページ内で完結しない</td><td><span class="pill p-warn">中</span> 離脱要因</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ========== 2 ========== -->
+<section id="s2">
+  <h2 class="s"><i>2</i>目的とKPI</h2>
+  <p class="s-lead">サイトは目的ではなく手段です。何のために直すのかを先に決めます。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>優先</th><th>目的</th><th>指標（KPI）</th><th>現状</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill p-brand">第1</span></td><td><strong>車検・整備の入庫を増やす</strong></td><td>電話タップ数／フォーム送信数／「岡山 車検」等での表示回数</td><td>未計測</td></tr>
+      <tr><td><span class="pill p-brand">第2</span></td><td><strong>法人リースの新規開拓</strong></td><td>法人からの問い合わせ件数</td><td>未計測</td></tr>
+      <tr><td><span class="pill p-brand">第3</span></td><td><strong>整備士の採用</strong></td><td>応募数／採用ページ滞在時間</td><td>ミイダス・Indeed 併用中</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box box--stop">
+    <h4>まず計測を入れてください</h4>
+    <p>現在アクセス解析が入っているか確認できませんでした。<strong>数字がないと、直した効果もわかりません。</strong>GA4 の設置は最優先です（第8章）。</p>
+  </div>
+</section>
+
+<!-- ========== 3 ========== -->
+<section id="s3">
+  <h2 class="s"><i>3</i>ターゲット</h2>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>誰</th><th>状況</th><th>刺さる訴求</th><th>入口</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><strong>地元の車検・整備ユーザー</strong></td><td>ディーラー車検が高い。近所で任せられる店を探している</td><td>代車無料／引取納車／60年の実績／整備保証</td><td>Google 検索・地図</td></tr>
+      <tr><td class="num">2</td><td><strong>事故・キズの修理</strong></td><td>今すぐ直したい。代車がないと困る</td><td><strong>鈑金塗装まで自社完結＝早い</strong>／保険対応／リペアネット</td><td>検索・保険会社紹介</td></tr>
+      <tr><td class="num">3</td><td><strong>中小企業の車両担当</strong></td><td>社用車の管理が手間。コストを平準化したい</td><td>メンテ込みリース／引取納車で<strong>業務が止まらない</strong></td><td>紹介・法人検索・YEG等</td></tr>
+      <tr><td class="num">4</td><td><strong>車を買い替えたい人</strong></td><td>複数店を比較中</td><td>メーカー不問／買取下取り／買った後もここで診られる</td><td>カーセンサー・検索</td></tr>
+      <tr><td class="num">5</td><td><strong>整備士（求職）</strong></td><td>今の職場で伸び悩み。技術を広げたい</td><td>販売〜鈑金まで扱える幅／資格支援／若手登用</td><td>Indeed・ミイダス・HP</td></tr>
+    </tbody>
+  </table></div>
+  <p>①②が売上のボリューム、③が単価と安定、⑤は<strong>供給側の制約</strong>です。人が採れないと入庫を増やしても回らないため、採用も集客と同列に扱います。</p>
+</section>
+
+<!-- ========== 4 ========== -->
+<section id="s4">
+  <h2 class="s"><i>4</i>集客設計</h2>
+  <p class="s-lead">サイトを直すだけでは客は増えません。流入をどこから作るかまでを設計します。</p>
+
+  <h3>4-1. 現状の集客動線</h3>
+  <div class="tw"><table>
+    <thead><tr><th>経路</th><th>状態</th><th>評価</th></tr></thead>
+    <tbody>
+      <tr><th>カーセンサー</th><td>掲載中。反響はメール通知で届く</td><td><span class="pill p-warn">取りこぼし懸念</span></td></tr>
+      <tr><th>ブログ</th><td>161本。blogspot.com にあり、HPにiframe埋め込み</td><td><span class="pill p-stop">資産が死んでいる</span></td></tr>
+      <tr><th>Google 検索（自然）</th><td>ページ数が少なく、サービス説明も薄い</td><td><span class="pill p-stop">弱い</span></td></tr>
+      <tr><th>Google 地図（MEO）</th><td>状況未確認</td><td><span class="pill p-warn">要確認・最重要</span></td></tr>
+      <tr><th>SNS</th><td>X・Instagram のリンクあり</td><td><span class="pill p-warn">効果不明</span></td></tr>
+      <tr><th>紹介・既存客</th><td>60年の地盤。保険会社経由の修理も</td><td><span class="pill p-ok">強い</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>4-2. ボトルネック仮説</h3>
+  <p>既存メモに「<strong>掲載→反響→来店→成約のどこが詰まっているか</strong>」という論点が残っていました。設計上もここが起点です。</p>
+  <div class="tw"><table>
+    <thead><tr><th>段階</th><th>仮説</th><th>打ち手</th></tr></thead>
+    <tbody>
+      <tr><th>認知</th><td>そもそも検索で出てこない。地図にも弱い可能性</td><td>MEO＋SEO（施策A・B）</td></tr>
+      <tr><th>興味</th><td>サイトが暗く、強みが書かれていないので比較で負ける</td><td>サイトリニューアル（施策C）</td></tr>
+      <tr><th>反響</th><td>問い合わせが外部フォーム。電話番号も目立たない</td><td>電話CTAの常時表示・フォーム内製化</td></tr>
+      <tr><th>来店</th><td><strong>反響への返信が遅い</strong>と他店に流れる</td><td>30分以内返信ルール（施策D）</td></tr>
+      <tr><th>成約</th><td>—（サイト外の領域）</td><td>本設計の対象外</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>4-3. 施策一覧</h3>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>施策</th><th>費用</th><th>工数</th><th>効果</th><th>時期</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill p-stop">0</span></td><td><strong>Blogger の広告を OFF</strong></td><td>0円</td><td>5分</td><td>信頼の毀損を止める</td><td><strong>即日</strong></td></tr>
+      <tr><td><span class="pill p-brand">A</span></td><td><strong>Google ビジネスプロフィール（MEO）の整備</strong></td><td>0円</td><td>初回3h＋週15分</td><td>★★★</td><td>第1週</td></tr>
+      <tr><td><span class="pill p-brand">B</span></td><td><strong>主要ブログ記事を自社ドメインへ</strong>（10〜20本）</td><td>0円</td><td>1本0.5〜1h</td><td>★★★</td><td>第2〜6週</td></tr>
+      <tr><td><span class="pill p-brand">C</span></td><td><strong>サイトリニューアル</strong>（本設計の本体）</td><td>要見積</td><td>—</td><td>★★★</td><td>第1〜8週</td></tr>
+      <tr><td><span class="pill p-brand">D</span></td><td><strong>反響30分以内返信のルール化</strong></td><td>0円</td><td>1h（仕組み化）</td><td>★★★</td><td><strong>即日</strong></td></tr>
+      <tr><td>E</td><td>法人リース専用ページ（即日代車＋料金）</td><td>0円</td><td>4h</td><td>★★</td><td>第4週〜</td></tr>
+      <tr><td>F</td><td>採用ページの刷新</td><td>0円</td><td>4h</td><td>★★</td><td>第4週〜</td></tr>
+      <tr><td>G</td><td>GA4・CV計測の設置</td><td>0円</td><td>2h</td><td>★★（土台）</td><td>第1週</td></tr>
+      <tr><td>H</td><td>リスティング広告</td><td>月3〜5万〜</td><td>—</td><td>★（後回し）</td><td>A〜Dの後</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box box--ok">
+    <h4>0・A・D は費用ゼロで、今日から着手できます</h4>
+    <p>サイト制作の判断を待たずに進められる施策です。<strong>先にここを片付けるのが最も費用対効果が高い</strong>と考えます。</p>
+  </div>
+
+  <h3>4-4. 施策A：MEO（Google ビジネスプロフィール）</h3>
+  <p>整備工場・車検の集客は、<strong>「岡山市 車検」「高屋 鈑金」のような地域検索と地図が主戦場</strong>です。ホームページより先に地図が見られます。ここを整えるのが最短距離です。</p>
+  <ul>
+    <li>営業時間・定休日（火曜）・電話番号・写真を最新化</li>
+    <li><strong>サービス欄に「車検」「鈑金塗装」「カーリース」「代車無料」を個別登録</strong></li>
+    <li>店舗外観・工場内・受付・スタッフ・代車の写真を各3枚以上</li>
+    <li><strong>口コミ依頼を業務フローに組み込む</strong>（納車時に一言＋QRコード）。返信は全件</li>
+    <li>「最新情報」に月2本投稿（ブログ記事の使い回しで可）</li>
+  </ul>
+
+  <h3>4-5. 施策B：ブログ資産の自社ドメイン化</h3>
+  <p>161本すべての移設は非現実的です（1記事＝1ページの手作業）。<strong>営業に効く記事だけを選んで、自社サイトのコンテンツとして書き直します。</strong></p>
+  <div class="tw"><table>
+    <thead><tr><th>優先</th><th>テーマ</th><th>狙うキーワード</th><th>既存記事</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>車検の費用と流れ／OBD検査</td><td>岡山 車検 費用</td><td>要新規</td></tr>
+      <tr><td class="num">2</td><td>洗車とコーティングの理論</td><td>洗車 やり方 コーティング</td><td>vol.154 / vol.159</td></tr>
+      <tr><td class="num">3</td><td>カーリースは本当にお得か</td><td>カーリース 損</td><td>vol.158</td></tr>
+      <tr><td class="num">4</td><td>自動車保険証券の扱い</td><td>自動車保険証券 車内</td><td>vol.157</td></tr>
+      <tr><td class="num">5</td><td>中古車の選び方</td><td>中古車 選び方 失敗</td><td>vol.160</td></tr>
+    </tbody>
+  </table></div>
+  <p>各記事の末尾に<strong>「岡山で車検をお考えなら」というCTA</strong>を置き、電話とフォームに接続します。記事は書きっぱなしにせず、必ず商売の導線につなげます。</p>
+
+  <h3>4-6. 施策D：反響30分以内返信</h3>
+  <p>既存メモに<strong>未着手のまま残っていた項目</strong>です。費用ゼロで、効果が最も直接的です。</p>
+  <ul>
+    <li>カーセンサー／フォーム／電話の着信を<strong>ひとつのチャネル（ChatWork等）に集約</strong></li>
+    <li>営業時間内は30分以内に一次返信。定型文でよい（「確認して本日中にご連絡します」）</li>
+    <li>時間外は<strong>自動返信</strong>で受付済みを伝える</li>
+    <li>担当を1人決める。全員の責任は誰の責任でもなくなります</li>
+  </ul>
+</section>
+
+<!-- ========== 5 ========== -->
+<section id="s5">
+  <h2 class="s"><i>5</i>サイト構成</h2>
+  <p class="s-lead">現行9ページ →<strong> 14ページ</strong>。増分はすべて集客上の理由があります。</p>
+  <div class="map">
+    <ul>
+      <li><b>トップ</b> <em>／ 強みの提示と各サービスへの分岐</em></li>
+      <li><b>サービス</b>
+        <ul>
+          <li><b>車検・点検</b> <em>／ 料金表・流れ・OBD検査</em> <span class="new">要強化</span></li>
+          <li><b>鈑金・塗装</b> <em>／ 自社完結・代車無料・保険対応</em> <span class="new">新規</span></li>
+          <li><b>新車・中古車販売</b></li>
+          <li><b>カーリース（個人）</b></li>
+          <li><b>法人カーリース</b> <em>／ 即日代車・引取納車・料金例</em> <span class="new">新規</span></li>
+          <li><b>保険</b> <em>／ 損害保険代理</em> <span class="new">新規</span></li>
+        </ul>
+      </li>
+      <li><b>選ばれる理由</b> <em>／ 差別化の集約</em> <span class="new">新規</span></li>
+      <li><b>会社概要</b>
+        <ul><li><b>ごあいさつ・経営理念</b> <em>／ 今回の修正対象</em></li></ul>
+      </li>
+      <li><b>ブログ</b> <em>／ 自社ドメイン化した記事一覧</em> <span class="new">要改修</span></li>
+      <li><b>採用</b> <em>／ 募集要項＋働く人の紹介</em> <span class="new">要強化</span></li>
+      <li><b>アクセス・お問い合わせ</b> <em>／ フォーム内製化・地図・電話</em> <span class="new">要改修</span></li>
+      <li><b>プライバシーポリシー</b></li>
+    </ul>
+  </div>
+  <p>「鈑金・塗装」を独立させるのは、<strong>現在この最大の差別化が外部サイト（リペアネット）へのリンクだけ</strong>になっているためです。自社ページがないと検索で拾われません。</p>
+</section>
+
+<!-- ========== 6 ========== -->
+<section id="s6">
+  <h2 class="s"><i>6</i>ページ要件</h2>
+  <p class="s-lead">主要ページのみ記載。<strong>すべてのページに電話CTAを常時表示</strong>します（車の相談は電話が主）。</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>ページ</th><th>目的</th><th>必須要素</th><th>CV</th></tr></thead>
+    <tbody>
+      <tr><th>トップ</th><td>3秒で「何屋か」「何が強いか」を伝え分岐させる</td><td>キャッチ／3つの約束（代車無料・自社完結・引取納車）／実績数字／サービス4枚／選ばれる理由／新着ブログ／アクセス</td><td>電話・フォーム</td></tr>
+      <tr><th>車検・点検</th><td>費用の不安を消して入庫予約へ</td><td><strong>料金の目安表</strong>／流れ図／OBD検査の説明／整備保証／代車無料／よくある質問</td><td>電話・予約フォーム</td></tr>
+      <tr><th>鈑金・塗装</th><td>「早い・代車あり・保険OK」を伝える</td><td>自社完結の説明／<strong>作業事例（before/after写真）</strong>／保険対応／リペアネット／代車</td><td>電話・写真送付相談</td></tr>
+      <tr><th>法人カーリース</th><td>車両担当者の手間を減らせると示す</td><td>メンテ込みの範囲／<strong>引取納車で業務が止まらない</strong>／料金例／導入の流れ</td><td>資料請求・フォーム</td></tr>
+      <tr><th>会社概要</th><td>信頼の裏付け</td><td>ごあいさつ（改訂版）／経営理念3枚＋原文／沿革／事業内容／加盟団体</td><td>—</td></tr>
+      <tr><th>採用</th><td>応募のハードルを下げる</td><td>募集要項／<strong>働く人の写真と声</strong>／1日の流れ／資格支援／若手登用の実例</td><td>応募フォーム</td></tr>
+      <tr><th>問い合わせ</th><td>迷わせず送信させる</td><td><strong>ページ内フォーム</strong>（外部遷移なし）／電話／地図／営業時間・定休日</td><td>送信</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box">
+    <h4>写真がリニューアルの成否を分けます</h4>
+    <p>整備工場は<strong>「どんな人が、どんな場所で作業するか」</strong>が信頼に直結します。現状ほぼ写真がありません。晴天日に外観・工場内・受付・スタッフ・代車を撮影してください。<strong>プロ撮影が最も費用対効果の高い投資</strong>だと考えます。</p>
+  </div>
+</section>
+
+<!-- ========== 7 ========== -->
+<section id="s7">
+  <h2 class="s"><i>7</i>デザイン仕様</h2>
+  <p class="s-lead">実装イメージは <a href="https://claude.ai/code/artifact/4c06d5ac-0da0-4f04-9b96-73b7fc657b6c">トップページのモック</a> を参照。</p>
+
+  <h3>7-1. 配色</h3>
+  <p>ブランド色は<strong>オレンジ寄りの赤</strong>。「明るい赤基調」は赤の面積を増やすのではなく、<strong>白を広く取って赤を強く効かせる</strong>ことで作ります。</p>
+  <div class="sw">
+    <div><i style="background:#E04A18"></i><span><b>#E04A18</b>ブランド赤：面・大きな文字・アイコン</span></div>
+    <div><i style="background:#D23E0D"></i><span><b>#D23E0D</b>赤ベタ面：白文字 4.7:1</span></div>
+    <div><i style="background:#B23C11"></i><span><b>#B23C11</b>白背景の小さな文字：5.9:1</span></div>
+    <div><i style="background:#A63508"></i><span><b>#A63508</b>ホバー</span></div>
+    <div><i style="background:#FFF4EF;border-bottom:1px solid #E4DFDA"></i><span><b>#FFF4EF</b>淡い赤：注記の地色</span></div>
+    <div><i style="background:#101010"></i><span><b>#101010</b>本文（黒。<strong>本文に赤は使わない</strong>）</span></div>
+  </div>
+  <div class="box">
+    <h4>訂正：当初「赤文字をやめる」としたのは誤りでした</h4>
+    <p>赤はタカヤのブランドカラーであり、主役に据えるべき色です。問題は<strong>純赤 <code>#ff0000</code> を長い本文に使っている</strong>点でした。赤は見出し・ボタン・数字・区切り線に集中させ、本文は黒にします。</p>
+  </div>
+
+  <h3>7-2. タイポグラフィ</h3>
+  <div class="tw"><table>
+    <tbody>
+      <tr><th>書体</th><td>ゴシック体。<code>"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",YuGothic,Meiryo,"IPAPGothic","IPAGothic",sans-serif</code><br><small>末尾の IPA フォントは、PDF生成時に中国語書体へ落ちるのを防ぐため必須</small></td></tr>
+      <tr><th>見出し</th><td>太さ 800／字間 -0.01em／<code>clamp()</code> で可変（例：25〜35px）</td></tr>
+      <tr><th>本文</th><td>14.5〜16px／行間 1.9〜2.0（日本語は広めに）</td></tr>
+      <tr><th>数字</th><td><code>font-variant-numeric: tabular-nums</code>（電話番号・料金表・年号）</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>7-3. コンポーネント</h3>
+  <ul>
+    <li><strong>角は小さく</strong>（0〜2px）。丸みを抑えて硬質に。工業・整備の質感に合わせる</li>
+    <li><strong>ホバー</strong>：カード上端に赤い線が伸びる／3px 浮く</li>
+    <li><strong>電話CTA</strong>：スマホでは画面下部に固定表示。<code>tel:</code> リンク必須</li>
+    <li><strong>セクションの区切り</strong>：白 → 赤ベタ → 淡グレー の交互でリズムを作る</li>
+  </ul>
+
+  <h3>7-4. 対応要件</h3>
+  <div class="tw"><table>
+    <tbody>
+      <tr><th>スマホ</th><td><strong>最優先。</strong>「岡山 車検」はほぼスマホ検索。390px 幅で全ページ検証</td></tr>
+      <tr><th>コントラスト</th><td>本文 4.5:1 以上、大きな文字 3:1 以上（WCAG AA）</td></tr>
+      <tr><th>表示速度</th><td>画像は WebP・遅延読み込み。トップは 2 秒以内</td></tr>
+      <tr><th>その他</th><td>キーボード操作でフォーカスが見えること／<code>prefers-reduced-motion</code> 対応</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ========== 8 ========== -->
+<section id="s8">
+  <h2 class="s"><i>8</i>計測設計</h2>
+  <p class="s-lead">これがないと、直した効果が判断できません。<strong>リニューアルより先に入れてください。</strong></p>
+  <div class="tw"><table>
+    <thead><tr><th>計測したいこと</th><th>実装</th><th>見る指標</th></tr></thead>
+    <tbody>
+      <tr><th>電話</th><td><code>tel:</code> リンクのクリックをイベント計測</td><td>電話タップ数／ページ別</td></tr>
+      <tr><th>フォーム</th><td>送信完了をイベント計測</td><td>送信数／到達率</td></tr>
+      <tr><th>地図</th><td>「経路案内」クリック</td><td>来店意向</td></tr>
+      <tr><th>流入元</th><td>GA4 標準</td><td>検索／地図／カーセンサー／SNS の内訳</td></tr>
+      <tr><th>検索語</th><td>Search Console 連携</td><td>どの語で見られ、押されているか</td></tr>
+      <tr><th>地図の反応</th><td>ビジネスプロフィールのインサイト</td><td>表示回数・電話・経路検索</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>月1回、A4一枚でよいので数字を見る場を作ってください。</strong>見ない数字は、無いのと同じです。</p>
+</section>
+
+<!-- ========== 9 ========== -->
+<section id="s9">
+  <h2 class="s"><i>9</i>技術構成の選択肢</h2>
+  <div class="box box--stop">
+    <h4>本設計のデザインは、現行の Google サイトでは実現できません</h4>
+    <p>Google サイトはテーマの色を選ぶことしかできず、ヒーローやカードの作り込み、料金表、固定電話CTAは作れません。<strong>ここが最大の分岐点です。</strong></p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>案</th><th>構成</th><th>費用</th><th>できること</th><th>評価</th></tr></thead>
+    <tbody>
+      <tr><th>①</th><td>Google サイトのまま</td><td>0円</td><td>黒帯を消す・赤を整える・埋め込みで一部作り込み。<strong>本設計の2〜3割</strong></td><td><span class="pill p-warn">応急処置</span></td></tr>
+      <tr><th>②</th><td><strong>静的サイト＋ヘッドレスCMS</strong><br><small>（Astro / Next.js＋microCMS 等、Vercel等にホスティング）</small></td><td>月0〜2千円程度</td><td>本設計を<strong>すべて実現</strong>。速い・SEOに強い・ブログも自社ドメイン</td><td><span class="pill p-ok">推奨</span></td></tr>
+      <tr><th>③</th><td>WordPress</td><td>月1〜2千円＋保守</td><td>本設計を実現。更新は容易だが<strong>更新・セキュリティ対応が継続的に必要</strong></td><td><span class="pill p-warn">運用負荷</span></td></tr>
+    </tbody>
+  </table></div>
+  <p>推奨は<strong>②</strong>です。独自ドメイン <code>takayagroup.co.jp</code> はそのまま使えます。ブログの自社ドメイン化（施策B）も同じ基盤で片付き、保守の手間が③より小さいためです。</p>
+</section>
+
+<!-- ========== 10 ========== -->
+<section id="s10">
+  <h2 class="s"><i>10</i>進め方と未決事項</h2>
+
+  <h3>10-1. 進め方（案）</h3>
+  <div class="tw"><table>
+    <thead><tr><th>時期</th><th>やること</th><th>依存</th></tr></thead>
+    <tbody>
+      <tr><th>即日</th><td>Blogger 広告OFF／反響30分ルール（施策0・D）</td><td>なし</td></tr>
+      <tr><th>第1週</th><td>GA4設置／MEO整備（施策G・A）／<strong>写真撮影の手配</strong></td><td>なし</td></tr>
+      <tr><th>第2週</th><td>技術構成の決定／原稿確定（ごあいさつ・料金表）</td><td><strong>要判断</strong></td></tr>
+      <tr><th>第3〜6週</th><td>サイト構築／主要記事の移設（施策B・C）</td><td>写真・原稿</td></tr>
+      <tr><th>第7週</th><td>検証（スマホ・表示速度・リンク）／公開</td><td>—</td></tr>
+      <tr><th>第8週〜</th><td>数字を見て改善。リスティングの要否を判断</td><td>GA4のデータ</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>10-2. ご判断いただきたいこと</h3>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>項目</th><th>推奨</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><strong>技術構成</strong>（①応急処置／②作り直し／③WordPress）</td><td>②</td></tr>
+      <tr><td class="num">2</td><td>Blogger の広告 OFF</td><td>即実施</td></tr>
+      <tr><td class="num">3</td><td>ごあいさつの環境メッセージ書き換え（「加害者」表現）</td><td>社長確認</td></tr>
+      <tr><td class="num">4</td><td>キャッチ「車のことは、ぜんぶタカヤで。」の採否</td><td>—</td></tr>
+      <tr><td class="num">5</td><td><strong>車検の料金表を公開するか</strong></td><td>公開推奨。費用不安が最大の離脱要因</td></tr>
+      <tr><td class="num">6</td><td>写真撮影の実施可否</td><td>実施推奨</td></tr>
+      <tr><td class="num">7</td><td>更新担当者を誰にするか</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box">
+    <h4>5番について</h4>
+    <p>車検の料金を出すかどうかは経営判断ですが、<strong>ユーザーが最も知りたいのは費用</strong>です。載っていないと、載せている店に流れます。「〜から」表記や車種区分ごとの目安でも効果があります。</p>
+  </div>
+
+  <p class="foot">
+    案件 20260808-takaya-hp-fix ／ 本書は<strong>下書き（未承認）</strong>です。承認後に Drive
+    <code>02_プロジェクト管理/20260808-takaya-hp-fix/</code> へ格納します。<br>
+    根拠：現行サイト保存ページ7件の解析、および既存の営業課題メモ。
+  </p>
+</section>
+
+</div>

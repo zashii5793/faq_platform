@@ -1,0 +1,553 @@
+<title>タカヤモーターグループ HP修正案｜ごあいさつ・経営理念</title>
+<style>
+  /* ============================================================
+     ドキュメント側（クローム）のトーン
+     ============================================================ */
+  :root {
+    --ground:      #EDEFF2;
+    --surface:     #FFFFFF;
+    --surface-2:   #F6F7F9;
+    --ink:         #171C23;
+    --ink-2:       #49515C;
+    --ink-3:       #79828E;
+    --line:        #D9DEE4;
+    --line-soft:   #E8ECF0;
+    --accent:      #0B6BCB;
+    --accent-soft: #E7F0FB;
+    --flag:        #B3271E;
+    --flag-soft:   #FCEEEC;
+    --ok:          #2E7D5B;
+    --ok-soft:     #E7F4EE;
+
+    --font-sans:
+      "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", YuGothic,
+      Meiryo, "IPAPGothic", "IPAGothic", sans-serif;
+    --font-serif:
+      "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "MS PMincho",
+      "IPAPMincho", "IPAMincho", serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #12161B;
+      --surface:     #1A1F26;
+      --surface-2:   #222831;
+      --ink:         #E9EDF2;
+      --ink-2:       #AEB7C2;
+      --ink-3:       #7C8794;
+      --line:        #2E3640;
+      --line-soft:   #262D36;
+      --accent:      #5CA8F0;
+      --accent-soft: #17304A;
+      --flag:        #F0857A;
+      --flag-soft:   #351F1D;
+      --ok:          #6FC49C;
+      --ok-soft:     #173025;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:      #12161B;
+    --surface:     #1A1F26;
+    --surface-2:   #222831;
+    --ink:         #E9EDF2;
+    --ink-2:       #AEB7C2;
+    --ink-3:       #7C8794;
+    --line:        #2E3640;
+    --line-soft:   #262D36;
+    --accent:      #5CA8F0;
+    --accent-soft: #17304A;
+    --flag:        #F0857A;
+    --flag-soft:   #351F1D;
+    --ok:          #6FC49C;
+    --ok-soft:     #173025;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .doc-wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 96px; }
+
+  /* ---------- ヘッダ ---------- */
+  .doc-head { padding: 56px 0 36px; }
+  .doc-kicker {
+    font-size: 12px; letter-spacing: .18em; color: var(--ink-3);
+    font-variant-numeric: tabular-nums; margin: 0 0 14px;
+  }
+  .doc-title {
+    font-family: var(--font-serif);
+    font-size: clamp(27px, 4.6vw, 41px);
+    line-height: 1.45; font-weight: 600; margin: 0 0 18px;
+    text-wrap: balance; letter-spacing: .01em;
+  }
+  .doc-sub { font-size: 15.5px; color: var(--ink-2); margin: 0; max-width: 62ch; }
+
+  .doc-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .tag {
+    font-size: 12px; padding: 5px 12px; border-radius: 100px;
+    border: 1px solid var(--line); color: var(--ink-2); background: var(--surface);
+  }
+  .tag--draft { border-color: var(--flag); color: var(--flag); background: var(--flag-soft); font-weight: bold; }
+
+  /* ---------- 発見（テーゼ） ---------- */
+  .finding {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 4px; padding: 34px 34px 30px; margin-bottom: 64px;
+    border-top: 3px solid var(--flag);
+  }
+  .finding__label {
+    font-size: 11.5px; letter-spacing: .16em; color: var(--flag);
+    font-weight: bold; margin: 0 0 16px;
+  }
+  .finding blockquote {
+    margin: 0 0 22px; padding: 0 0 0 20px;
+    border-left: 2px solid var(--flag);
+    font-family: var(--font-serif);
+    font-size: clamp(17px, 2.4vw, 21px); line-height: 1.85; color: var(--ink);
+  }
+  .finding blockquote mark {
+    background: var(--flag-soft); color: var(--flag);
+    padding: 1px 3px; font-weight: bold;
+  }
+  .finding p { margin: 0 0 12px; font-size: 15px; color: var(--ink-2); max-width: 68ch; }
+  .finding p:last-child { margin-bottom: 0; }
+  .finding strong { color: var(--ink); }
+
+  /* ---------- セクション ---------- */
+  .sec { margin-bottom: 72px; }
+  .sec__head { margin-bottom: 24px; }
+  .sec__eyebrow {
+    font-size: 11.5px; letter-spacing: .16em; color: var(--accent);
+    font-weight: bold; margin: 0 0 8px;
+  }
+  .sec__title {
+    font-family: var(--font-serif); font-size: 24px; font-weight: 600;
+    margin: 0 0 8px; letter-spacing: .01em;
+  }
+  .sec__note { margin: 0; font-size: 14.5px; color: var(--ink-2); max-width: 70ch; }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+  @media (max-width: 900px) { .pair { grid-template-columns: 1fr; } }
+
+  .col__label {
+    display: flex; align-items: baseline; gap: 9px;
+    font-size: 12px; letter-spacing: .1em; margin: 0 0 10px; color: var(--ink-3);
+  }
+  .col__label b { font-size: 13px; letter-spacing: .04em; }
+  .col--before .col__label b { color: var(--ink-2); }
+  .col--after  .col__label b { color: var(--accent); }
+
+  /* ---------- 画面プレビュー枠 ---------- */
+  .device {
+    border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+    background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  }
+  .device__bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; background: var(--surface-2);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .device__dots { display: flex; gap: 5px; }
+  .device__dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: block; }
+  .device__url {
+    font-size: 11px; color: var(--ink-3); overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* ============================================================
+     モック部分：実際の Web ページのプレビューなので常に明るい配色
+     ============================================================ */
+  .mk { font-family: var(--font-sans); line-height: 1.9; }
+  .mk * { box-sizing: border-box; }
+
+  /* ---- BEFORE：現行ページの再現 ---- */
+  .mk-band {
+    background: #3A3A3A; color: #fff; padding: 22px 22px; font-size: 18px;
+  }
+  .mk-old { background: #fff; color: #202124; padding: 24px 22px; font-size: 13px; line-height: 1.9; }
+  .mk-old p { margin: 0 0 15px; }
+  .mk-old .rin { margin: 0 0 3px; }
+  .mk-old .sub { font-weight: bold; font-size: 13.5px; margin: 22px 0 10px; }
+  .mk-old .sign { margin-top: 20px; font-size: 14px; }
+  .mk-old mark { background: #FBE3E1; color: #9B1C13; padding: 1px 2px; }
+  .mk-old .meta-note { color: #6B7280; font-size: 12px; margin-bottom: 16px; }
+
+  /* ---- AFTER：修正案 ---- */
+  .mk-new { background: #FDF8F1; padding: 30px 22px; color: #1F2937; }
+  .mk-eyebrow {
+    display: inline-block; background: #F0910A; color: #fff;
+    font-size: 11px; font-weight: bold; letter-spacing: .1em;
+    padding: 4px 12px; border-radius: 100px; margin-bottom: 14px;
+  }
+  .mk-h {
+    font-size: 23px; line-height: 1.6; margin: 0 0 20px; color: #1F2937; font-weight: bold;
+  }
+  .mk-h span { background: linear-gradient(transparent 62%, #FFE08A 62%); padding: 0 2px; }
+  .mk-card {
+    background: #fff; border-radius: 10px; padding: 24px 22px 20px;
+    box-shadow: 0 2px 12px rgba(176,146,96,.16);
+  }
+  .mk-card > p { font-size: 14px; margin: 0 0 14px; color: #37414F; line-height: 1.95; }
+  .mk-eco { background: #E7F4EE; border-radius: 9px; padding: 19px 20px; margin-top: 20px; }
+  .mk-eco h4 { margin: 0 0 10px; font-size: 14.5px; color: #2E7D5B; }
+  .mk-eco p { margin: 0 0 11px; font-size: 13.5px; color: #354A41; line-height: 1.9; }
+  .mk-eco p:last-child { margin-bottom: 0; }
+  .mk-sign {
+    display: flex; gap: 22px; flex-wrap: wrap;
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid #E7E2DA;
+  }
+  .mk-person { display: flex; align-items: center; gap: 11px; }
+  .mk-ava {
+    width: 46px; height: 46px; border-radius: 50%; background: #EAF2FC;
+    border: 2px solid #fff; box-shadow: 0 0 0 1px #E7E2DA;
+    display: flex; align-items: center; justify-content: center;
+    color: #0B6BCB; font-size: 9px; font-weight: bold; letter-spacing: .06em; flex-shrink: 0;
+  }
+  .mk-person .t { font-size: 11.5px; color: #5B6674; line-height: 1.55; }
+  .mk-person .t b { display: block; font-size: 15px; color: #1F2937; }
+
+  /* 経営理念カード */
+  .mk-goal { background: #fff; padding: 30px 20px; color: #1F2937; }
+  .mk-goal .eb {
+    display: block; text-align: center; color: #0B6BCB;
+    font-size: 11px; font-weight: bold; letter-spacing: .16em; margin-bottom: 8px;
+  }
+  .mk-goal h3 { text-align: center; font-size: 21px; margin: 0 0 6px; }
+  .mk-goal .sub2 { text-align: center; color: #5B6674; font-size: 13px; margin: 0 0 22px; }
+  .mk-glist { display: grid; gap: 12px; }
+  .mk-g { display: flex; gap: 14px; background: #EAF2FC; border-radius: 10px; padding: 17px 17px 15px; }
+  .mk-g i {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+    background: #F0910A; color: #fff; font-size: 15px; font-weight: bold; font-style: normal;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mk-g h4 { margin: 4px 0 5px; font-size: 15px; line-height: 1.5; }
+  .mk-g p { margin: 0; font-size: 12.8px; color: #46505E; line-height: 1.85; }
+  .mk-orig {
+    margin-top: 14px; border: 1px solid #E7E2DA; border-radius: 9px; background: #FAF8F4;
+  }
+  .mk-orig summary {
+    cursor: pointer; padding: 12px 16px; font-size: 13px; font-weight: bold;
+    color: #1F2937; list-style: none;
+  }
+  .mk-orig summary::-webkit-details-marker { display: none; }
+  .mk-orig summary::before { content: "▸ "; color: #F0910A; }
+  .mk-orig[open] summary::before { content: "▾ "; }
+  .mk-orig div { padding: 0 16px 16px; font-size: 13px; color: #37414F; line-height: 2; }
+
+  /* ---------- 変更点テーブル ---------- */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 620px; }
+  caption { text-align: left; padding: 18px 20px 4px; font-size: 13px; color: var(--ink-3); }
+  th, td { text-align: left; padding: 15px 18px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  thead th {
+    font-size: 12px; letter-spacing: .08em; color: var(--ink-3);
+    background: var(--surface-2); font-weight: bold; white-space: nowrap;
+  }
+  tbody th { font-weight: bold; color: var(--ink); white-space: nowrap; width: 1%; }
+  td { color: var(--ink-2); }
+  td strong { color: var(--ink); }
+  tr:last-child th, tr:last-child td { border-bottom: none; }
+
+  /* ---------- 承認 ---------- */
+  .ask {
+    background: var(--surface); border: 1px solid var(--line);
+    border-top: 3px solid var(--accent); border-radius: 4px; padding: 32px 34px;
+  }
+  .ask h2 { font-family: var(--font-serif); font-size: 21px; margin: 0 0 6px; font-weight: 600; }
+  .ask > p { margin: 0 0 24px; color: var(--ink-2); font-size: 14.5px; }
+  .ask ol { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 18px; counter-reset: q; }
+  .ask li { padding-left: 40px; position: relative; counter-increment: q; }
+  .ask li::before {
+    content: counter(q); position: absolute; left: 0; top: 1px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: 13px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ask li b { display: block; font-size: 15.5px; margin-bottom: 3px; }
+  .ask li span { font-size: 14px; color: var(--ink-2); }
+
+  .foot {
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--ink-3);
+  }
+</style>
+
+<div class="doc-wrap">
+
+  <header class="doc-head">
+    <p class="doc-kicker">案件 20260808-takaya-hp-fix ／ 2026-08-08</p>
+    <h1 class="doc-title">「ごあいさつ」と経営理念を、<br>明るくする — 修正案</h1>
+    <p class="doc-sub">
+      会社概要ページの2つの欄について、現行の文面と修正案を並べています。
+      左は<strong>現行ページの文面をそのまま</strong>載せたもので、推測は含みません。
+    </p>
+    <div class="doc-tags">
+      <span class="tag tag--draft">下書き・未承認</span>
+      <span class="tag">対象：会社概要ページ</span>
+      <span class="tag">Google サイト（新版）</span>
+    </div>
+  </header>
+
+  <section class="finding">
+    <p class="finding__label">最も大きな要因</p>
+    <blockquote>
+      私たち一人ひとりがクルマが原因で引き起こされる環境問題の<mark>被害者であると同時に加害者である</mark>ことを忘れてはなりません。
+    </blockquote>
+    <p>
+      現行の「ごあいさつ」欄にある一文です。車を買いに来たお客様が、会社紹介のページで
+      <strong>「あなたは環境問題の加害者だ」と言われる</strong>構図になっています。
+    </p>
+    <p>
+      志は立派ですが、挨拶文としては読後感が重くなります。
+      <strong>欄が暗く感じられる一番の理由はここ</strong>と判断しました。
+      配色（濃グレーの帯）も効いていますが、主因は文章のほうです。
+    </p>
+    <p>
+      修正案では<strong>この取り組みを削除していません。</strong>
+      エコへの姿勢は残したまま、お客様を加害者にするのをやめ、
+      「長く大切に乗ることがいちばんのエコ」という<strong>整備という本業に接続する言い方</strong>に変えています。
+    </p>
+  </section>
+
+  <!-- ================= ごあいさつ ================= -->
+  <section class="sec">
+    <div class="sec__head">
+      <p class="sec__eyebrow">SECTION</p>
+      <h2 class="sec__title">ごあいさつ欄</h2>
+      <p class="sec__note">
+        濃グレーの帯・約170字の一続きの段落・「加害者」という強い言葉 →
+        明るい紙面、区切られた段落、前向きな環境メッセージへ。
+      </p>
+    </div>
+
+    <div class="pair">
+      <div class="col col--before">
+        <p class="col__label"><b>現行</b>／実物そのまま</p>
+        <div class="device">
+          <div class="device__bar">
+            <span class="device__dots"><i></i><i></i><i></i></span>
+            <span class="device__url">www.takayagroup.co.jp/会社概要</span>
+          </div>
+          <div class="mk">
+            <div class="mk-band">ごあいさつ</div>
+            <div class="mk-old">
+              <p>経営理念に、</p>
+              <p class="rin">一、常に豊かさを追求し、優れた人材育成へ努力・研鑽しよう。</p>
+              <p class="rin">一、お客様満足度を第一とし、質の良い物・サービスを提供しよう。</p>
+              <p>一、価値ある仕事を通じ、公平な配分と利益をもって地域社会に貢献しよう。</p>
+              <p>を掲げ日々業務に邁進しております。</p>
+              <p>車の販売・リースから整備や修理、代車、保険など自動車におけるほぼ全ての業務をお客様にお任せ頂けるよう、トータルカーライフサポートをこれからも徹底して参ります。さらに高い品質と確かな満足度を感じていただけるようこれらも成長し続ける企業でありたい。それが私たちタカヤグループの行く道であります。お客様のご来店を心よりお待ちしております。</p>
+              <p class="sub">-地球の環境と未来を考える-</p>
+              <p>私たちは日常生活で多量のエネルギーを使用しています。特にクルマからの排出ガスが地球温暖化の大きな要因の一つとなっています。国内で1年間に排出される二酸化炭素総量の20％は、これらクルマから排出されると云われています。<mark>私たち一人ひとりがクルマが原因で引き起こされる環境問題の被害者であると同時に加害者であることを忘れてはなりません。</mark>私たちタカヤは、お客様と一体となりクルマのエコ活動を推進し、排出ガス削減と地球温暖化防止へ努力いたします。それが私たちタカヤカーグループの行く道であります。</p>
+              <p class="sign">タカヤモーター代表取締役社長　草地 賢吾 / タカヤリース代表取締役社長　石指 英樹</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col col--after">
+        <p class="col__label"><b>修正案</b>／このまま貼り付け可能</p>
+        <div class="device">
+          <div class="device__bar">
+            <span class="device__dots"><i></i><i></i><i></i></span>
+            <span class="device__url">www.takayagroup.co.jp/会社概要</span>
+          </div>
+          <div class="mk">
+            <div class="mk-new">
+              <span class="mk-eyebrow">ごあいさつ</span>
+              <p class="mk-h">車のことは、<span>ぜんぶタカヤで。</span></p>
+              <div class="mk-card">
+                <p>昭和40年の創業から、岡山・高屋の地でお客様のカーライフをお手伝いしてきました。販売も、車検も、整備も、鈑金塗装も、リースも保険も。<strong>一か所で全部そろう</strong>——それが私たちの形です。</p>
+                <p>鈑金塗装まで自社で完結できるので、<strong>代車は無料でご用意</strong>します。お車をお預かりしている間も、お客様の毎日は止まりません。お引き取りと納車もお伺いしますので、お忙しい方こそお任せください。</p>
+                <p>これからも品質と満足度を高め続けます。スタッフが学び、伸びていける会社であることが、めぐりめぐってお客様への一番のサービスになると信じています。どうぞお気軽にお立ち寄りください。</p>
+
+                <div class="mk-eco">
+                  <h4>― 地球と、これからのことを考える ―</h4>
+                  <p>クルマは暮らしに欠かせない道具です。だからこそ<strong>一台を長く、良い状態で乗り続けることが、いちばん確かなエコ</strong>だと私たちは考えています。</p>
+                  <p>きちんと整備されたクルマは燃費が落ちにくく、余計な部品交換も減ります。私たちが日々の点検・整備にこだわる理由のひとつは、ここにあります。お客様と一緒に、クルマとの付き合い方から環境に向き合っていきます。</p>
+                </div>
+
+                <div class="mk-sign">
+                  <div class="mk-person">
+                    <span class="mk-ava">PHOTO</span>
+                    <span class="t">タカヤモーター株式会社 代表取締役社長<b>草地 賢吾</b></span>
+                  </div>
+                  <div class="mk-person">
+                    <span class="mk-ava">PHOTO</span>
+                    <span class="t">タカヤリース株式会社 代表取締役社長<b>石指 英樹</b></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 経営理念 ================= -->
+  <section class="sec">
+    <div class="sec__head">
+      <p class="sec__eyebrow">SECTION</p>
+      <h2 class="sec__title">経営理念（会社の目標）</h2>
+      <p class="sec__note">
+        現行は独立した欄がなく、挨拶文の冒頭に地の文として埋もれています。
+        <strong>文言は一字も変えず</strong>、独立した3枚のカードに。原文も折りたたみで併記します。
+      </p>
+    </div>
+
+    <div class="pair">
+      <div class="col col--before">
+        <p class="col__label"><b>現行</b>／実物そのまま</p>
+        <div class="device">
+          <div class="device__bar">
+            <span class="device__dots"><i></i><i></i><i></i></span>
+            <span class="device__url">www.takayagroup.co.jp/会社概要</span>
+          </div>
+          <div class="mk">
+            <div class="mk-band">会社概要</div>
+            <div class="mk-old">
+              <p class="meta-note">※ 経営理念には独立した欄がなく、「ごあいさつ」冒頭に地の文として置かれています。</p>
+              <p class="rin">一、常に豊かさを追求し、優れた人材育成へ努力・研鑽しよう。</p>
+              <p class="rin">一、お客様満足度を第一とし、質の良い物・サービスを提供しよう。</p>
+              <p>一、価値ある仕事を通じ、公平な配分と利益をもって地域社会に貢献しよう。</p>
+              <p class="sub">■創　立</p>
+              <p class="rin">● タカヤモーター株式会社＝昭和40年5月10日</p>
+              <p>● タカヤリース株式会社＝昭和59年5月（事業部発足昭和50年10月）</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col col--after">
+        <p class="col__label"><b>修正案</b>／文言は変更なし</p>
+        <div class="device">
+          <div class="device__bar">
+            <span class="device__dots"><i></i><i></i><i></i></span>
+            <span class="device__url">www.takayagroup.co.jp/会社概要</span>
+          </div>
+          <div class="mk">
+            <div class="mk-goal">
+              <span class="eb">OUR MISSION</span>
+              <h3>私たちが大切にしていること</h3>
+              <p class="sub2">昭和40年の創業から変わらない、3つの約束です。</p>
+              <div class="mk-glist">
+                <div class="mk-g">
+                  <i>1</i>
+                  <div>
+                    <h4>人が育つ会社であること</h4>
+                    <p>技術も接客も、伸ばし続けます。学び続けるスタッフが、お客様の「困った」に応えられる一番の力になります。</p>
+                  </div>
+                </div>
+                <div class="mk-g">
+                  <i>2</i>
+                  <div>
+                    <h4>お客様の満足を、いちばんに</h4>
+                    <p>良いものを、納得のいく形で。売って終わりではなく、乗り続ける毎日をずっと支えます。</p>
+                  </div>
+                </div>
+                <div class="mk-g">
+                  <i>3</i>
+                  <div>
+                    <h4>地元・岡山とともに歩む</h4>
+                    <p>価値ある仕事で得た利益を、働く仲間と地域へきちんと還元する。地元に根ざした会社であり続けます。</p>
+                  </div>
+                </div>
+              </div>
+              <details class="mk-orig">
+                <summary>経営理念（原文）</summary>
+                <div>
+                  一、常に豊かさを追求し、優れた人材育成へ努力・研鑽しよう。<br>
+                  一、お客様満足度を第一とし、質の良い物・サービスを提供しよう。<br>
+                  一、価値ある仕事を通じ、公平な配分と利益をもって地域社会に貢献しよう。
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 変更点 ================= -->
+  <section class="sec">
+    <div class="sec__head">
+      <p class="sec__eyebrow">DIFF</p>
+      <h2 class="sec__title">何を変えたか</h2>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <caption>現行ページの実測・実文面との対照</caption>
+        <thead>
+          <tr><th scope="col">観点</th><th scope="col">現行</th><th scope="col">修正案</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">環境メッセージ</th>
+            <td>「…環境問題の<strong>被害者であると同時に加害者である</strong>ことを忘れてはなりません」<br>お客様に罪悪感を向ける書き方</td>
+            <td><strong>「一台を長く、良い状態で乗り続けることが、いちばん確かなエコ」</strong><br>取り組みの中身は維持し、整備という本業に接続</td>
+          </tr>
+          <tr>
+            <th scope="row">セクション帯</th>
+            <td>「ごあいさつ」「会社概要」の<strong>2本とも濃グレー</strong>の帯</td>
+            <td>ヘッダーを「タイトルのみ」に変更し、生成りの紙面へ</td>
+          </tr>
+          <tr>
+            <th scope="row">経営理念</th>
+            <td>独立した欄がなく、挨拶文の冒頭に埋没</td>
+            <td>独立した3枚のカードへ。<strong>文言は一字も変更なし</strong>。原文も併記</td>
+          </tr>
+          <tr>
+            <th scope="row">本文の構造</th>
+            <td>1段落が約170字。改行のみで区切られている</td>
+            <td>3〜4行ごとに区切り、要点を太字化。スマホでも読める</td>
+          </tr>
+          <tr>
+            <th scope="row">強みの提示</th>
+            <td>「トータルカーライフサポート」という<strong>抽象語のみ</strong></td>
+            <td>無料代車・鈑金塗装まで自社完結・引取納車と、<strong>具体で示す</strong></td>
+          </tr>
+          <tr>
+            <th scope="row">署名</th>
+            <td>2社の社長名が1行に詰まっている</td>
+            <td>2名を並べ、顔写真枠を追加。誰の言葉かが伝わる</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= 承認 ================= -->
+  <section class="ask">
+    <h2>ご判断いただきたいこと</h2>
+    <p>この3点が決まれば、Google サイトへの反映まで進められます。</p>
+    <ol>
+      <li>
+        <b>環境メッセージの書き換え</b>
+        <span>「加害者」の表現を外すことの可否。<strong>文意を変える唯一の箇所</strong>なので、社長ご本人のご確認をお願いします。</span>
+      </li>
+      <li>
+        <b>「車のことは、ぜんぶタカヤで。」の採否</b>
+        <span>見出しです。既存の「お客様満足No.1を目指し、質の高いカーサービスを。」を活かす案も作れます。</span>
+      </li>
+      <li>
+        <b>顔写真を入れるか</b>
+        <span>無しでも成立しますが、あると信頼感が上がります。採用ページにも効きます。</span>
+      </li>
+    </ol>
+    <p class="foot">
+      承認前のため Drive には格納していません。承認後に
+      <strong>02_プロジェクト管理/20260808-takaya-hp-fix/</strong> へ移します。
+    </p>
+  </section>
+
+</div>
