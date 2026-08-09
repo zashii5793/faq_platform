@@ -1,9 +1,11 @@
 <title>タカヤモーターグループ｜HPリニューアル案</title>
 <style>
   :root{
-    --red:#E60012;
-    --red-deep:#AE000E;
-    --red-tint:#FFF2F3;
+    --red:#E04A18;        /* ブランド赤（オレンジ寄り）：面・大きな文字・アイコン */
+    --red-panel:#D23E0D;  /* 赤ベタ面：白文字とのコントラスト 4.7:1 を確保 */
+    --red-ink:#B23C11;    /* 白背景の小さな文字用：5.9:1 */
+    --red-deep:#A63508;   /* ホバー */
+    --red-tint:#FFF4EF;
     --ink:#101010;
     --ink-2:#4B4B4B;
     --ink-3:#8A8A8A;
@@ -28,7 +30,7 @@
     background:#101010;color:#fff;font-size:12.5px;
     padding:11px 24px;text-align:center;letter-spacing:.02em;
   }
-  .memo b{color:#FF8A92;}
+  .memo b{color:#FFAE8C;}
 
   /* ===== ヘッダー ===== */
   .hd{
@@ -48,9 +50,9 @@
     color:var(--ink-2);text-decoration:none;font-size:13.5px;font-weight:600;
     padding:5px 0;border-bottom:2px solid transparent;transition:.18s;
   }
-  .hd nav a:hover,.hd nav a:focus-visible{color:var(--red);border-bottom-color:var(--red);}
+  .hd nav a:hover,.hd nav a:focus-visible{color:var(--red-ink);border-bottom-color:var(--red);}
   .hd__cta{
-    background:var(--red);color:#fff;text-decoration:none;
+    background:var(--red-panel);color:#fff;text-decoration:none;
     font-size:13.5px;font-weight:700;padding:11px 20px;letter-spacing:.03em;
     transition:.18s;white-space:nowrap;
   }
@@ -59,7 +61,7 @@
 
   /* ===== ヒーロー ===== */
   .hero{
-    background:var(--red);color:#fff;position:relative;overflow:hidden;
+    background:var(--red-panel);color:#fff;position:relative;overflow:hidden;
     padding:78px 0 128px;
   }
   .hero::after{
@@ -91,17 +93,17 @@
 
   .offer{
     background:#fff;color:var(--ink);padding:30px 30px 26px;
-    box-shadow:0 24px 60px rgba(120,0,8,.30);
+    box-shadow:0 24px 60px rgba(120,38,6,.30);
   }
   .offer h2{
-    font-size:13px;letter-spacing:.14em;color:var(--red);margin:0 0 18px;font-weight:800;
+    font-size:13px;letter-spacing:.14em;color:var(--red-ink);margin:0 0 18px;font-weight:800;
   }
   .offer ul{list-style:none;margin:0;padding:0;display:grid;gap:15px;}
   .offer li{display:flex;gap:13px;align-items:flex-start;font-size:14.5px;line-height:1.75;}
   .offer li b{display:block;font-size:16.5px;margin-bottom:1px;}
   .offer li span{color:var(--ink-2);font-size:13px;}
   .offer__ic{
-    width:26px;height:26px;background:var(--red);color:#fff;flex-shrink:0;
+    width:26px;height:26px;background:var(--red-panel);color:#fff;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
     font-size:13px;font-weight:800;margin-top:3px;
   }
@@ -121,10 +123,10 @@
   /* ===== 共通セクション ===== */
   .sec{padding:84px 0;}
   .sec--tint{background:var(--paper-2);}
-  .sec--red{background:var(--red);color:#fff;}
+  .sec--red{background:var(--red-panel);color:#fff;}
   .shd{margin-bottom:42px;}
   .shd__eb{
-    font-size:12px;letter-spacing:.2em;color:var(--red);font-weight:800;
+    font-size:12px;letter-spacing:.2em;color:var(--red-ink);font-weight:800;
     margin:0 0 11px;display:flex;align-items:center;gap:10px;
   }
   .shd__eb::before{content:"";width:22px;height:2px;background:var(--red);}
@@ -148,10 +150,10 @@
   }
   .svc a:hover,.svc a:focus-visible{border-color:var(--red);transform:translateY(-3px);}
   .svc a:hover::before,.svc a:focus-visible::before{transform:scaleX(1);}
-  .svc__n{font-size:12px;font-weight:800;color:var(--red);letter-spacing:.1em;}
+  .svc__n{font-size:12px;font-weight:800;color:var(--red-ink);letter-spacing:.1em;}
   .svc h3{font-size:18px;margin:9px 0 9px;font-weight:800;}
   .svc p{margin:0 0 16px;font-size:13.5px;color:var(--ink-2);line-height:1.85;}
-  .svc__go{font-size:12.5px;font-weight:700;color:var(--red);letter-spacing:.06em;}
+  .svc__go{font-size:12.5px;font-weight:700;color:var(--red-ink);letter-spacing:.06em;}
 
   /* ===== 選ばれる理由 ===== */
   .why{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
@@ -159,7 +161,7 @@
   .why__c{background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.24);padding:28px 24px 25px;}
   .why__c h3{font-size:19px;margin:0 0 11px;font-weight:800;display:flex;align-items:center;gap:11px;}
   .why__c h3 i{
-    font-style:normal;width:30px;height:30px;background:#fff;color:var(--red);
+    font-style:normal;width:30px;height:30px;background:#fff;color:var(--red-ink);
     display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;
   }
   .why__c p{margin:0;font-size:14px;line-height:1.9;color:rgba(255,255,255,.93);}
@@ -217,11 +219,11 @@
   @media(max-width:880px){.posts{grid-template-columns:1fr;}}
   .post{border:1px solid var(--line);padding:22px 20px;text-decoration:none;color:inherit;display:block;transition:.2s;}
   .post:hover,.post:focus-visible{border-color:var(--red);background:var(--red-tint);}
-  .post time{font-size:11.5px;color:var(--red);font-weight:800;letter-spacing:.08em;font-variant-numeric:tabular-nums;}
+  .post time{font-size:11.5px;color:var(--red-ink);font-weight:800;letter-spacing:.08em;font-variant-numeric:tabular-nums;}
   .post h3{font-size:15.5px;margin:9px 0 0;line-height:1.65;font-weight:700;}
-  .more{display:inline-block;margin-top:30px;border:2px solid var(--red);color:var(--red);
+  .more{display:inline-block;margin-top:30px;border:2px solid var(--red);color:var(--red-ink);
     text-decoration:none;font-weight:800;font-size:13.5px;padding:13px 30px;letter-spacing:.04em;transition:.2s;}
-  .more:hover,.more:focus-visible{background:var(--red);color:#fff;}
+  .more:hover,.more:focus-visible{background:var(--red-panel);color:#fff;}
 
   /* ===== 連絡 ===== */
   .contact{display:grid;grid-template-columns:1fr 1fr;gap:44px;}
@@ -242,7 +244,7 @@
   .ft a{color:#C9C9C9;text-decoration:none;}
   .ft a:hover{color:#fff;}
 
-  :focus-visible{outline:3px solid #FFB3B8;outline-offset:2px;}
+  :focus-visible{outline:3px solid #FFC2A3;outline-offset:2px;}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto;}}
 </style>
 
