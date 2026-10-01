@@ -12,6 +12,13 @@ Inquira のリリースノート。すべての変更点を時系列順に記録
 
 ## [Unreleased]
 
+### Added — 死活監視
+- 🩺 **死活監視スクリプト** `scripts/inquira_watchdog.ps1` 追加
+  - アプリ (uvicorn) / DNS / IIS (443) / HTTPS 経路の 4 層を 5 分おきに確認し、どの層で止まっているかをログに記録
+  - healthchecks.io 等へのハートビート送信で、異常時・サーバー停止時に提供側へ通知
+  - `-AutoRestart` で uvicorn 停止時に自動再起動、`-Install` でタスクスケジューラ登録 (管理者権限不要)
+- 📖 利用ガイド `scripts/inquira_watchdog_README.md` (「このサイトにアクセスできません」の切り分け表つき)
+
 ### Added — リリース運用基盤
 - 🚀 **顧客側ワンコマンド更新スクリプト** `scripts/update_inquira.ps1` 追加
   - GitHub からタグ/ブランチを取得 → コード入れ替え → 自動ヘルスチェック → 失敗時は自動ロールバック
