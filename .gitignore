@@ -22,4 +22,9 @@ data/faq_master/*
 
 .coverage
 data/org_settings.json
+# 画面から登録した API キー（暗号化済みでも、リポジトリには絶対に入れない）
+data/api_key.enc
+data/api_key.tmp
+# 動かすと書き出される状態ファイル
+data/faq_candidates.json
 data/client_eval/
