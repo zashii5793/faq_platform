@@ -10,14 +10,18 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
+from anthropic import Anthropic
+
 from . import (
     __version__,
+    api_key_store,
     audit,
     faq_candidate_settings,
     faq_candidates,
     impact,
     runtime_settings,
     shared_qa,
+    llm,
 )
 from .auth import is_email_allowed, oauth, require_user
 from .config import settings
@@ -64,12 +68,12 @@ def _demo_banner_html() -> str:
     """DEMO_MODE 中、かつ APIキー未設定の場合の警告。"""
     if not settings.demo_mode:
         return ""
-    if not settings.anthropic_api_key:
+    if not api_key_store.effective_key():
         return (
             '<div class="demo-banner">'
             '🚧 <b>デモモード</b>（APIキー未設定）— 回答は <b>ローカルモードのスタブ</b> です。'
-            '実際の Claude 回答を見るには <code>.env</code> に '
-            '<code>ANTHROPIC_API_KEY=sk-ant-...</code> を設定して再起動してください。'
+            '実際の Claude 回答を見るには、管理画面の「設定・出力」で API キーを登録するか、'
+            '<code>.env</code> に <code>ANTHROPIC_API_KEY=sk-ant-...</code> を設定して再起動してください。'
             '</div>'
         )
     return (
@@ -1906,7 +1910,12 @@ button.confirm:disabled{background:#9ca3af;cursor:not-allowed}
 
     <!-- ===== タブ4: 設定・出力 ===== -->
     <div class="admin-pane" data-pane="settings" hidden>
-    <div class="step-title"><span class="step-num">⚙</span>組織情報（デモ・カスタマイズ用）</div>
+    <div class="step-title"><span class="step-num">🔑</span>AI の API キー（Anthropic）</div>
+    <div id="apikey-section" class="settings-panel" style="font-size:13px;color:#374151">
+      <div class="empty-msg">読み込み中…</div>
+    </div>
+
+    <div class="step-title" style="margin-top:32px"><span class="step-num">⚙</span>組織情報（デモ・カスタマイズ用）</div>
     <div id="settings-section" style="font-size:13px;color:#6b7280">
       <div class="empty-msg">読み込み中…</div>
     </div>
@@ -2714,8 +2723,79 @@ loadDashboard();
 loadDocuments();
 loadFaqRequests();
 loadSettings();
+loadApiKey();
 loadImpact();
 loadCandidates();
+
+
+// --- AI の API キー（お客さまのキーを登録する・BYOK） ---
+const apikeySection = document.getElementById('apikey-section');
+const APIKEY_SOURCE = {
+  ui: '画面から登録したキーで動いています',
+  env: 'サーバーの設定ファイル（.env）のキーで動いています',
+  none: 'キーが登録されていません。いまはローカルモード（AIを呼ばない）で動いています',
+  unreadable: '登録済みのキーを読み出せません（暗号化の合言葉が変わった可能性があります）。登録し直してください',
+};
+async function loadApiKey(){
+  try {
+    const r = await fetch('/api/admin/api-key');
+    if(!r.ok) throw new Error(r.statusText);
+    renderApiKey(await r.json());
+  } catch(e) {
+    apikeySection.innerHTML = `<div class="error-msg">読み込み失敗: ${escape(e.message)}</div>`;
+  }
+}
+function renderApiKey(d){
+  const current = d.masked ? ` <code>${escape(d.masked)}</code>` : '';
+  const who = d.updated_by ? `<div class="setting-hint">最終更新: ${escape(d.updated_at)}（${escape(d.updated_by)}）</div>` : '';
+  let form;
+  if(d.can_manage){
+    form = `
+      <div class="row"><input type="password" id="apikeyInput" autocomplete="off" placeholder="sk-ant-..." style="flex:1;min-width:260px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px"></div>
+      <label style="font-size:12px;color:#6b7280"><input type="checkbox" id="apikeyVerify" checked> 登録の前に Anthropic へ問い合わせて、使えるキーか確かめる</label>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="save-btn" id="apikeySave">登録する</button>
+        ${d.source === 'ui' ? '<button class="setting-reset-btn" id="apikeyClear">登録したキーを削除</button>' : ''}
+      </div>`;
+  } else if(!d.admin_configured){
+    form = '<div class="setting-hint" style="color:#9a3412">キーを変更できる管理者が決まっていません。サーバーの <code>.env</code> の <code>ADMIN_EMAILS</code> に管理者のメールアドレスを書くと、ここから登録できるようになります。</div>';
+  } else {
+    form = '<div class="setting-hint">キーを変更できるのは管理者だけです。</div>';
+  }
+  apikeySection.innerHTML = `
+    <div><b>${escape(APIKEY_SOURCE[d.source] || d.source)}</b>${current}</div>
+    ${who}
+    <div class="setting-hint" style="margin:6px 0 10px">AI の利用料は、ここに登録したキーの Anthropic アカウントに直接かかります。キーは暗号化して保存し、画面には末尾4文字だけを表示します。</div>
+    ${form}`;
+  const save = document.getElementById('apikeySave');
+  if(save) save.onclick = saveApiKey;
+  const clear = document.getElementById('apikeyClear');
+  if(clear) clear.onclick = clearApiKey;
+}
+async function saveApiKey(){
+  const key = document.getElementById('apikeyInput').value.trim();
+  if(!key){ alert('キーを入力してください'); return; }
+  const btn = document.getElementById('apikeySave');
+  btn.disabled = true; btn.textContent = '確かめています…';
+  try {
+    const r = await fetch('/api/admin/api-key', {method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({key, verify: document.getElementById('apikeyVerify').checked})});
+    const d = await r.json().catch(() => ({}));
+    if(!r.ok) throw new Error(d.detail || r.statusText);
+    renderApiKey(d);
+    alert('✅ 登録しました。次の質問からこのキーで回答します');
+  } catch(e){
+    btn.disabled = false; btn.textContent = '登録する';
+    alert('登録できませんでした: ' + e.message);
+  }
+}
+async function clearApiKey(){
+  if(!confirm('画面から登録したキーを削除します。.env にキーがあればそちらで動き、無ければローカルモードになります。よろしいですか？')) return;
+  const r = await fetch('/api/admin/api-key', {method:'DELETE'});
+  const d = await r.json().catch(() => ({}));
+  if(!r.ok){ alert('削除できませんでした: ' + (d.detail || r.statusText)); return; }
+  renderApiKey(d);
+}
 
 // ========== 📈 削減効果タブ ==========
 async function loadImpact() {
@@ -3357,6 +3437,67 @@ async def admin_reset_settings(user: dict = Depends(require_user)):
     runtime_settings.reset()
     audit.record("settings_reset", user=user["email"])
     return {"ok": True, "note": "再起動で .env 値が反映されます"}
+
+
+# --- Anthropic API キー（お客さまが自分のキーを登録する・BYOK） -------------------
+
+def _api_key_status(user: dict) -> dict:
+    return {**api_key_store.status(), "can_manage": api_key_store.can_manage(user),
+            "admin_configured": bool(settings.admin_email_set) or settings.demo_mode}
+
+
+@app.get("/api/admin/api-key")
+async def admin_get_api_key(user: dict = Depends(require_user)):
+    """どのキーで動いているか（末尾4文字だけ）。平文は返さない。"""
+    return _api_key_status(user)
+
+
+class ApiKeyUpdate(BaseModel):
+    key: str
+    verify: bool = True
+
+
+def _verify_api_key(key: str) -> None:
+    """登録前に Anthropic へ1回問い合わせて、使えるキーか確かめる。"""
+    import anthropic
+    try:
+        Anthropic(api_key=key).models.list(limit=1)
+    except anthropic.AuthenticationError as e:
+        raise HTTPException(status_code=400, detail="このキーは Anthropic に受け付けられませんでした（無効か、削除されたキーです）。") from e
+    except anthropic.PermissionDeniedError as e:
+        raise HTTPException(status_code=400, detail="このキーには必要な権限がありません。") from e
+    except anthropic.APIConnectionError as e:
+        raise HTTPException(status_code=502, detail="Anthropic に接続できませんでした。ネットワークを確認するか、確認なしで登録してください。") from e
+
+
+@app.put("/api/admin/api-key")
+async def admin_set_api_key(payload: ApiKeyUpdate, user: dict = Depends(require_user)):
+    if not api_key_store.can_manage(user):
+        raise HTTPException(status_code=403, detail="API キーを変更できるのは管理者（.env の ADMIN_EMAILS）だけです。")
+    try:
+        key = api_key_store.validate_format(payload.key)
+    except api_key_store.KeyStoreError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    if payload.verify:
+        _verify_api_key(key)
+    try:
+        api_key_store.save(key, user["email"])
+    except api_key_store.KeyStoreError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    # 古いキーで作った回答のキャッシュは捨てる（別アカウントの回答を出し続けないため）
+    llm.clear_answer_cache()
+    audit.record("api_key_set", user=user["email"], key=api_key_store.mask(key), verified=payload.verify)
+    return _api_key_status(user)
+
+
+@app.delete("/api/admin/api-key")
+async def admin_clear_api_key(user: dict = Depends(require_user)):
+    if not api_key_store.can_manage(user):
+        raise HTTPException(status_code=403, detail="API キーを変更できるのは管理者（.env の ADMIN_EMAILS）だけです。")
+    api_key_store.clear()
+    llm.clear_answer_cache()
+    audit.record("api_key_cleared", user=user["email"])
+    return _api_key_status(user)
 
 
 @app.get("/api/admin/queries")

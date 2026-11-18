@@ -52,6 +52,17 @@ cd clients/$SLUG && docker compose up -d
 
 将来的には `provision-client.sh` で自動化予定。
 
+## AI の API キー（お客さまが自分のキーを登録する）
+
+本構成では、Anthropic の API キーは **お客さまの管理者が管理画面（設定・出力）から登録** します。
+AI の利用料はお客さまの Anthropic アカウントに直接かかり、運営側はキーを預かりません。
+
+- `.env` の `ADMIN_EMAILS` に、お客さま側の管理者のメールアドレスを入れる（空だと誰も登録できない）
+- `KEY_ENCRYPTION_SECRET` はクライアントごとに別の値にする（`openssl rand -hex 32`）。
+  変えると登録済みのキーは読めなくなり、登録し直しになる
+- キーは `/app/data/api_key.enc` に暗号化して保存される。画面には末尾4文字しか出ない
+- `ANTHROPIC_API_KEY` は空のままでよい（入れた場合は、画面で未登録のときの予備になる）
+
 ## 注意
 
 - 本構成では運営側に物理アクセスがあるため、UI 上の「Inquira 運営からも
