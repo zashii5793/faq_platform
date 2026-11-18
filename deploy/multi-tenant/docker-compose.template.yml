@@ -25,7 +25,11 @@ services:
       ASSISTANT_ROLE: ${ASSISTANT_ROLE:-社内ヘルプデスク}
 
       # --- Anthropic ---
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # お客さまの管理者が画面から自分のキーを登録する（BYOK）。ここは空でよい
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS}
+      KEY_ENCRYPTION_SECRET: ${KEY_ENCRYPTION_SECRET}
+      API_KEY_PATH: /app/data/api_key.enc
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-6}
 
       # --- Google OAuth ---

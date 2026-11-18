@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     assistant_role: str = "社内ヘルプデスク"
 
     anthropic_api_key: str = ""
+    # 画面から登録した API キー（暗号化して保存）。SaaS ではこちらが正。無ければ上の .env の値を使う
+    api_key_path: Path = Path("./data/api_key.enc")
+    # API キーを暗号化する合言葉。空なら session_secret を使う
+    key_encryption_secret: str = ""
+    # API キーを登録・削除できる管理者（カンマ区切り）。空なら誰も変えられない
+    admin_emails: str = ""
     claude_model: str = "claude-sonnet-4-6"
 
     google_client_id: str = ""
@@ -59,6 +65,10 @@ class Settings(BaseSettings):
     port: int = 8000
 
     demo_mode: bool = False
+
+    @property
+    def admin_email_set(self) -> set[str]:
+        return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
 
     @property
     def allowed_email_set(self) -> set[str]:

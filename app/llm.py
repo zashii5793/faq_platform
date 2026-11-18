@@ -7,6 +7,7 @@ import time
 from anthropic import Anthropic
 
 from . import audit
+from . import api_key_store
 from .config import settings
 from .rag import Chunk
 
@@ -70,7 +71,7 @@ def system_prompt(reference_mode: bool = False) -> str:
 
 
 def _client() -> Anthropic:
-    return Anthropic(api_key=settings.anthropic_api_key)
+    return Anthropic(api_key=api_key_store.effective_key())
 
 
 # --- 質問キャッシュ -----------------------------------------------------------
@@ -128,7 +129,7 @@ def build_user_prompt(question: str, chunks: list[tuple[Chunk, float]]) -> str:
 
 
 def answer(question: str, chunks: list[tuple[Chunk, float]], reference_mode: bool = False) -> str:
-    if not settings.anthropic_api_key:
+    if not api_key_store.effective_key():
         prefix = "（ローカルモード：APIキー未設定／参考情報モード）" if reference_mode else "（ローカルモード：APIキー未設定）"
         return (
             f"{prefix}\n\n"

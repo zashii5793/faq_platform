@@ -12,6 +12,17 @@ Inquira のリリースノート。すべての変更点を時系列順に記録
 
 ## [Unreleased]
 
+### Added — お客さまが自分の API キーを登録する（BYOK・SaaS 向け）
+- 🔑 管理画面「設定・出力」に **AI の API キー（Anthropic）** の欄を追加。お客さまの管理者が自分のキーを登録・削除できる
+  - 登録前に Anthropic へ1回問い合わせて、使えるキーか確かめる（外すこともできる）
+  - キーは `data/api_key.enc` に暗号化して保存（`cryptography` の Fernet。合言葉は `KEY_ENCRYPTION_SECRET`、無ければ `SESSION_SECRET`）
+  - 画面・API・監査ログには末尾4文字だけを出す。平文は返さない
+  - 変更できるのは `.env` の `ADMIN_EMAILS` の人だけ。未設定なら誰も変えられない
+  - 既定の合言葉のままでは保存しない（暗号化したふりにしない）
+  - キーを変えたら回答キャッシュを捨てる
+- 画面で登録したキーが無ければ、従来どおり `.env` の `ANTHROPIC_API_KEY` を使う（オンプレ導入の運用はそのまま）
+- 依存に `cryptography>=42` を追加
+
 ### Added — リリース運用基盤
 - 🚀 **顧客側ワンコマンド更新スクリプト** `scripts/update_inquira.ps1` 追加
   - GitHub からタグ/ブランチを取得 → コード入れ替え → 自動ヘルスチェック → 失敗時は自動ロールバック
